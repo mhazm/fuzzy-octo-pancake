@@ -12,6 +12,7 @@ import {
   Loader2,
   CheckCircle,
   UploadCloud,
+  ShieldAlert,
 } from "lucide-react";
 
 export default function SettingsClient() {
@@ -136,15 +137,39 @@ export default function SettingsClient() {
     <main className="min-h-screen pt-24 pb-12 bg-background">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-black text-foreground">Profile Settings</h1>
+          <h1 className="text-3xl font-black text-foreground">
+            Profile Settings
+          </h1>
           <p className="text-gray-400">
             Kustomisasi identitas publik Nismara kamu.
           </p>
         </div>
 
-        {/* ... Message Alert ... */}
+        {message && (
+          <div
+            className={`p-4 mb-6 rounded-2xl border backdrop-blur-sm flex items-center gap-3 transition-all duration-300 shadow-lg ${
+              message.type === "success"
+                ? "bg-accent-sky/10 border-accent-sky/20 text-accent-sky shadow-accent-sky/5"
+                : "bg-red-500/10 border-red-500/20 text-red-400 shadow-red-500/5"
+            }`}
+          >
+            {message.type === "success" ? (
+              <CheckCircle className="w-5 h-5 shrink-0" />
+            ) : (
+              <ShieldAlert className="w-5 h-5 shrink-0" />
+            )}
+            <p className="text-sm font-medium">{message.text}</p>
+          </div>
+        )}
 
-        <form action={handleSubmit} className="space-y-8">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const formData = new FormData(e.currentTarget);
+            handleSubmit(formData);
+          }}
+          className="space-y-8"
+        >
           <div className="glass-panel p-8 rounded-[2rem] border-border/50">
             <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
               <User className="text-primary w-5 h-5" /> Identitas Dasar
