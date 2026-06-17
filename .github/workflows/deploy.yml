@@ -3,7 +3,7 @@ name: Deploy Nismara Transport to VPS
 on:
   push:
     branches:
-      - main # Ubah ke 'master' jika default branch kamu master
+      - main
 
 jobs:
   build-and-deploy:
@@ -11,12 +11,12 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: "24.15.0" # Sesuaikan dengan versi Node yang kamu pakai
+          node-version: "24"
 
       - name: Install Dependencies
         run: npm install
