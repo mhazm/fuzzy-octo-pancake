@@ -25,31 +25,40 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ]);
 
   // 2. Map Jobs (/jobs/[jobId])
-  const jobEntries = jobs.map((job) => ({
-    url: `${baseUrl}/jobs/${job.jobId}`,
-    lastModified: job.updatedAt || new Date(),
-    changeFrequency: "monthly" as const,
-    priority: 0.6,
-  }));
+  // Tambahkan filter untuk memastikan jobId ada
+  const jobEntries = jobs
+    .filter((job) => job.jobId)
+    .map((job) => ({
+      url: `${baseUrl}/jobs/${job.jobId}`,
+      lastModified: job.updatedAt || new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.6,
+    }));
 
   // 3. Map Teams (/teams/[uri])
-  const teamEntries = teams.map((team) => ({
-    url: `${baseUrl}/teams/${team.uri}`,
-    lastModified: team.updatedAt || new Date(),
-    changeFrequency: "weekly" as const,
-    priority: 0.8,
-  }));
+  // Tambahkan filter untuk memastikan uri ada
+  const teamEntries = teams
+    .filter((team) => team.uri)
+    .map((team) => ({
+      url: `${baseUrl}/teams/${team.uri}`,
+      lastModified: team.updatedAt || new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.8,
+    }));
 
   // 4. Map Special Contracts (/contracts/[slug])
-  const contractEntries = contracts.map((contract) => {
-    const slug = contract.contractName.toLowerCase().replace(/ /g, "-");
-    return {
-      url: `${baseUrl}/special-contracts/${slug}`,
-      lastModified: contract.updatedAt || new Date(),
-      changeFrequency: "weekly" as const,
-      priority: 0.7,
-    };
-  });
+  // Ini letak perbaikan utamanya: pastikan contractName ada sebelum di-lowercase
+  const contractEntries = contracts
+    .filter((contract) => contract.contractName)
+    .map((contract) => {
+      const slug = contract.contractName.toLowerCase().replace(/ /g, "-");
+      return {
+        url: `${baseUrl}/special-contracts/${slug}`,
+        lastModified: contract.updatedAt || new Date(),
+        changeFrequency: "weekly" as const,
+        priority: 0.7,
+      };
+    });
 
   // 5. Rute Statis
   const staticRoutes = [
