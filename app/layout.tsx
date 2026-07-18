@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Providers } from "@/components/Providers";
+import { GoogleAnalytics } from "@next/third-parties/google";
 
 const roboto = Noto_Sans({ subsets: ["latin"] });
 
@@ -65,10 +66,12 @@ export default function RootLayout({
           <Navbar />
 
           <div className="flex-1">{children}</div>
-
           <Footer />
         </Providers>
       </body>
+      {process.env.NEXT_PUBLIC_GA_ID && (
+        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
+      )}
     </html>
   );
 }
