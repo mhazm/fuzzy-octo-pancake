@@ -3,7 +3,7 @@ import React from "react";
 import clientPromise from "@/lib/mongodb";
 
 type Props = {
-  params: Promise<{ convoyUri: string }>;
+  params: Promise<{ uri: string }>;
 };
 
 export async function generateMetadata(
@@ -11,7 +11,7 @@ export async function generateMetadata(
   parent: ResolvingMetadata,
 ): Promise<Metadata> {
   const resolvedParams = await params;
-  const convoyUri = resolvedParams.convoyUri;
+  const convoyUri = resolvedParams.uri;
 
   const client = await clientPromise;
   const db = client.db();
@@ -25,6 +25,7 @@ export async function generateMetadata(
 
   if (!convoyData) {
     console.log("Convoy data not found for URI:", convoyUri);
+    return { title: "Convoy | Nismara Transport" };
   }
 
   const convoyName = convoyData?.convoyName;
