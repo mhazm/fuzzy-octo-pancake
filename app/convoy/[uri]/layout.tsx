@@ -37,10 +37,10 @@ export async function generateMetadata(
     convoyData?.imageUrl || "https://images.nismara.my.id/227300_188.jpg";
 
   return {
-    title: `#${convoyName} | Nismara Transport`,
+    title: `${convoyName} | Nismara Transport`,
     description: `#${convoyName} akan berlangsung dari ${sourceCity} menuju ${destinationCity} dengan membawa cargo ${cargo}. Perjalanan ini akan menempuh jarak ${plannedDistance} km.`,
     openGraph: {
-      title: `#${convoyName} | Nismara Transport`,
+      title: `${convoyName} | Nismara Transport`,
       description: `#${convoyName} akan berlangsung dari ${sourceCity} menuju ${destinationCity} dengan membawa cargo ${cargo}. Perjalanan ini akan menempuh jarak ${plannedDistance} km.`,
       images: [imageUrl],
     },
