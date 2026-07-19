@@ -32,31 +32,15 @@ const menuItems = [
 
 const managementItems = [
   { name: "Manager Overview", href: "/dashboard/manage", icon: ShieldCheck },
-  { name: "Manage Users", href: "/dashboard/manage/users", icon: Users },
   {
-    name: "User Registration",
-    href: "/dashboard/manage/register-user",
+    name: "User Data",
+    href: "/dashboard/manage/data",
     icon: User2,
-  },
-  {
-    name: "Manage Contracts",
-    href: "/dashboard/manage/contracts",
-    icon: FileText,
   },
   {
     name: "Manage Events",
     href: "/dashboard/manage/events",
     icon: Sparkles,
-  },
-  {
-    name: "Manage NC Data",
-    href: "/dashboard/manage/currency-data",
-    icon: Landmark,
-  },
-  {
-    name: "Manage Point Data",
-    href: "/dashboard/manage/point-data",
-    icon: ReceiptText,
   },
 ];
 

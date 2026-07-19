@@ -16,6 +16,7 @@ declare module "next-auth" {
       teamRole?: "owner" | "admin" | "member" | null;
       xp: number;
       level: number;
+      joinedConvoy: number;
     } & DefaultSession["user"];
   }
 

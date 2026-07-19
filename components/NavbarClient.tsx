@@ -24,6 +24,7 @@ export default function NavbarClient({ session }: { session: any }) {
     { name: "Home", href: "/" },
     { name: "Events", href: "/events" },
     { name: "Jobs", href: "/jobs" },
+    { name: "Convoy", href: "/convoy" },
     { name: "Special Contract", href: "/special-contracts" },
     { name: "Teams", href: "/teams" },
     { name: "Leaderboard", href: "/leaderboard" },
