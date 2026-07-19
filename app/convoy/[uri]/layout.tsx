@@ -16,12 +16,15 @@ export async function generateMetadata(
   const client = await clientPromise;
   const db = client.db();
 
+  // DEBUGGING: Cek apa yang dikirim ke database
+  console.log("Mencari convoy dengan URI:", convoyUri);
+
   const convoyData = await db.collection("convoylobby").findOne({
-    $or: [{ convoyUri: convoyUri }],
+    convoyUri: convoyUri,
   });
 
   if (!convoyData) {
-    console.error("Error fetching convoy data for metadata:", convoyData);
+    console.log("Convoy data not found for URI:", convoyUri);
   }
 
   const convoyName = convoyData?.convoyName;
