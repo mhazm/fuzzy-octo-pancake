@@ -9,7 +9,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const db = client.db();
 
   // 1. Ambil Data Dinamis dari MongoDB
-  const [jobs, teams, contracts] = await Promise.all([
+  const [jobs, teams, contracts, convoylobby] = await Promise.all([
     db
       .collection("jobs")
       .find({}, { projection: { jobId: 1, updatedAt: 1 } })
@@ -21,6 +21,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     db
       .collection("contracts")
       .find({}, { projection: { contractName: 1, updatedAt: 1 } })
+      .toArray(),
+    db
+      .collection("convoylobby")
+      .find({}, { projection: { convoyUri: 1, updatedAt: 1 } })
       .toArray(),
   ]);
 
@@ -60,6 +64,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       };
     });
 
+  const convoyEntries = convoylobby
+    .filter((convoy) => convoy.convoyUri)
+    .map((convoy) => ({
+      url: `${baseUrl}/convoy/${convoy.convoyUri}`,
+      lastModified: convoy.updatedAt || new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.8,
+    }));
+
   // 5. Rute Statis
   const staticRoutes = [
     {
@@ -82,6 +95,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
     {
       url: `${baseUrl}/events`,
+      lastModified: new Date(),
+      changeFrequency: "daily" as const,
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/convoy`,
       lastModified: new Date(),
       changeFrequency: "daily" as const,
       priority: 0.9,
@@ -124,5 +143,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  return [...staticRoutes, ...jobEntries, ...teamEntries, ...contractEntries];
+  return [
+    ...staticRoutes,
+    ...jobEntries,
+    ...teamEntries,
+    ...contractEntries,
+    ...convoyEntries,
+  ];
 }
