@@ -38,10 +38,10 @@ export async function generateMetadata(
 
   return {
     title: `${convoyName} | Nismara Transport`,
-    description: `#${convoyName} akan berlangsung dari ${sourceCity} menuju ${destinationCity} dengan membawa cargo ${cargo}. Perjalanan ini akan menempuh jarak ${plannedDistance} km.`,
+    description: `${convoyName} akan berlangsung dari ${sourceCity} menuju ${destinationCity} dengan membawa cargo ${cargo}. Perjalanan ini akan menempuh jarak ${plannedDistance} km.`,
     openGraph: {
       title: `${convoyName} | Nismara Transport`,
-      description: `#${convoyName} akan berlangsung dari ${sourceCity} menuju ${destinationCity} dengan membawa cargo ${cargo}. Perjalanan ini akan menempuh jarak ${plannedDistance} km.`,
+      description: `${convoyName} akan berlangsung dari ${sourceCity} menuju ${destinationCity} dengan membawa cargo ${cargo}. Perjalanan ini akan menempuh jarak ${plannedDistance} km.`,
       images: [imageUrl],
     },
     robots: {
