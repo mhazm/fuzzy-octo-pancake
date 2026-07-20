@@ -13,6 +13,7 @@ import {
   ChevronRight,
   Gamepad2,
   Briefcase,
+  Edit3, // Tambahkan Edit3 disini
 } from "lucide-react";
 
 export default function ContractManageUI({ ongoing, history, manager }: any) {
@@ -24,7 +25,7 @@ export default function ContractManageUI({ ongoing, history, manager }: any) {
     contractName: "",
     companyName: "",
     imageUrl: "",
-    gameId: "1", // Default ETS2
+    gameId: "1",
     endAt: "",
   });
 
@@ -65,7 +66,6 @@ export default function ContractManageUI({ ongoing, history, manager }: any) {
     }
   };
 
-  // Helper untuk membuat slug URL (Contoh: "Lebaran 2026" -> "lebaran-2026")
   const slugify = (text: string) => text.toLowerCase().replace(/\s+/g, "-");
 
   return (
@@ -73,10 +73,10 @@ export default function ContractManageUI({ ongoing, history, manager }: any) {
       {/* HEADER SECTION */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-4xl font-black text-(-primary-foreground) tracking-tighter uppercase italic">
+          <h1 className="text-4xl font-black text-foreground tracking-tighter uppercase italic">
             Contract Management
           </h1>
-          <p className="text-(-primary-foreground)/50 font-bold uppercase text-[10px] tracking-[0.2em]">
+          <p className="text-foreground/50 font-bold uppercase text-[10px] tracking-[0.2em]">
             System Authorization • Logistics Control
           </p>
         </div>
@@ -90,7 +90,7 @@ export default function ContractManageUI({ ongoing, history, manager }: any) {
 
       {/* ONGOING CONTRACTS */}
       <div className="space-y-4">
-        <h2 className="text-xl font-black text-(-primary-foreground) uppercase italic flex items-center gap-2">
+        <h2 className="text-xl font-black text-foreground uppercase italic flex items-center gap-2">
           <Timer className="text-accent-lilac" size={20} /> Ongoing Contracts
         </h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -119,7 +119,7 @@ export default function ContractManageUI({ ongoing, history, manager }: any) {
                 <div className="p-8 space-y-5">
                   <div className="flex justify-between items-start">
                     <div>
-                      <h3 className="text-2xl font-black text-(-primary-foreground) uppercase leading-none mb-1 italic">
+                      <h3 className="text-2xl font-black text-foreground uppercase leading-none mb-1 italic">
                         {c.contractName}
                       </h3>
                       <p className="text-accent-lilac font-bold text-xs uppercase tracking-widest">
@@ -129,15 +129,15 @@ export default function ContractManageUI({ ongoing, history, manager }: any) {
                   </div>
                   <div className="grid grid-cols-2 gap-4 py-4 border-y border-border/50">
                     <div>
-                      <p className="text-[10px] font-black text-(-primary-foreground)/30 uppercase">
+                      <p className="text-[10px] font-black text-foreground/30 uppercase">
                         Deployment
                       </p>
-                      <p className="text-xs font-bold text-(-primary-foreground)">
+                      <p className="text-xs font-bold text-foreground">
                         {formatDate(c.setAt)}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-[10px] font-black text-(-primary-foreground)/30 uppercase">
+                      <p className="text-[10px] font-black text-foreground/30 uppercase">
                         Deadline
                       </p>
                       <p className="text-xs font-bold text-red-500">
@@ -145,16 +145,26 @@ export default function ContractManageUI({ ongoing, history, manager }: any) {
                       </p>
                     </div>
                   </div>
-                  <Link
-                    href={`/special-contracts/${slugify(c.contractName)}`}
-                    className="w-full py-4 bg-foreground/5 hover:bg-primary hover:text-primary-foreground text-(-primary-foreground) rounded-2xl text-[10px] font-black uppercase transition-all flex items-center justify-center gap-2 group/btn"
-                  >
-                    View Participants{" "}
-                    <ChevronRight
-                      size={14}
-                      className="group-hover/btn:translate-x-1 transition-transform"
-                    />
-                  </Link>
+
+                  {/* Bagian Tombol yang Diperbarui */}
+                  <div className="flex flex-col gap-2">
+                    <Link
+                      href={`/special-contracts/${slugify(c.contractName)}`}
+                      className="w-full py-4 bg-foreground/5 hover:bg-primary hover:text-primary-foreground text-foreground rounded-2xl text-[10px] font-black uppercase transition-all flex items-center justify-center gap-2 group/btn"
+                    >
+                      View Participants{" "}
+                      <ChevronRight
+                        size={14}
+                        className="group-hover/btn:translate-x-1 transition-transform"
+                      />
+                    </Link>
+                    <Link
+                      href={`/dashboard/manage/events/contracts/edit/${c._id}`}
+                      className="w-full py-3 bg-transparent border border-border/50 hover:border-accent-sky hover:text-accent-sky text-foreground/50 rounded-2xl text-[10px] font-black uppercase transition-all flex items-center justify-center gap-2"
+                    >
+                      <Edit3 size={14} /> Edit Contract
+                    </Link>
+                  </div>
                 </div>
               </div>
             );
@@ -164,13 +174,12 @@ export default function ContractManageUI({ ongoing, history, manager }: any) {
 
       {/* PAST CONTRACTS HISTORY */}
       <div className="space-y-4">
-        <h2 className="text-xl font-black text-(-primary-foreground) uppercase italic flex items-center gap-2">
-          <History className="text-(-primary-foreground)/20" size={20} /> Past
-          Operations
+        <h2 className="text-xl font-black text-foreground uppercase italic flex items-center gap-2">
+          <History className="text-foreground/20" size={20} /> Past Operations
         </h2>
         <div className="bg-card border border-border rounded-[2.5rem] overflow-hidden">
           <table className="w-full text-left text-sm">
-            <thead className="bg-foreground/5 text-(-primary-foreground)/30 text-[10px] font-black uppercase tracking-widest border-b border-border">
+            <thead className="bg-foreground/5 text-foreground/30 text-[10px] font-black uppercase tracking-widest border-b border-border">
               <tr>
                 <th className="px-8 py-5">Game</th>
                 <th className="px-8 py-5">Contract Name</th>
@@ -194,7 +203,7 @@ export default function ContractManageUI({ ongoing, history, manager }: any) {
                       </span>
                     </td>
                     <td className="px-8 py-5">
-                      <p className="font-black text-(-primary-foreground) uppercase">
+                      <p className="font-black text-foreground uppercase">
                         {h.contractName}
                       </p>
                       <p className="text-[10px] font-bold text-accent-lilac uppercase tracking-tighter">
@@ -206,12 +215,12 @@ export default function ContractManageUI({ ongoing, history, manager }: any) {
                         <span className="font-black text-emerald-500">
                           N¢ {h.totalNCEarned?.toLocaleString("id-ID")}
                         </span>
-                        <span className="text-[10px] font-bold text-(-primary-foreground)/30">
+                        <span className="text-[10px] font-bold text-foreground/30">
                           {h.totalDistance?.toLocaleString("id-ID")} KM
                         </span>
                       </div>
                     </td>
-                    <td className="px-8 py-5 text-right text-(-primary-foreground)/40 font-mono text-[10px] font-black">
+                    <td className="px-8 py-5 text-right text-foreground/40 font-mono text-[10px] font-black">
                       {formatDate(h.closedAt)}
                     </td>
                   </tr>
@@ -234,10 +243,10 @@ export default function ContractManageUI({ ongoing, history, manager }: any) {
             </div>
 
             <div className="text-center relative z-10">
-              <h3 className="text-3xl font-black text-(-primary-foreground) italic uppercase tracking-tighter">
+              <h3 className="text-3xl font-black text-foreground italic uppercase tracking-tighter">
                 New Contract
               </h3>
-              <p className="text-(-primary-foreground)/30 text-[10px] font-black uppercase tracking-[0.3em]">
+              <p className="text-foreground/30 text-[10px] font-black uppercase tracking-[0.3em]">
                 Operational Deployment System
               </p>
             </div>
@@ -249,7 +258,7 @@ export default function ContractManageUI({ ongoing, history, manager }: any) {
                     Target Game
                   </label>
                   <select
-                    className="w-full bg-foreground/5 border border-border rounded-2xl p-4 text-(-primary-foreground) font-bold text-sm outline-none focus:border-accent-lilac"
+                    className="w-full bg-foreground/5 border border-border rounded-2xl p-4 text-foreground font-bold text-sm outline-none focus:border-accent-lilac"
                     onChange={(e) =>
                       setFormData({ ...formData, gameId: e.target.value })
                     }
@@ -265,7 +274,7 @@ export default function ContractManageUI({ ongoing, history, manager }: any) {
                   <input
                     type="date"
                     required
-                    className="w-full bg-foreground/5 border border-border rounded-2xl p-4 text-(-primary-foreground) text-sm outline-none focus:border-accent-lilac"
+                    className="w-full bg-foreground/5 border border-border rounded-2xl p-4 text-foreground text-sm outline-none focus:border-accent-lilac"
                     onChange={(e) =>
                       setFormData({ ...formData, endAt: e.target.value })
                     }
@@ -281,7 +290,7 @@ export default function ContractManageUI({ ongoing, history, manager }: any) {
                   <input
                     placeholder="Contoh: Mudik Lebaran 2026"
                     required
-                    className="w-full bg-foreground/5 border border-border rounded-2xl p-4 text-(-primary-foreground) text-sm"
+                    className="w-full bg-foreground/5 border border-border rounded-2xl p-4 text-foreground text-sm"
                     onChange={(e) =>
                       setFormData({ ...formData, contractName: e.target.value })
                     }
@@ -289,7 +298,7 @@ export default function ContractManageUI({ ongoing, history, manager }: any) {
                   <input
                     placeholder="Nama Perusahaan (Client)"
                     required
-                    className="w-full bg-foreground/5 border border-border rounded-2xl p-4 text-(-primary-foreground) text-sm"
+                    className="w-full bg-foreground/5 border border-border rounded-2xl p-4 text-foreground text-sm"
                     onChange={(e) =>
                       setFormData({ ...formData, companyName: e.target.value })
                     }
@@ -303,7 +312,7 @@ export default function ContractManageUI({ ongoing, history, manager }: any) {
                 </label>
                 <input
                   placeholder="Link gambar Imgur/Discord"
-                  className="w-full bg-foreground/5 border border-border rounded-2xl p-4 text-(-primary-foreground) text-sm"
+                  className="w-full bg-foreground/5 border border-border rounded-2xl p-4 text-foreground text-sm"
                   onChange={(e) =>
                     setFormData({ ...formData, imageUrl: e.target.value })
                   }
@@ -322,7 +331,7 @@ export default function ContractManageUI({ ongoing, history, manager }: any) {
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="w-full py-2 text-(-primary-foreground)/20 font-black uppercase text-[10px] tracking-widest"
+                className="w-full py-2 text-foreground/20 font-black uppercase text-[10px] tracking-widest"
               >
                 Cancel
               </button>
