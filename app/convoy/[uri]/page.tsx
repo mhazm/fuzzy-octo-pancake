@@ -71,12 +71,20 @@ export default async function ConvoyDetailPage({
     usersMap.set(user.discordId?.toString(), user);
   });
 
+  const now = new Date().getTime();
+  const startTime = new Date(convoy.meetupDate).getTime();
+  const DURATION_MS = 2 * 60 * 60 * 1000;
+
+  const isOngoing = now >= startTime && now < startTime + DURATION_MS;
+  const isPast = now >= startTime + DURATION_MS;
+
   const formatDate = (date: Date) => {
     return new Date(date).toLocaleDateString("id-ID", {
       weekday: "long",
       year: "numeric",
       month: "long",
       day: "numeric",
+      timeZone: "Asia/Jakarta",
     });
   };
 
@@ -84,10 +92,9 @@ export default async function ConvoyDetailPage({
     return new Date(date).toLocaleTimeString("id-ID", {
       hour: "2-digit",
       minute: "2-digit",
+      timeZone: "Asia/Jakarta",
     });
   };
-
-  const isPast = new Date(convoy.meetupDate) < new Date();
 
   return (
     <div className="max-w-5xl mx-auto p-4 md:p-8 space-y-6">
@@ -126,8 +133,13 @@ export default async function ConvoyDetailPage({
                 <span className="bg-background/80 backdrop-blur-md text-foreground px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider">
                   {convoy.typeConvoy}
                 </span>
+                {isOngoing && (
+                  <span className="bg-amber-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider animate-pulse">
+                    Sedang Berjalan
+                  </span>
+                )}
                 {isPast && (
-                  <span className="bg-red-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider">
+                  <span className="bg-red-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider">
                     Sesi Berakhir
                   </span>
                 )}
@@ -198,7 +210,7 @@ export default async function ConvoyDetailPage({
                     </span>
                     <span className="text-foreground bg-card/50 px-2 py-1 rounded-md border border-border/50 text-xs font-black tracking-wider">
                       {convoy.cargoMass
-                        ? `${convoy.cargoMass.toLocaleString("id-ID")} KG`
+                        ? `${convoy.cargoMass.toLocaleString("id-ID")} Ton`
                         : "-"}
                     </span>
                   </div>
@@ -278,13 +290,21 @@ export default async function ConvoyDetailPage({
                   </p>
                 </div>
 
-                <div className="w-full pt-2">
-                  <JoinConvoyButton
-                    convoyId={convoy._id.toString()}
-                    isLoggedIn={!!session}
-                    isDriver={isUserDriver}
-                    isJoined={isAlreadyJoined}
-                  />
+                <div className="w-full">
+                  {!isPast ? (
+                    <div className="w-full">
+                      <JoinConvoyButton
+                        convoyId={convoy._id.toString()}
+                        isLoggedIn={!!session}
+                        isDriver={isUserDriver}
+                        isJoined={isAlreadyJoined}
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-full py-4 bg-red-500/10 border border-red-500/20 text-red-500 font-black uppercase text-xs rounded-xl text-center">
+                      Sesi Sudah Berakhir
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -301,16 +321,18 @@ export default async function ConvoyDetailPage({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {partisipanRaw.map((p: any, idx: number) => {
-              // Ambil data user dari Map yang sudah kita fetch sebelumnya
               const userDetail = usersMap.get(p.discordId?.toString());
 
               return (
-                <Link
-                  href={`/profile/${p.truckyId}`}
+                <div
                   key={idx}
-                  className="flex items-center gap-4 bg-black/20 hover:bg-primary/10 border border-white/5 hover:border-primary/40 p-4 rounded-2xl transition-all group"
+                  className="flex items-center gap-4 bg-black/20 border border-white/5 p-4 rounded-2xl group"
                 >
-                  <div className="w-12 h-12 rounded-full overflow-hidden bg-card border-2 border-border/50 group-hover:border-primary transition-colors shrink-0">
+                  {/* Avatar sebagai Link */}
+                  <Link
+                    href={`/profile/${p.truckyId}`}
+                    className="w-12 h-12 rounded-full overflow-hidden bg-card border-2 border-border/50 hover:border-primary transition-colors shrink-0"
+                  >
                     {userDetail?.image ? (
                       <img
                         src={userDetail.image}
@@ -322,16 +344,28 @@ export default async function ConvoyDetailPage({
                         {(userDetail?.name || "D").charAt(0)}
                       </div>
                     )}
-                  </div>
+                  </Link>
+
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-foreground truncate group-hover:text-primary transition-colors">
+                    {/* Nama sebagai Link */}
+                    <Link
+                      href={`/profile/${p.truckyId}`}
+                      className="text-sm font-bold text-foreground truncate hover:text-primary transition-colors block"
+                    >
                       {userDetail?.name || "Driver Nismara"}
-                    </p>
+                    </Link>
+
+                    {/* Job ID sebagai Link */}
                     <p className="text-[10px] font-semibold text-foreground/50 uppercase tracking-widest truncate mt-0.5">
-                      Trucky ID: {p.truckyId}
+                      <Link
+                        href={`/jobs/${p.jobId}`}
+                        className="text-[10px] font-black uppercase text-primary hover:underline"
+                      >
+                        Job #{p.jobId}
+                      </Link>
                     </p>
                   </div>
-                </Link>
+                </div>
               );
             })}
           </div>

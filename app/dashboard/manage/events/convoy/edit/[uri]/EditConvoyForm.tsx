@@ -297,7 +297,7 @@ export default function EditConvoyForm({ convoy }: { convoy: any }) {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-                Bobot (KG)
+                Bobot (Ton)
               </label>
               <input
                 name="cargoMass"
