@@ -29,6 +29,7 @@ interface PenaltyClientUIProps {
   initialPoints: number;
   totalNC: number;
   pointPrice: number;
+  discountBooster: number; // Tambahan prop discount
   history: HistoryItem[];
   eligibleJobs: any[];
 }
@@ -37,6 +38,7 @@ export default function PenaltyClientUI({
   initialPoints,
   totalNC,
   pointPrice,
+  discountBooster,
   history,
   eligibleJobs,
 }: PenaltyClientUIProps) {
@@ -54,14 +56,20 @@ export default function PenaltyClientUI({
   const totalItems = eligibleJobs.length;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const currentJobs = eligibleJobs.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const currentJobs = eligibleJobs.slice(
+    startIndex,
+    startIndex + ITEMS_PER_PAGE,
+  );
 
   const PRICE_PER_POINT = 3000;
   const ADMIN_FEE = 4000;
   const subtotal = pointsToPay * PRICE_PER_POINT;
   const totalRupiah = subtotal + ADMIN_FEE;
 
-  const totalCost = pointsToPay * pointPrice;
+  // Kalkulasi Harga Akhir NC
+  const finalPointPrice = Math.max(0, pointPrice - discountBooster);
+  const totalCost = pointsToPay * finalPointPrice;
+  const totalSavedDiscount = pointsToPay * discountBooster;
   const MAX_POINTS = 50;
 
   // Kalkulasi persentase bar
@@ -97,13 +105,12 @@ export default function PenaltyClientUI({
     setIsLoading(false);
   };
 
-const handleValidation = async (jobId: string) => {
+  const handleValidation = async (jobId: string) => {
     if (!confirm("Validasi job ini untuk pengurangan poin penalti?")) return;
     setIsLoading(true);
     const res = await validateJobPoints(jobId);
     if (res.success) {
       alert(res.message);
-      // Jika job di halaman terakhir habis setelah divalidasi, mundur 1 halaman
       if (currentJobs.length === 1 && currentPage > 1) {
         setCurrentPage(currentPage - 1);
       }
@@ -113,11 +120,11 @@ const handleValidation = async (jobId: string) => {
     setIsLoading(false);
   };
 
-const handleRupiahPayment = async () => {
+  const handleRupiahPayment = async () => {
     setIsLoading(true);
     try {
       const res = await createPenaltyPayment(pointsToPay);
-      
+
       if (res.token) {
         (window as any).snap.pay(res.token, {
           onSuccess: (result: any) => {
@@ -132,7 +139,7 @@ const handleRupiahPayment = async () => {
           },
           onClose: () => {
             setIsLoading(false);
-          }
+          },
         });
       }
     } catch (error) {
@@ -237,7 +244,7 @@ const handleRupiahPayment = async () => {
           {totalPages > 1 && (
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
                 className="p-1.5 rounded-lg border hover:bg-secondary disabled:opacity-30 transition-colors"
               >
@@ -247,7 +254,9 @@ const handleRupiahPayment = async () => {
                 {currentPage} / {totalPages}
               </span>
               <button
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                }
                 disabled={currentPage === totalPages}
                 className="p-1.5 rounded-lg border hover:bg-secondary disabled:opacity-30 transition-colors"
               >
@@ -256,15 +265,18 @@ const handleRupiahPayment = async () => {
             </div>
           )}
         </div>
-        
+
         {totalItems === 0 ? (
           <div className="p-8 text-center border-2 border-dashed rounded-xl text-muted-foreground bg-foreground/[0.01]">
-            Tidak ada job hardcore ({'>'}4 HC) yang tersedia untuk divalidasi.
+            Tidak ada job hardcore ({">"}4 HC) yang tersedia untuk divalidasi.
           </div>
         ) : (
           <div className="space-y-3">
             {currentJobs.map((job) => (
-              <div key={job._id} className="flex items-center justify-between p-4 border rounded-xl bg-foreground/[0.02] hover:border-primary/30 transition-colors group">
+              <div
+                key={job._id}
+                className="flex items-center justify-between p-4 border rounded-xl bg-foreground/[0.02] hover:border-primary/30 transition-colors group"
+              >
                 <div>
                   <p className="font-bold text-sm group-hover:text-primary transition-colors">
                     #{job.jobId} - {job.sourceCity} ke {job.destinationCity}
@@ -286,21 +298,27 @@ const handleRupiahPayment = async () => {
             {/* Footer Informasi & Navigasi Bawah */}
             <div className="flex items-center justify-between mt-6 pt-6 border-t border-dashed">
               <p className="text-[10px] text-muted-foreground italic">
-                * Menampilkan {startIndex + 1}-{Math.min(startIndex + ITEMS_PER_PAGE, totalItems)} dari {totalItems} job.
+                * Menampilkan {startIndex + 1}-
+                {Math.min(startIndex + ITEMS_PER_PAGE, totalItems)} dari{" "}
+                {totalItems} job.
               </p>
-              
+
               {totalPages > 1 && (
                 <div className="flex items-center gap-1">
                   {/* Tombol halaman nomor bisa ditambahkan di sini jika perlu */}
                   <button
-                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(prev - 1, 1))
+                    }
                     disabled={currentPage === 1}
                     className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold border rounded-lg hover:bg-secondary disabled:opacity-30 transition-colors"
                   >
                     <ChevronLeft size={14} /> Prev
                   </button>
                   <button
-                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                    }
                     disabled={currentPage === totalPages}
                     className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold border rounded-lg hover:bg-secondary disabled:opacity-30 transition-colors"
                   >
@@ -412,14 +430,41 @@ const handleRupiahPayment = async () => {
                 />
               </div>
 
-              <div className="bg-secondary/50 rounded-lg p-4 flex justify-between items-center">
-                <span className="text-sm font-medium">Total Biaya:</span>
-                <span
-                  className={`text-lg font-bold flex items-center gap-1 ${totalNC < totalCost ? "text-red-500" : "text-primary"}`}
-                >
-                  {totalCost.toLocaleString("id-ID")}{" "}
-                  <Coins className="w-4 h-4" />
-                </span>
+              {/* Tampilan UI Diskon Detail */}
+              <div className="bg-secondary/50 rounded-lg p-4 space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    Harga Normal (per poin):
+                  </span>
+                  <span>{pointPrice.toLocaleString("id-ID")} NC</span>
+                </div>
+
+                {discountBooster > 0 && (
+                  <div className="flex justify-between text-sm text-green-500 font-medium">
+                    <span>💎 Diskon Booster:</span>
+                    <span>-{discountBooster.toLocaleString("id-ID")} NC</span>
+                  </div>
+                )}
+
+                <div className="flex justify-between items-center pt-3 border-t border-border/50">
+                  <div className="flex flex-col">
+                    <span className="text-sm font-bold">Total Biaya:</span>
+
+                    {/* Badge Total Penghematan */}
+                    {totalSavedDiscount > 0 && (
+                      <span className="text-[10px] font-bold text-green-400 bg-green-500/10 px-2.5 py-1 rounded-md mt-1 w-fit flex items-center gap-1 border border-green-500/20">
+                        ✨ Hemat {totalSavedDiscount.toLocaleString("id-ID")} NC
+                      </span>
+                    )}
+                  </div>
+
+                  <span
+                    className={`text-2xl font-black flex items-center gap-1.5 ${totalNC < totalCost ? "text-red-500" : "text-primary"}`}
+                  >
+                    {totalCost.toLocaleString("id-ID")}{" "}
+                    <Coins className="w-5 h-5" />
+                  </span>
+                </div>
               </div>
 
               {totalNC < totalCost && (
@@ -467,7 +512,10 @@ const handleRupiahPayment = async () => {
               <h2 className="text-xl font-black flex items-center gap-2">
                 <Wallet className="text-blue-500" /> Tebus Poin IDR
               </h2>
-              <button onClick={() => setIsRupiahModalOpen(false)} className="text-foreground/40 hover:text-foreground">
+              <button
+                onClick={() => setIsRupiahModalOpen(false)}
+                className="text-foreground/40 hover:text-foreground"
+              >
                 <X size={20} />
               </button>
             </div>
@@ -475,9 +523,11 @@ const handleRupiahPayment = async () => {
             {/* Body */}
             <div className="p-8 space-y-6">
               <div>
-                <label className="text-[10px] font-black uppercase tracking-widest text-foreground/40">Jumlah Poin yang Ditebus</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-foreground/40">
+                  Jumlah Poin yang Ditebus
+                </label>
                 <div className="flex items-center gap-4 mt-2">
-                  <input 
+                  <input
                     type="number"
                     min="1"
                     max={initialPoints}
@@ -485,35 +535,51 @@ const handleRupiahPayment = async () => {
                     onChange={(e) => setPointsToPay(Number(e.target.value))}
                     className="flex-1 p-4 bg-foreground/5 rounded-2xl border-0 focus:ring-2 ring-blue-500 font-bold"
                   />
-                  <span className="font-bold text-sm text-foreground/60">Poin</span>
+                  <span className="font-bold text-sm text-foreground/60">
+                    Poin
+                  </span>
                 </div>
               </div>
 
               {/* Rincian Biaya */}
               <div className="space-y-3 bg-foreground/[0.03] p-5 rounded-3xl border border-dashed">
                 <div className="flex justify-between text-sm">
-                  <span className="text-foreground/50 font-medium">Harga Poin ({pointsToPay} x 5rb)</span>
-                  <span className="font-bold">Rp {subtotal.toLocaleString()}</span>
+                  <span className="text-foreground/50 font-medium">
+                    Harga Poin ({pointsToPay} x 5rb)
+                  </span>
+                  <span className="font-bold">
+                    Rp {subtotal.toLocaleString()}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm text-blue-500">
                   <span className="font-medium flex items-center gap-1">
                     Biaya Admin <Info size={12} />
                   </span>
-                  <span className="font-bold">Rp {ADMIN_FEE.toLocaleString()}</span>
+                  <span className="font-bold">
+                    Rp {ADMIN_FEE.toLocaleString()}
+                  </span>
                 </div>
                 <div className="pt-3 border-t flex justify-between items-center">
-                  <span className="font-black text-xs uppercase">Total Bayar</span>
-                  <span className="text-2xl font-black text-blue-600">Rp {totalRupiah.toLocaleString()}</span>
+                  <span className="font-black text-xs uppercase">
+                    Total Bayar
+                  </span>
+                  <span className="text-2xl font-black text-blue-600">
+                    Rp {totalRupiah.toLocaleString()}
+                  </span>
                 </div>
               </div>
 
               <p className="text-[10px] text-center text-foreground/40 leading-relaxed px-4">
-                Pembayaran menggunakan Midtrans. Poin akan berkurang secara otomatis setelah status pembayaran menjadi <span className="font-bold italic">Settlement</span>.
+                Pembayaran menggunakan Midtrans. Poin akan berkurang secara
+                otomatis setelah status pembayaran menjadi{" "}
+                <span className="font-bold italic">Settlement</span>.
               </p>
 
-              <button 
+              <button
                 onClick={handleRupiahPayment}
-                disabled={isLoading || pointsToPay <= 0 || pointsToPay > initialPoints}
+                disabled={
+                  isLoading || pointsToPay <= 0 || pointsToPay > initialPoints
+                }
                 className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-blue-700 disabled:opacity-50 transition-all shadow-lg shadow-blue-500/20"
               >
                 {isLoading ? "Menghubungkan..." : "Lanjutkan Pembayaran"}

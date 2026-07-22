@@ -90,6 +90,7 @@ export default async function PointsPage() {
         initialPoints={data.totalPoints}
         totalNC={data.totalNC}
         pointPrice={data.pointPrice}
+        discountBooster={data.discountBooster} // ---> Tambahkan prop ini
         history={data.history as HistoryItem[]}
         eligibleJobs={eligibleJobs}
       />
