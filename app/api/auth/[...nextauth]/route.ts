@@ -17,7 +17,7 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.DISCORD_CLIENT_SECRET!,
       authorization: {
         params: {
-          scope: "guilds email identify",
+          scope: "email identify",
         },
       },
       allowDangerousEmailAccountLinking: true,
@@ -28,64 +28,94 @@ export const authOptions: NextAuthOptions = {
       const client = await clientPromise;
       const db = client.db();
 
-      // 1. Ambil data akun Discord dari koleksi 'accounts'
       const account = await db.collection("accounts").findOne({
         userId: new ObjectId(user.id),
         provider: "discord",
       });
 
+      // Default value
       let isDriver = false;
       let driverData = null;
       let userRole: "user" | "manager" | "admin" = "user";
+      let isBooster = false;
+      const guildId = "863959415702028318";
+      const managerRoleId = "1406574228794507354";
+
+      // 1. Ambil data User dari DB terlebih dahulu
+      const dbUser = await db
+        .collection("users")
+        .findOne({ _id: new ObjectId(user.id) });
 
       if (account) {
         const discordId = account.providerAccountId;
 
-        // 2. PERBAIKAN: Gunakan $set untuk discordId dan lastSeen (Bukan $cache)
+        // Cek kapan terakhir kali kita menembak API Discord untuk user ini
+        const lastDiscordSync = dbUser?.lastDiscordSync
+          ? new Date(dbUser.lastDiscordSync).getTime()
+          : 0;
+        const now = Date.now();
+        const tenMinutes = 10 * 60 * 1000;
+
+        // 2. Jika data sudah kedaluwarsa (lebih dari 10 menit) ATAU belum pernah sync, fetch ke Discord
+        if (now - lastDiscordSync > tenMinutes) {
+          try {
+            const response = await fetch(
+              `https://discord.com/api/v10/guilds/${guildId}/members/${discordId}`,
+              {
+                headers: {
+                  Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
+                },
+              },
+            );
+
+            if (response.ok) {
+              const memberData = await response.json();
+
+              if (memberData.roles.includes(managerRoleId))
+                userRole = "manager";
+              if (memberData.premium_since) isBooster = true;
+
+              // SIMPAN HASIL KE DATABASE AGAR TIDAK PERLU FETCH LAGI DALAM WAKTU DEKAT
+              await db.collection("users").updateOne(
+                { _id: new ObjectId(user.id) },
+                {
+                  $set: {
+                    discordRole: userRole,
+                    isBooster: isBooster,
+                    lastDiscordSync: new Date(),
+                  },
+                },
+              );
+            } else {
+              console.error("❌ [API DISCORD] Error Status:", response.status);
+            }
+          } catch (error) {
+            console.error("❌ [FETCH] Gagal menghubungi Discord API:", error);
+          }
+        } else {
+          // 3. JIKA BELUM 10 MENIT, GUNAKAN DATA DARI DATABASE (TIDAK SPAM API)
+          userRole = dbUser?.discordRole || "user";
+          isBooster = dbUser?.isBooster || false;
+        }
+
+        // --- UPDATE DISCORD ID & XP JIKA KOSONG ---
         await db.collection("users").updateOne(
           { _id: new ObjectId(user.id) },
           {
-            $set: {
-              discordId: discordId,
-              lastSeen: new Date(),
-            },
+            $set: { discordId: discordId, lastSeen: new Date() },
           },
         );
 
-        // 3. Inisialisasi XP dan Level hanya jika belum ada
-        await db
-          .collection("users")
-          .updateOne(
-            { _id: new ObjectId(user.id), xp: { $exists: false } },
-            { $set: { xp: 0, level: 1 } },
-          );
-
-        // --- VERIFIKASI ROLE DISCORD ---[cite: 16]
-        const guildId = "863959415702028318";
-        const managerRoleId = "1406574228794507354";
-
-        try {
-          const response = await fetch(
-            `https://discord.com/api/v10/guilds/${guildId}/members/${discordId}`,
-            {
-              headers: {
-                Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
-              },
-              next: { revalidate: 600 },
-            },
-          );
-
-          if (response.ok) {
-            const memberData = await response.json();
-            if (memberData.roles.includes(managerRoleId)) {
-              userRole = "manager";
-            }
-          }
-        } catch (error) {
-          console.error("Gagal verifikasi role Discord:", error);
+        if (dbUser && dbUser.xp === undefined) {
+          await db
+            .collection("users")
+            .updateOne(
+              { _id: new ObjectId(user.id) },
+              { $set: { xp: 0, level: 1 } },
+            );
         }
 
-        // --- SYNC TRUCKY ID ---[cite: 16]
+        // --- SYNC TRUCKY ID ---
         const driverLink = await db.collection("driverlinks").findOne({
           userId: discordId,
           guildId,
@@ -98,29 +128,22 @@ export const authOptions: NextAuthOptions = {
             truckyName: driverLink.truckyName,
           };
 
-          // Update/Sync truckyId ke dokumen user agar bisa dibuat profile public
-          await db.collection("users").updateOne(
-            { _id: new ObjectId(user.id) },
-            {
-              $set: {
-                truckyId: driverLink.truckyId,
-                isDriver: true,
-              },
-            },
-          );
+          await db
+            .collection("users")
+            .updateOne(
+              { _id: new ObjectId(user.id) },
+              { $set: { truckyId: driverLink.truckyId, isDriver: true } },
+            );
         }
 
         session.user.discordId = discordId;
       }
 
-      // 4. Ambil data terbaru untuk session[cite: 16, 17]
-      const dbUser = await db
-        .collection("users")
-        .findOne({ _id: new ObjectId(user.id) });
-
+      // 4. MASUKKAN DATA KE SESSION
       session.user.isDriver = isDriver;
       session.user.driverData = driverData;
       session.user.role = userRole;
+      session.user.isBooster = isBooster;
       session.user.xp = dbUser?.xp || 0;
       session.user.level = dbUser?.level || 1;
       session.user.teamId = dbUser?.teamId ? dbUser.teamId.toString() : null;

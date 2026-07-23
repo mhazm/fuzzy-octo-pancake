@@ -17,6 +17,7 @@ declare module "next-auth" {
       xp: number;
       level: number;
       joinedConvoy: number;
+      isBooster: boolean;
     } & DefaultSession["user"];
   }
 
