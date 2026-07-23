@@ -17,7 +17,7 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.DISCORD_CLIENT_SECRET!,
       authorization: {
         params: {
-          scope: "guilds email identify guilds.members.read sdk.social_layer",
+          scope: "guilds email identify",
         },
       },
       allowDangerousEmailAccountLinking: true,
