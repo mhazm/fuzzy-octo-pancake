@@ -18,7 +18,7 @@ export const metadata = {
 
 export default async function GlobalGalleryPage() {
   const session = await getServerSession(authOptions);
-  const loggedInDiscordId = session?.user?.id || session?.user?.discordId || "";
+  const loggedInDiscordId = String(session?.user?.id || session?.user?.discordId || "");
   const isManager =
     session?.user?.role === "manager" || session?.user?.role === "admin";
 

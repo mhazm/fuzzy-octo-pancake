@@ -21,7 +21,7 @@ const r2 = new S3Client({
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { postId: string } }
+  { params }: { params: Promise<{ postId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);

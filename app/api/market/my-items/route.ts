@@ -19,7 +19,7 @@ export async function GET(request: Request) {
     }
 
     // Ambil data barang yang dijual oleh user
-    const items = await MarketItem.find({ sellerId: session.user.discordId })
+    const items = await MarketItem.find({ sellerId: String(session.user.discordId) })
       .sort({ createdAt: -1 })
       .lean();
 

@@ -20,7 +20,7 @@ export async function GET(request: Request) {
     }
 
     // Ambil data pembelian dengan populasi marketItem
-    const purchases = await MarketPurchase.find({ buyerId: session.user.discordId })
+    const purchases = await MarketPurchase.find({ buyerId: String(session.user.discordId) })
       .populate("marketItemId")
       .sort({ purchasedAt: -1, createdAt: -1 })
       .lean();
