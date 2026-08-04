@@ -1,4 +1,4 @@
-"use client";
+
 
 import React from "react";
 import {
@@ -11,6 +11,13 @@ import {
   ToggleRight,
   EyeOff,
 } from "lucide-react";
+
+export const metadata = {
+  title: "Cookie Policy",
+  description: "Kebijakan penggunaan cookies di Nismara Transport.",
+};
+
+export const revalidate = 86400;
 
 export default function CookiePolicy() {
   const lastUpdated = "07 Mei 2026";

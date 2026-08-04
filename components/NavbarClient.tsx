@@ -1,191 +1,479 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import ThemeToggle from "./ThemeToggle";
+import NotificationBell from "@/components/ui/NotificationBell";
+import { getCurrencyData } from "@/app/dashboard/currency/actions";
 import { NismaraIcon, DiscordIcon } from "./icons/SocialMedia";
 import {
   Menu,
-  X,
-  ChevronDown,
   LayoutDashboard,
   User,
   LogOut,
   ExternalLink,
+  Home,
+  Calendar,
+  Briefcase,
+  Truck,
+  Users,
+  Trophy,
+  TrendingUp,
+  FileSignature,
+  ClipboardList,
+  Ticket,
+  Heart,
+  Grid3X3,
+  ShoppingCart,
 } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuGroup,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+  navigationMenuTriggerStyle,
+} from "@/components/ui/navigation-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function NavbarClient({ session }: { session: any }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const profileRef = useRef<HTMLDivElement>(null);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [currency, setCurrency] = useState<number | null>(null);
 
-  const menuItems = [
-    { name: "Home", href: "/" },
-    { name: "Events", href: "/events" },
-    { name: "Jobs", href: "/jobs" },
-    { name: "Convoy", href: "/convoy" },
-    { name: "Special Contract", href: "/special-contracts" },
-    { name: "Teams", href: "/teams" },
-    { name: "Leaderboard", href: "/leaderboard" },
-  ];
+  // Note: If you need to close the menu on route change, you would normally use usePathname from next/navigation.
+  // We'll keep the state simple for now without breaking existing code.
 
-  // Menutup dropdown saat klik di luar
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        profileRef.current &&
-        !profileRef.current.contains(event.target as Node)
-      ) {
-        setIsProfileOpen(false);
-      }
+    if (session?.user?.discordId) {
+      getCurrencyData()
+        .then((data) => setCurrency(data.balance))
+        .catch((err) => console.error("Gagal mengambil currency:", err));
     }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [session]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Standard top-level items (excluding Home and Events which are custom handled)
+  const mainMenuItems = [
+    { name: "Jobs", href: "/jobs", icon: Briefcase },
+    { name: "Convoy", href: "/convoy", icon: Truck },
+    { name: "Gallery", href: "/gallery", icon: Grid3X3 },
+    { name: "Market", href: "/market", icon: ShoppingCart },
+    { name: "Leaderboard", href: "/leaderboard", icon: Trophy },
+    { name: "Lotto", href: "/lotto", icon: Ticket },
+  ];
+
+  // Mobile-specific menu items (flattened)
+  const mobileMenuItems = [
+    { name: "Home", href: "/", icon: Home },
+    { name: "Jobs", href: "/jobs", icon: Briefcase },
+    { name: "Convoy", href: "/convoy", icon: Truck },
+    { name: "Gallery", href: "/gallery", icon: Grid3X3 },
+    { name: "Market", href: "/market", icon: ShoppingCart },
+    { name: "Leaderboard", href: "/leaderboard", icon: Trophy },
+    { name: "Lotto", href: "/lotto", icon: Ticket },
+    {
+      name: "Currency Boost",
+      href: "/currency-boost",
+      separator: true,
+      icon: TrendingUp,
+    },
+    {
+      name: "Special Contract",
+      href: "/special-contracts",
+      icon: FileSignature,
+    },
+    { name: "Surveys", href: "/surveys", icon: ClipboardList },
+    { name: "Coupons", href: "/coupons", icon: Ticket },
+  ];
+
   return (
-    <header className="w-full border-b border-border/50 bg-background/50 backdrop-blur-md sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        {/* LOGO & DESKTOP NAV */}
-        <div className="flex items-center gap-8">
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 bg-linear-to-br from-primary to-accent-sky rounded-lg flex items-center justify-center shadow-lg shadow-primary/20">
-              <NismaraIcon className="w-5 h-5"></NismaraIcon>
-            </div>
-            <span className="font-bold text-xl tracking-tight uppercase">
-              Nismara <span className="text-accent-sky">Transport</span>
-            </span>
-          </Link>
+    <>
+      {/* Spacer to maintain document flow since header is fixed */}
+      <div className="h-20 w-full shrink-0" />
 
-          <nav className="hidden md:flex items-center gap-6">
-            {menuItems.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className="text-sm font-medium text-foreground/70 hover:text-primary transition-colors"
-              >
-                {item.name}
-              </Link>
-            ))}
-          </nav>
-        </div>
-
-        {/* RIGHT SECTION: THEME & PROFILE */}
-        <div className="flex items-center gap-2 sm:gap-4"></div>
-
-        <div className="flex items-center gap-2 sm:gap-4">
-          <Link
-            href="https://link.nismara.web.id/discord"
-            className="p-2.5 rounded-xl transition-all border"
-          >
-            <DiscordIcon />
-          </Link>
-          <ThemeToggle />
-
-          <div className="hidden sm:block h-6 w-px bg-border mx-1"></div>
-
-          {session ? (
-            <div className="relative" ref={profileRef}>
-              <button
-                onClick={() => setIsProfileOpen(!isProfileOpen)}
-                className="flex items-center gap-2 p-1 rounded-full hover:bg-foreground/5 transition-all"
-              >
-                <div className="w-9 h-9 rounded-full border-2 border-primary/30 overflow-hidden bg-card">
-                  {session.user?.image ? (
-                    <img
-                      src={session.user.image}
-                      alt="Profile"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-xs font-bold bg-primary/10">
-                      {session.user?.name?.charAt(0)}
-                    </div>
-                  )}
-                </div>
-                <ChevronDown
-                  className={`w-4 h-4 text-foreground/50 transition-transform ${isProfileOpen ? "rotate-180" : ""}`}
-                />
-              </button>
-
-              {/* DROPDOWN MENU */}
-              {isProfileOpen && (
-                <div className="absolute right-0 mt-2 w-56 glass-panel rounded-2xl border border-border shadow-xl py-2 animate-in fade-in zoom-in-95">
-                  <div className="px-4 py-2 border-b border-border/50 mb-1">
-                    <p className="text-sm font-bold truncate">
-                      {session.user?.name}
-                    </p>
-                    <p className="text-[10px] text-primary font-medium uppercase tracking-tighter">
-                      {session.user?.role || "Driver"}
-                    </p>
-                  </div>
-                  <Link
-                    href="/dashboard"
-                    className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-primary/10 text-foreground/80 hover:text-primary transition-colors"
-                  >
-                    <LayoutDashboard className="w-4 h-4" /> Dashboard
-                  </Link>
-                  <Link
-                    href={`/profile/${session.user?.driverData?.truckyId}`}
-                    className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-primary/10 text-foreground/80 hover:text-primary transition-colors"
-                  >
-                    <User className="w-4 h-4" /> Public Profile
-                  </Link>
-                  <div className="border-t border-border/50 my-1"></div>
-                  <button
-                    onClick={() => signOut()}
-                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-500 hover:bg-red-500/10 transition-colors"
-                  >
-                    <LogOut className="w-4 h-4" /> Logout
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <Link
-              href="/login"
-              className="px-4 py-2 text-sm font-bold rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition-all shadow-lg shadow-primary/20"
-            >
-              Login
+      <header
+        className={`fixed left-0 right-0 z-50 flex justify-center pointer-events-none transition-all duration-500 ease-out ${isScrolled ? "top-4 px-4" : "top-0 px-0"}`}
+      >
+        <div
+          className={`flex items-center justify-between pointer-events-auto transition-all duration-500 ease-out ${
+            isScrolled
+              ? "w-max max-w-full rounded-full border border-border/50 bg-card/80 backdrop-blur-xl shadow-2xl h-16 px-4 sm:px-6 gap-8 lg:gap-16"
+              : "w-full max-w-full rounded-none border-b border-border/20 bg-background/50 backdrop-blur-md h-20 px-4 sm:px-8 lg:px-12"
+          }`}
+        >
+          {/* LOGO & DESKTOP NAV */}
+          <div className="flex items-center gap-6 lg:gap-8">
+            <Link href="/" className="flex items-center gap-2 group shrink-0">
+              <div className="w-8 h-8 bg-linear-to-br from-primary to-accent-sky rounded-lg flex items-center justify-center shadow-lg shadow-primary/20">
+                <NismaraIcon className="w-5 h-5" />
+              </div>
+              <span className="font-bold text-xl tracking-tight uppercase">
+                Nismara{" "}
+                <span className="text-accent-sky hidden sm:inline">
+                  Transport
+                </span>
+              </span>
             </Link>
-          )}
 
-          {/* MOBILE TOGGLE */}
-          <button
-            className="md:hidden p-2 text-foreground/70 hover:text-primary"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          >
-            {isMobileMenuOpen ? <X /> : <Menu />}
-          </button>
-        </div>
-      </div>
+            <div className="hidden lg:flex items-center">
+              <NavigationMenu>
+                <NavigationMenuList className="gap-1">
+                  {/* Home */}
+                  <NavigationMenuItem>
+                    <NavigationMenuLink
+                      render={<Link href="/" />}
+                      className={navigationMenuTriggerStyle()}
+                    >
+                      <Home className="mr-2 h-4 w-4 text-muted-foreground" />
+                      Home
+                    </NavigationMenuLink>
+                  </NavigationMenuItem>
 
-      {/* MOBILE MENU OVERLAY */}
-      {isMobileMenuOpen && (
-        <div className="md:hidden border-t border-border/50 bg-background/95 backdrop-blur-lg animate-in slide-in-from-top-4">
-          <nav className="flex flex-col p-4 gap-1">
-            {menuItems.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="flex items-center justify-between p-3 rounded-xl text-sm font-bold text-foreground/70 hover:bg-primary/10 hover:text-primary transition-all"
+                  {/* Events Mega Menu */}
+                  <NavigationMenuItem>
+                    <NavigationMenuTrigger className="bg-transparent hover:bg-muted/50 data-[state=open]:bg-muted/50">
+                      <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
+                      Events
+                    </NavigationMenuTrigger>
+                    <NavigationMenuContent>
+                      <div className="flex w-[400px] gap-4 p-4 lg:w-[600px]">
+                        <ul className="grid w-full lg:w-2/3 grid-cols-1 lg:grid-cols-2 gap-2">
+                          <li>
+                            <NavigationMenuLink
+                              render={<Link href="/currency-boost" />}
+                              className="flex h-full w-full flex-col items-start gap-1 p-3"
+                            >
+                              <div className="flex items-center gap-2 font-medium">
+                                <TrendingUp className="w-4 h-4 text-primary" />
+                                Currency Boost
+                              </div>
+                              <p className="text-xs text-muted-foreground line-clamp-2">
+                                Tingkatkan pendapatan NC Anda selama event.
+                              </p>
+                            </NavigationMenuLink>
+                          </li>
+                          <li>
+                            <NavigationMenuLink
+                              render={<Link href="/special-contracts" />}
+                              className="flex h-full w-full flex-col items-start gap-1 p-3"
+                            >
+                              <div className="flex items-center gap-2 font-medium">
+                                <FileSignature className="w-4 h-4 text-primary" />
+                                Special Contract
+                              </div>
+                              <p className="text-xs text-muted-foreground line-clamp-2">
+                                Selesaikan kontrak khusus dan raih hadiah
+                                eksklusif.
+                              </p>
+                            </NavigationMenuLink>
+                          </li>
+                          <li>
+                            <NavigationMenuLink
+                              render={<Link href="/surveys" />}
+                              className="flex h-full w-full flex-col items-start gap-1 p-3"
+                            >
+                              <div className="flex items-center gap-2 font-medium">
+                                <ClipboardList className="w-4 h-4 text-primary" />
+                                Surveys
+                              </div>
+                              <p className="text-xs text-muted-foreground line-clamp-2">
+                                Ikuti survey untuk mendapatkan imbalan NC.
+                              </p>
+                            </NavigationMenuLink>
+                          </li>
+                          <li>
+                            <NavigationMenuLink
+                              render={<Link href="/coupons" />}
+                              className="flex h-full w-full flex-col items-start gap-1 p-3"
+                            >
+                              <div className="flex items-center gap-2 font-medium">
+                                <Ticket className="w-4 h-4 text-primary" />
+                                Coupons
+                              </div>
+                              <p className="text-xs text-muted-foreground line-clamp-2">
+                                Klaim kupon spesial untuk diskon atau hadiah.
+                              </p>
+                            </NavigationMenuLink>
+                          </li>
+                        </ul>
+                        <div className="hidden lg:block w-1/3 rounded-lg overflow-hidden relative bg-muted group/image">
+                          <img
+                            src="https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&w=400&q=80"
+                            alt="Events"
+                            className="object-cover w-full h-full opacity-80 transition-transform duration-500 group-hover/image:scale-110"
+                          />
+                          <div className="absolute inset-0 bg-linear-to-t from-background/90 via-background/20 to-transparent flex items-end p-4">
+                            <div className="space-y-1">
+                              <span className="font-bold text-sm text-foreground block">
+                                Special Events
+                              </span>
+                              <span className="text-xs text-muted-foreground block">
+                                Explore our limited time offerings
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </NavigationMenuContent>
+                  </NavigationMenuItem>
+
+                  {/* Other Main Links */}
+                  {mainMenuItems.map((item) => (
+                    <NavigationMenuItem key={item.name}>
+                      <NavigationMenuLink
+                        render={<Link href={item.href} />}
+                        className={navigationMenuTriggerStyle()}
+                      >
+                        <item.icon className="mr-2 h-4 w-4 text-muted-foreground" />
+                        {item.name}
+                      </NavigationMenuLink>
+                    </NavigationMenuItem>
+                  ))}
+                </NavigationMenuList>
+              </NavigationMenu>
+            </div>
+          </div>
+
+          {/* RIGHT SECTION: THEME & PROFILE */}
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+            <Link href="https://link.nismara.web.id/discord">
+              <Button
+                variant="outline"
+                size="icon"
+                className="rounded-xl border border-border/50 hidden sm:inline-flex"
               >
-                {item.name} <ExternalLink className="w-4 h-4 opacity-30" />
-              </Link>
-            ))}
-            {!session && (
-              <Link
-                href="/login"
-                className="mt-4 p-4 text-center rounded-2xl bg-primary text-primary-foreground font-bold shadow-lg"
-              >
-                Login Driver
+                <DiscordIcon />
+              </Button>
+            </Link>
+            {session && <NotificationBell />}
+
+            <ThemeToggle />
+
+            <div className="hidden sm:block h-6 w-px bg-border mx-1"></div>
+
+            {session ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <Button
+                      variant="ghost"
+                      className="relative h-10 w-10 rounded-full focus-visible:ring-0"
+                    />
+                  }
+                >
+                  <Avatar className="h-9 w-9 border-2 border-primary/30 shadow-sm bg-card">
+                    <AvatarImage
+                      src={session.user?.image || ""}
+                      alt={session.user?.name || "User"}
+                    />
+                    <AvatarFallback className="bg-primary/10 text-primary font-bold">
+                      {session.user?.name?.charAt(0) || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  className="w-64 mt-2 p-2 rounded-2xl bg-card border border-border/50 shadow-xl"
+                  align="end"
+                >
+                  <div className="bg-muted/80 backdrop-blur-md rounded-xl p-3 flex items-center gap-3 mb-2 border border-white/5">
+                    <Avatar className="h-12 w-12 border border-primary/20 bg-primary/10 shrink-0">
+                      <AvatarImage
+                        src={session.user?.image || ""}
+                        alt={session.user?.name || "User"}
+                        className="object-cover"
+                      />
+                      <AvatarFallback className="bg-red-500 text-white font-bold">
+                        {session.user?.name?.charAt(0) || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col min-w-0">
+                      <span className="font-bold text-sm text-foreground truncate block">
+                        {session.user?.name}
+                      </span>
+                      <span className="text-xs text-muted-foreground truncate block capitalize">
+                        {session.user?.role || "Driver"}
+                      </span>
+                      <span className="text-xs text-primary font-medium truncate block mt-0.5">
+                        Level {session.user?.level || 1} •{" "}
+                        {currency !== null
+                          ? currency.toLocaleString("id-ID")
+                          : "..."}{" "}
+                        NC
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="px-1 py-1 space-y-1">
+                    <DropdownMenuItem
+                      className="cursor-pointer rounded-lg hover:bg-white/5 focus:bg-white/5"
+                      render={
+                        <Link
+                          href="/dashboard"
+                          className="flex items-center w-full"
+                        />
+                      }
+                    >
+                      <LayoutDashboard className="mr-3 h-4 w-4 text-slate-400" />
+                      <span className="font-medium">Dashboard</span>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem
+                      className="cursor-pointer rounded-lg hover:bg-white/5 focus:bg-white/5"
+                      render={
+                        <Link
+                          href={`/profile/${session.user?.truckyId || session.user?.driverData?.truckyId}`}
+                          className="flex items-center w-full"
+                        />
+                      }
+                    >
+                      <User className="mr-3 h-4 w-4 text-slate-400" />
+                      <span className="font-medium">Public Profile</span>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem
+                      className="cursor-pointer rounded-lg hover:bg-white/5 focus:bg-white/5"
+                      render={
+                        <Link
+                          href="/teams"
+                          className="flex items-center w-full"
+                        />
+                      }
+                    >
+                      <LayoutDashboard className="mr-3 h-4 w-4 text-slate-400" />
+                      <span className="font-medium">Teams</span>
+                    </DropdownMenuItem>
+                  </div>
+
+                  <div className="h-px bg-border my-2 mx-2" />
+
+                  <div className="px-1 pb-1">
+                    <DropdownMenuItem
+                      className="text-red-400 hover:text-red-300 focus:text-red-300 focus:bg-red-500/10 cursor-pointer flex items-center justify-center rounded-lg font-bold py-2.5 transition-colors"
+                      onClick={() => signOut()}
+                    >
+                      Logout
+                    </DropdownMenuItem>
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Link href="/login" className="hidden sm:block">
+                <Button className="font-bold rounded-xl shadow-lg shadow-primary/20">
+                  Login
+                </Button>
               </Link>
             )}
-          </nav>
+
+            {/* MOBILE TOGGLE (SHEET) */}
+            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+              <SheetTrigger
+                render={
+                  <Button variant="ghost" size="icon" className="lg:hidden" />
+                }
+              >
+                <Menu className="h-5 w-5" />
+              </SheetTrigger>
+              <SheetContent
+                side="left"
+                className="w-[85vw] sm:w-[350px] overflow-y-auto"
+              >
+                <SheetHeader className="text-left mb-6">
+                  <SheetTitle className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-linear-to-br from-primary to-accent-sky rounded-lg flex items-center justify-center shadow-lg shadow-primary/20">
+                      <NismaraIcon className="w-5 h-5" />
+                    </div>
+                    <span className="font-bold text-xl tracking-tight uppercase">
+                      Nismara <span className="text-accent-sky">Transport</span>
+                    </span>
+                  </SheetTitle>
+                </SheetHeader>
+                <nav className="flex flex-col gap-1.5">
+                  {mobileMenuItems.map((item, index) => (
+                    <div key={item.name}>
+                      {item.separator && (
+                        <div className="h-px bg-border/50 my-2" />
+                      )}
+                      <Link
+                        href={item.href}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center justify-between p-3 rounded-xl text-sm font-bold text-foreground/70 hover:bg-primary/10 hover:text-primary transition-all group/mobilenav"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="p-1.5 rounded-lg bg-muted group-hover/mobilenav:bg-background transition-colors">
+                            <item.icon className="w-4 h-4" />
+                          </div>
+                          {item.name}
+                        </div>
+                        <ExternalLink className="w-4 h-4 opacity-0 group-hover/mobilenav:opacity-30 transition-opacity" />
+                      </Link>
+                    </div>
+                  ))}
+
+                  <div className="h-px bg-border/50 my-2" />
+
+                  {/* DISCORD LINK ON MOBILE */}
+                  <Link
+                    href="https://link.nismara.web.id/discord"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center justify-between p-3 rounded-xl text-sm font-bold text-foreground/70 hover:bg-[#5865F2]/10 hover:text-[#5865F2] transition-all group/discord"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-1.5 rounded-lg bg-muted group-hover/discord:bg-background transition-colors">
+                        <DiscordIcon />
+                      </div>
+                      Discord Server
+                    </div>
+                    <ExternalLink className="w-4 h-4 opacity-0 group-hover/discord:opacity-30 transition-opacity" />
+                  </Link>
+                </nav>
+                {!session && (
+                  <div className="mt-8 border-t border-border pt-6 pb-4">
+                    <Link
+                      href="/login"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <Button
+                        className="w-full font-bold shadow-lg shadow-primary/20"
+                        size="lg"
+                      >
+                        Login Driver
+                      </Button>
+                    </Link>
+                  </div>
+                )}
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
-      )}
-    </header>
+      </header>
+    </>
   );
 }

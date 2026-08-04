@@ -5,6 +5,8 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { getCompanyMembersMap } from "@/lib/trucky";
 import LeaderboardUI from "./LeaderboardUI";
 
+export const revalidate = 120; // Cache halaman ini selama 2 menit (120 detik)
+
 export default async function LeaderboardPage() {
   const client = await clientPromise;
   const db = client.db();

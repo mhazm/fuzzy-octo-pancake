@@ -132,8 +132,26 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* 3. SHOWCASE FEATURES */}
-      <section className="py-32 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-32">
+      {/* 2. FEATURES SECTION */}
+      <section className="relative pt-32 pb-48 overflow-hidden border-t border-border/10">
+        {/* Nismara Watermark & Spinning Text */}
+        <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none overflow-hidden">
+          <div className="relative flex items-center justify-center opacity-[0.03]">
+            <NismaraIcon className="w-[400px] h-[400px] md:w-[600px] md:h-[600px] text-primary" />
+            <svg className="absolute w-[800px] h-[800px] md:w-[1200px] md:h-[1200px] animate-[spin_40s_linear_infinite]" viewBox="0 0 1000 1000">
+              <defs>
+                <path id="textCircle" d="M 500, 500 m -350, 0 a 350,350 0 1,1 700,0 a 350,350 0 1,1 -700,0" /> 
+              </defs>
+              <text className="text-[42px] font-black fill-current uppercase tracking-[0.3em] text-foreground">
+                <textPath href="#textCircle" startOffset="0%" textLength="2199">
+                  NISMARA LOGISTICS • NISMARA TRANSPORT • NISMARA AIRLINES • NISMARA RACING • 
+                </textPath>
+              </text>
+            </svg>
+          </div>
+        </div>
+
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-32">
         {/* Fitur 1 */}
         <div className="flex flex-col lg:flex-row items-center gap-16">
           <ScrollReveal direction="right" className="w-full lg:w-1/2">
@@ -210,11 +228,52 @@ export default async function Home() {
             </div>
           </ScrollReveal>
         </div>
+        </div>
       </section>
 
       {/* 4. EKOSISTEM SECTION */}
-      <section className="py-32 bg-card/20 border-y border-border/50 relative overflow-hidden">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
+      <section 
+        className="pt-64 pb-64 bg-card/40 relative overflow-hidden -mt-[150px] mb-10 z-10"
+        style={{
+          WebkitMaskImage: `
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 200' preserveAspectRatio='none'%3E%3Cpath fill='black' d='M0,200 L0,100 C150,200 250,0 400,100 C550,200 650,0 800,100 C950,200 1050,0 1200,100 L1200,200 Z'/%3E%3C/svg%3E"),
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 200' preserveAspectRatio='none'%3E%3Cpath fill='black' d='M0,0 L0,100 C150,0 250,200 400,100 C550,0 650,200 800,100 C950,0 1050,200 1200,100 L1200,0 Z'/%3E%3C/svg%3E"),
+            linear-gradient(black, black)
+          `,
+          WebkitMaskSize: `100% 150px, 100% 150px, 100% calc(100% - 298px)`,
+          WebkitMaskPosition: `top left, bottom left, center`,
+          WebkitMaskRepeat: `no-repeat, no-repeat, no-repeat`,
+          maskImage: `
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 200' preserveAspectRatio='none'%3E%3Cpath fill='black' d='M0,200 L0,100 C150,200 250,0 400,100 C550,200 650,0 800,100 C950,200 1050,0 1200,100 L1200,200 Z'/%3E%3C/svg%3E"),
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 200' preserveAspectRatio='none'%3E%3Cpath fill='black' d='M0,0 L0,100 C150,0 250,200 400,100 C550,0 650,200 800,100 C950,0 1050,200 1200,100 L1200,0 Z'/%3E%3C/svg%3E"),
+            linear-gradient(black, black)
+          `,
+          maskSize: `100% 150px, 100% 150px, 100% calc(100% - 298px)`,
+          maskPosition: `top left, bottom left, center`,
+          maskRepeat: `no-repeat, no-repeat, no-repeat`
+        }}
+      >
+        {/* Animated Marquee Background */}
+        <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none flex flex-col justify-center -rotate-12 scale-150">
+          {[...Array(12)].map((_, i) => (
+            <div 
+              key={i} 
+              className="flex whitespace-nowrap animate-marquee" 
+              style={{ 
+                animationDirection: i % 2 === 0 ? "normal" : "reverse",
+                animationDuration: `${40 + (i % 3) * 10}s` 
+              }}
+            >
+              {[...Array(15)].map((_, j) => (
+                <span key={j} className="text-7xl md:text-9xl font-black text-foreground uppercase px-8">
+                  NISMARA
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
+
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <ScrollReveal

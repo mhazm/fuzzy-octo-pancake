@@ -18,6 +18,7 @@ declare module "next-auth" {
       level: number;
       joinedConvoy: number;
       isBooster: boolean;
+      nismaraplus: boolean;
     } & DefaultSession["user"];
   }
 

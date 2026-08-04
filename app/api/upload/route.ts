@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import clientPromise from "@/lib/mongodb";
 
 // Inisialisasi R2 langsung di sini (menggantikan @/lib/r2)
 const r2 = new S3Client({
@@ -27,7 +28,32 @@ export async function POST(request: Request) {
 
   try {
     // Menggunakan variabel yang sama persis dengan project lamamu
-    const { fileName, fileType, folder } = await request.json();
+    const { fileName, fileType, folder, fileSize } = await request.json();
+
+    // Validasi khusus folder gallery
+    if (folder === "gallery") {
+      if (!["image/jpeg", "image/png", "image/webp"].includes(fileType)) {
+        return NextResponse.json(
+          { error: "Format file harus JPEG, PNG, atau WebP" },
+          { status: 400 }
+        );
+      }
+
+      const client = await clientPromise;
+      const db = client.db();
+      const userDiscordId = session.user.id || session.user.discordId;
+      const user = await db.collection("users").findOne({ discordId: userDiscordId });
+      
+      const isNismaraPlus = user?.nismaraplus?.status === true;
+      const maxSize = isNismaraPlus ? 10 * 1024 * 1024 : 2 * 1024 * 1024;
+
+      if (fileSize && fileSize > maxSize) {
+        return NextResponse.json(
+          { error: `Ukuran file melebihi batas maksimal (${isNismaraPlus ? '10MB' : '2MB'})` },
+          { status: 400 }
+        );
+      }
+    }
 
     // Bersihkan nama file dari spasi atau karakter aneh (Logika dari kodemu)
     const cleanFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, "-");

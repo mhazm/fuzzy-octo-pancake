@@ -32,8 +32,8 @@ export default async function ManageConvoyPage() {
   const convoys = await getConvoyData();
   const now = new Date();
 
-  const upcoming = convoys.filter((c) => new Date(c.meetupDate) >= now);
-  const past = convoys.filter((c) => new Date(c.meetupDate) < now);
+  const upcoming = convoys.filter((c) => c.active !== false);
+  const past = convoys.filter((c) => c.active === false);
 
   const getGameInfo = (id: string) => {
     return id === "2"

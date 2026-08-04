@@ -34,6 +34,7 @@ export default async function ManageRegistrationPage() {
       <RegisterManagerUI
         initialData={JSON.parse(JSON.stringify(registrations))}
         guildId={process.env.DISCORD_GUILD_ID}
+        currentUserDiscordId={session.user.discordId}
       />
     </div>
   );

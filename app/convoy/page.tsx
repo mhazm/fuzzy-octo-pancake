@@ -19,14 +19,21 @@ async function getConvoys() {
 
   const convoys = await db
     .collection("convoylobby")
-    .find({ active: true })
+    .find({})
     .sort({ meetupDate: 1 })
     .toArray();
 
   return convoys;
 }
 
-export default async function ConvoyListingPage() {
+export default async function ConvoyListingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ showAll?: string }>;
+}) {
+  const { showAll } = (await searchParams) || {};
+  const isShowAll = showAll === "true";
+  
   const convoys = await getConvoys();
 
   const now = new Date().getTime();
@@ -40,14 +47,19 @@ export default async function ConvoyListingPage() {
   const ongoingConvoys = convoys.filter((c) => {
     if (!c.meetupDate) return false;
     const startTime = new Date(c.meetupDate).getTime();
-    return now >= startTime && now < startTime + DURATION_MS;
+    return !c.isEnded && now >= startTime && now < startTime + DURATION_MS;
   });
 
-  const pastConvoys = convoys.filter((c) => {
+  let pastConvoys = convoys.filter((c) => {
     if (!c.meetupDate) return false;
     const startTime = new Date(c.meetupDate).getTime();
-    return now >= startTime + DURATION_MS;
-  });
+    return c.isEnded || now >= startTime + DURATION_MS;
+  }).reverse(); // Reverse because convoys are fetched sorted by meetupDate ASC
+
+  const totalPast = pastConvoys.length;
+  if (!isShowAll) {
+    pastConvoys = pastConvoys.slice(0, 3);
+  }
 
   const renderConvoyCard = (
     convoy: any,
@@ -243,6 +255,17 @@ export default async function ConvoyListingPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 opacity-90">
                 {pastConvoys.map((c) => renderConvoyCard(c, "past"))}
               </div>
+              
+              {!isShowAll && totalPast > 3 && (
+                <div className="mt-8 flex justify-center">
+                  <Link 
+                    href="/convoy?showAll=true"
+                    className="px-6 py-3 bg-card border border-border/50 text-foreground/70 font-bold uppercase tracking-widest text-xs rounded-xl hover:text-foreground hover:bg-white/5 transition-all"
+                  >
+                    Lihat Semua Riwayat
+                  </Link>
+                </div>
+              )}
             </section>
           )}
         </div>

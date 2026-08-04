@@ -13,13 +13,16 @@ import {
   ChevronRight,
   Gamepad2,
   Briefcase,
-  Edit3, // Tambahkan Edit3 disini
+  Edit3,
+  Upload,
 } from "lucide-react";
+import { compressImageToWebP } from "@/lib/imageUtils";
 
 export default function ContractManageUI({ ongoing, history, manager }: any) {
   const [mounted, setMounted] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   const [formData, setFormData] = useState({
     contractName: "",
@@ -67,6 +70,44 @@ export default function ContractManageUI({ ongoing, history, manager }: any) {
   };
 
   const slugify = (text: string) => text.toLowerCase().replace(/\s+/g, "-");
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const optimizedFile = await compressImageToWebP(file, 2, 1920);
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fileName: optimizedFile.name,
+          fileType: optimizedFile.type,
+          fileSize: optimizedFile.size,
+          folder: "events/contracts",
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal mendapatkan URL upload");
+
+      const uploadRes = await fetch(data.signedUrl, {
+        method: "PUT",
+        headers: { "Content-Type": optimizedFile.type },
+        body: optimizedFile,
+      });
+
+      if (!uploadRes.ok) throw new Error("Gagal mengupload file ke server");
+      setFormData({ ...formData, imageUrl: data.publicUrl });
+      alert("Foto berhasil diupload!");
+    } catch (error: any) {
+      alert(error.message || "Gagal mengupload foto");
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-700">
@@ -308,15 +349,29 @@ export default function ContractManageUI({ ongoing, history, manager }: any) {
 
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-accent-lilac uppercase ml-2">
-                  Cover Image URL
+                  Cover Image (Upload)
                 </label>
-                <input
-                  placeholder="Link gambar Imgur/Discord"
-                  className="w-full bg-foreground/5 border border-border rounded-2xl p-4 text-foreground text-sm"
-                  onChange={(e) =>
-                    setFormData({ ...formData, imageUrl: e.target.value })
-                  }
-                />
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileUpload}
+                    disabled={isUploading}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                  />
+                  <div className={`w-full bg-foreground/5 border ${formData.imageUrl ? "border-emerald-500/50" : "border-border"} rounded-2xl p-4 flex items-center justify-center gap-2 transition-colors`}>
+                    {isUploading ? (
+                      <span className="text-sm font-bold text-foreground/50 animate-pulse">Uploading...</span>
+                    ) : formData.imageUrl ? (
+                      <span className="text-sm font-bold text-emerald-500">Image Uploaded Successfully</span>
+                    ) : (
+                      <>
+                        <Upload size={16} className="text-foreground/50" />
+                        <span className="text-sm font-bold text-foreground/50">Click to upload cover image</span>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
 

@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import {
   ShieldCheck,
@@ -10,10 +8,15 @@ import {
   Lock,
   ChevronRight,
   FileText,
+  ShoppingCart,
+  Camera,
+  Crown,
 } from "lucide-react";
 
+export const revalidate = 86400;
+
 export default function TermsOfService() {
-  const lastUpdated = "07 Mei 2026";
+  const lastUpdated = "03 Agustus 2026";
 
   const sections = [
     {
@@ -51,6 +54,24 @@ export default function TermsOfService() {
       title: "6. Hak Intelektual",
       content:
         "Semua logo, aset grafis, dan infrastruktur perangkat lunak Nismara adalah hak milik Nismara Group. Penggunaan aset kami untuk kepentingan komersial pihak ketiga tanpa izin tertulis adalah pelanggaran hukum.",
+    },
+    {
+      icon: <ShoppingCart size={20} />,
+      title: "7. Marketplace & Transaksi",
+      content:
+        "Pengguna dilarang keras melakukan eksploitasi, penipuan (scam), atau manipulasi harga di dalam fitur Marketplace maupun Lotto Nismara. Pengguna juga dilarang keras memperjualbelikan modifikasi (mods) milik pihak lain di luar ekosistem Nismara, mods yang bukan hak milik penuh pengguna, atau mengkomersialkan mods yang aslinya tersedia secara gratis. Manajemen Nismara sepenuhnya terlepas dari segala tuntutan hukum, kerugian, maupun klaim hak cipta yang timbul akibat barang/mod yang dijual oleh pengguna. Seluruh tanggung jawab dan akibat hukum secara mutlak dilimpahkan kepada pengguna (penjual) yang bersangkutan, dan wewenang Manajemen Nismara sebatas melakukan pencabutan (take down) atas produk yang melanggar tersebut. Semua transaksi pembelian menggunakan Nismara Coin (N¢) bersifat final dan tidak dapat dikembalikan (non-refundable), kecuali terjadi kesalahan sistem yang tervalidasi oleh pengurus.",
+    },
+    {
+      icon: <Camera size={20} />,
+      title: "8. Kebijakan Galeri & Konten",
+      content:
+        "Foto atau tangkapan layar yang diunggah oleh pengguna ke dalam fitur Galeri dilarang keras mengandung unsur SARA (Suku, Agama, Ras, dan Antargolongan) maupun unsur pornografi. Apabila ditemukan unggahan yang menyalahi aturan ini, pihak manajemen berhak penuh untuk menghapus konten tersebut dan memblokir akses pengguna dari fitur Galeri secara permanen. Selain itu, Manajemen Nismara lepas dari segala bentuk tanggung jawab apabila konten yang diunggah menyalahi hak cipta atau aturan pihak ketiga. Segala bentuk tuntutan atau konsekuensi dari unggahan tersebut sepenuhnya dilimpahkan dan menjadi tanggung jawab pengguna (driver) yang bersangkutan.",
+    },
+    {
+      icon: <Crown size={20} />,
+      title: "9. Layanan Premium (Nismara Plus)",
+      content:
+        "Nismara Plus merupakan bentuk dukungan (donasi) berbayar yang memberikan keuntungan eksklusif tambahan bagi pengguna. Semua bentuk pembayaran untuk status Nismara Plus bersifat final dan tidak dapat dikembalikan atau diuangkan (non-refundable) dengan alasan apa pun. Apabila pengguna Nismara Plus melakukan pelanggaran berat (seperti penggunaan cheat, eksploitasi, rasisme, dll) yang mengakibatkan pemblokiran akun, maka status Nismara Plus dan sisa masa aktifnya akan otomatis hangus dan tidak ada kompensasi atas kerugian tersebut.",
     },
   ];
 

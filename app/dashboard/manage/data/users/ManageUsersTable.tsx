@@ -10,6 +10,8 @@ import {
   XCircle,
   UserCheck,
   UserMinus,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 
 export default function ManageUsersTable({
@@ -19,6 +21,39 @@ export default function ManageUsersTable({
 }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+
+  // State untuk Modal Purge
+  const [purgeUserId, setPurgeUserId] = useState<string | null>(null);
+  const [purgePassword, setPurgePassword] = useState("");
+  const [isPurging, setIsPurging] = useState(false);
+
+  const handlePurge = async () => {
+    if (!purgeUserId || !purgePassword) return alert("Discord ID atau Password tidak boleh kosong!");
+    setIsPurging(true);
+    try {
+      const res = await fetch(`/api/manage/users/${purgeUserId}/purge`, {
+        method: "DELETE",
+        headers: {
+          "x-purge-password": purgePassword,
+        },
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        alert("Berhasil menghapus data user!");
+        window.location.reload();
+      } else {
+        alert(`Gagal: ${data.error || data.message || "Password salah"}`);
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Terjadi kesalahan jaringan.");
+    } finally {
+      setIsPurging(false);
+      setPurgeUserId(null);
+      setPurgePassword("");
+    }
+  };
 
   // Logika Filter & Search
   const filteredUsers = initialData.filter((user) => {
@@ -155,15 +190,28 @@ export default function ManageUsersTable({
                     </td>
 
                     <td className="px-8 py-4 text-right">
-                      <Link
-                        href={`/dashboard/manage/users/${user.truckyId}`}
-                        className="inline-flex items-center justify-center p-3 bg-white/5 rounded-xl text-foreground/40 hover:text-(-primary-foreground) hover:bg-accent-lilac transition-all group/btn"
-                      >
-                        <ExternalLink
-                          size={18}
-                          className="group-hover/btn:scale-110 transition-transform"
-                        />
-                      </Link>
+                      <div className="flex items-center justify-end gap-2">
+                        <Link
+                          href={`/dashboard/manage/data/users/${user.truckyId}`}
+                          className="inline-flex items-center justify-center p-3 bg-white/5 rounded-xl text-foreground/40 hover:text-(-primary-foreground) hover:bg-accent-lilac transition-all group/btn"
+                        >
+                          <ExternalLink
+                            size={18}
+                            className="group-hover/btn:scale-110 transition-transform"
+                          />
+                        </Link>
+                        {user.discordId && (
+                          <button
+                            onClick={() => setPurgeUserId(user.discordId)}
+                            className="inline-flex items-center justify-center p-3 bg-red-500/10 rounded-xl text-red-500 hover:text-white hover:bg-red-600 transition-all group/btn"
+                          >
+                            <Trash2
+                              size={18}
+                              className="group-hover/btn:scale-110 transition-transform"
+                            />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -181,6 +229,66 @@ export default function ManageUsersTable({
           </table>
         </div>
       </div>
+
+      {/* MODAL PURGE */}
+      {purgeUserId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-card border border-red-500/30 rounded-[2rem] max-w-md w-full p-8 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full blur-3xl -z-10" />
+            
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="p-4 bg-red-500/10 text-red-500 rounded-full">
+                <AlertTriangle size={32} />
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-foreground uppercase tracking-tight">
+                  Warning: Data Purge
+                </h3>
+                <p className="text-muted-foreground text-xs mt-2 leading-relaxed">
+                  Anda akan menghapus SELURUH data secara permanen untuk user dengan Discord ID <span className="font-mono text-red-400">{purgeUserId}</span>. Tindakan ini tidak dapat dibatalkan.
+                </p>
+              </div>
+
+              <div className="w-full text-left space-y-2 mt-4">
+                <label className="text-[10px] font-black uppercase text-foreground/40 tracking-widest pl-2">
+                  Password Verifikasi
+                </label>
+                <input
+                  type="password"
+                  value={purgePassword}
+                  onChange={(e) => setPurgePassword(e.target.value)}
+                  className="w-full bg-black/50 border border-red-500/30 rounded-xl px-4 py-3 text-sm text-red-400 focus:outline-none focus:border-red-500 font-mono tracking-widest"
+                  placeholder="Masukkan Password Purge..."
+                />
+              </div>
+
+              <div className="flex w-full gap-3 mt-6">
+                <button
+                  onClick={() => {
+                    setPurgeUserId(null);
+                    setPurgePassword("");
+                  }}
+                  disabled={isPurging}
+                  className="flex-1 py-3 px-4 rounded-xl font-bold text-xs uppercase bg-white/5 hover:bg-white/10 text-foreground transition-colors disabled:opacity-50"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={handlePurge}
+                  disabled={isPurging || !purgePassword}
+                  className="flex-1 py-3 px-4 rounded-xl font-bold text-xs uppercase bg-red-500 hover:bg-red-600 text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isPurging ? (
+                    <span className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    "Eksekusi Purge"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

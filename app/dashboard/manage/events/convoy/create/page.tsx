@@ -11,6 +11,8 @@ import {
   Loader2,
   Save,
 } from "lucide-react";
+import { compressImageToWebP } from "@/lib/imageUtils";
+import CityCombobox from "@/components/ui/CityCombobox";
 
 export default function CreateConvoyPage() {
   const [convoyName, setConvoyName] = useState("");
@@ -18,6 +20,7 @@ export default function CreateConvoyPage() {
   const [imageUrl, setImageUrl] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [gameId, setGameId] = useState("1");
 
   // Auto-fill URI dari Nama Convoy
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -35,43 +38,34 @@ export default function CreateConvoyPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
-      alert("Format gambar tidak didukung!");
-      return;
-    }
-
-    if (file.size > 4 * 1024 * 1024) {
-      alert("Maksimal ukuran gambar adalah 4MB.");
-      return;
-    }
-
     setIsUploading(true);
-
     try {
+      const optimizedFile = await compressImageToWebP(file, 2, 1920);
+
       const res = await fetch("/api/upload", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          fileName: file.name,
-          fileType: file.type,
-          folder: "convoys",
+          fileName: optimizedFile.name,
+          fileType: optimizedFile.type,
+          fileSize: optimizedFile.size,
+          folder: "events/convoys",
         }),
       });
-      const { signedUrl, publicUrl } = await res.json();
 
-      const uploadRes = await fetch(signedUrl, {
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal mendapatkan URL upload");
+
+      const uploadRes = await fetch(data.signedUrl, {
         method: "PUT",
-        headers: { "Content-Type": file.type },
-        body: file,
+        headers: { "Content-Type": optimizedFile.type },
+        body: optimizedFile,
       });
 
-      if (uploadRes.ok) {
-        setImageUrl(publicUrl);
-      } else {
-        alert("Gagal mengunggah gambar ke R2.");
-      }
-    } catch (error) {
-      console.error(error);
-      alert("Terjadi kesalahan sistem saat unggah.");
+      if (!uploadRes.ok) throw new Error("Gagal mengupload file ke server");
+      setImageUrl(data.publicUrl);
+    } catch (error: any) {
+      alert(error.message || "Terjadi kesalahan sistem saat unggah.");
     } finally {
       setIsUploading(false);
       e.target.value = "";
@@ -180,6 +174,8 @@ export default function CreateConvoyPage() {
                 </label>
                 <select
                   name="gameId"
+                  value={gameId}
+                  onChange={(e) => setGameId(e.target.value)}
                   className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary transition-colors appearance-none"
                 >
                   <option value="1" className="bg-card">
@@ -302,13 +298,8 @@ export default function CreateConvoyPage() {
               <h3 className="text-sm font-bold text-foreground/70 uppercase tracking-widest border-b border-white/10 pb-2">
                 Asal Keberangkatan
               </h3>
-              <div className="space-y-2">
-                <input
-                  name="sourceCity"
-                  required
-                  className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-foreground focus:outline-none focus:border-primary"
-                  placeholder="Kota Asal"
-                />
+              <div className="space-y-2 relative">
+                <CityCombobox name="sourceCity" gameId={gameId} placeholder="Pilih Kota Asal..." />
                 <input
                   name="sourceCompany"
                   required
@@ -322,13 +313,8 @@ export default function CreateConvoyPage() {
               <h3 className="text-sm font-bold text-foreground/70 uppercase tracking-widest border-b border-white/10 pb-2">
                 Tujuan Pengiriman
               </h3>
-              <div className="space-y-2">
-                <input
-                  name="destinationCity"
-                  required
-                  className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-foreground focus:outline-none focus:border-primary"
-                  placeholder="Kota Tujuan"
-                />
+              <div className="space-y-2 relative">
+                <CityCombobox name="destinationCity" gameId={gameId} placeholder="Pilih Kota Tujuan..." />
                 <input
                   name="destinationCompany"
                   required

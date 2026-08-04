@@ -4,6 +4,7 @@ export interface IPartisipan {
   truckyId: string;
   discordId: string;
   jobId: number;
+  claimedReward?: boolean;
 }
 
 export interface IConvoyLobby extends Document {
@@ -27,6 +28,8 @@ export interface IConvoyLobby extends Document {
   cargoMass?: number;
   plannedDistanceKm?: number;
   partisipan: IPartisipan[];
+  interested: string[]; // array of discordIds
+  roadCaptain?: string; // discordId
   createdAt: Date;
   updatedAt: Date;
 }
@@ -36,6 +39,7 @@ const partisipanSchema = new Schema<IPartisipan>(
     truckyId: { type: String },
     discordId: { type: String },
     jobId: { type: Number, default: 0 },
+    claimedReward: { type: Boolean, default: false },
   },
   { _id: false },
 );
@@ -69,6 +73,8 @@ const convoyLobbySchema = new Schema<IConvoyLobby>(
     plannedDistanceKm: { type: Number },
 
     partisipan: [partisipanSchema],
+    interested: [{ type: String }],
+    roadCaptain: { type: String },
   },
   { timestamps: true },
 );

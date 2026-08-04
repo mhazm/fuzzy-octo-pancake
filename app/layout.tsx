@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
-import { Noto_Sans } from "next/font/google";
+import { Noto_Sans, Geist } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Providers } from "@/components/Providers";
 import { GoogleAnalytics } from "@next/third-parties/google";
+import { cn } from "@/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 const roboto = Noto_Sans({ subsets: ["latin"] });
 
@@ -59,13 +62,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id" className="dark">
-      <body className={`${roboto.className} flex flex-col min-h-screen`}>
+    <html lang="id" className={cn("dark", "font-sans", geist.variable, "overflow-x-hidden")}>
+      <body className={`${roboto.className} flex flex-col min-h-screen overflow-x-hidden`}>
         {/* Navbar akan selalu ada di paling atas */}
         <Providers>
           <Navbar />
 
-          <div className="flex-1">{children}</div>
+          <div className="flex-1 w-full max-w-full overflow-x-hidden">{children}</div>
           <Footer />
         </Providers>
       </body>

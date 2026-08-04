@@ -55,3 +55,50 @@ export async function submitLeaveRequest(formData: any) {
 
   revalidatePath(`/dashboard/manage/users/${truckyId}`);
 }
+
+export async function updateGalleryBan(
+  discordId: string,
+  truckyId: string,
+  status: boolean,
+  expiredAt: string | null,
+  reason: string
+) {
+  const client = await clientPromise;
+  const db = client.db();
+
+  await db.collection("users").updateOne(
+    { discordId: discordId },
+    {
+      $set: {
+        "galleryBan.status": status,
+        "galleryBan.expiredAt": expiredAt ? new Date(expiredAt) : null,
+        "galleryBan.reason": reason,
+        updatedAt: new Date(),
+      },
+    },
+  );
+
+  revalidatePath(`/dashboard/manage/data/users/${truckyId}`);
+}
+
+export async function resetUserImages(
+  discordId: string,
+  truckyId: string,
+  type: 'avatar' | 'banner' | 'background' | 'all'
+) {
+  const client = await clientPromise;
+  const db = client.db();
+
+  const updateFields: any = {};
+  if (type === 'avatar' || type === 'all') updateFields.image = null;
+  if (type === 'banner' || type === 'all') updateFields.bannerUrl = null;
+  if (type === 'background' || type === 'all') updateFields.backgroundUrl = null;
+
+  await db.collection("users").updateOne(
+    { discordId: discordId },
+    { $set: updateFields }
+  );
+
+  revalidatePath(`/dashboard/manage/data/users/${truckyId}`);
+}
+

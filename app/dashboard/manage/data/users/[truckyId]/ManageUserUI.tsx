@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { submitLeaveRequest } from "@/app/actions/adminActions";
+import { submitLeaveRequest, updateGalleryBan, resetUserImages } from "@/app/actions/adminActions";
 import {
   Clock,
   CheckCircle2,
@@ -21,6 +21,8 @@ import {
   Coins,
   Route,
   TriangleAlert,
+  Image as ImageIcon,
+  Trash2,
 } from "lucide-react";
 
 export default function ManageUserUI({
@@ -41,6 +43,17 @@ export default function ManageUserUI({
     startDate: "",
     endDate: "",
     reason: "",
+  });
+
+  const [isBanModalOpen, setIsBanModalOpen] = useState(false);
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [resetType, setResetType] = useState<'avatar' | 'banner' | 'background' | 'all'>('all');
+
+  const [banFormData, setBanFormData] = useState({
+    status: user?.galleryBan?.status || false,
+    isPermanent: !user?.galleryBan?.expiredAt && user?.galleryBan?.status,
+    expiredAt: user?.galleryBan?.expiredAt ? new Date(user?.galleryBan?.expiredAt).toISOString().split('T')[0] : "",
+    reason: user?.galleryBan?.reason || "",
   });
 
   // Mencegah Hydration Error
@@ -107,6 +120,24 @@ export default function ManageUserUI({
     setIsModalOpen(false);
   };
 
+  const handleBanSubmit = async (e: any) => {
+    e.preventDefault();
+    await updateGalleryBan(
+      user.discordId,
+      user.truckyId,
+      banFormData.status,
+      banFormData.status && !banFormData.isPermanent ? banFormData.expiredAt : null,
+      banFormData.reason
+    );
+    setIsBanModalOpen(false);
+  };
+
+  const handleResetImages = async (e: any) => {
+    e.preventDefault();
+    await resetUserImages(user.discordId, user.truckyId, resetType);
+    setIsResetModalOpen(false);
+  };
+
   const joinDate = driverLink?.createdAt
     ? new Date(driverLink.createdAt).toLocaleDateString("id-ID")
     : "-";
@@ -158,8 +189,8 @@ export default function ManageUserUI({
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-3 justify-center relative z-10">
-          <div className="px-6 py-4 bg-white/5 rounded-3xl border border-white/10 text-center min-w-[140px]">
+        <div className="flex flex-col sm:flex-row gap-4 items-center justify-center relative z-10">
+          <div className="px-6 py-4 bg-white/5 rounded-3xl border border-white/10 text-center min-w-[140px] flex flex-col justify-center h-full">
             <p className="text-[10px] font-black text-(-primary-foreground)/40 uppercase flex items-center justify-center gap-1">
               <Wallet size={12} /> Gabung Nismara
             </p>
@@ -167,12 +198,26 @@ export default function ManageUserUI({
               {joinDate}
             </p>
           </div>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="bg-accent-lilac hover:bg-accent-lilac/80 text-(-primary-foreground) px-8 py-4 rounded-3xl font-black uppercase tracking-tighter transition-all flex items-center gap-2 shadow-xl shadow-accent-lilac/20"
-          >
-            <Calendar size={18} /> Manage Leave
-          </button>
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={() => setIsBanModalOpen(true)}
+              className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-6 py-2.5 rounded-2xl font-black uppercase tracking-tighter transition-all flex items-center justify-center gap-2 text-xs"
+            >
+              <ImageIcon size={14} /> Manage Gallery Ban
+            </button>
+            <button
+              onClick={() => setIsResetModalOpen(true)}
+              className="bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/20 px-6 py-2.5 rounded-2xl font-black uppercase tracking-tighter transition-all flex items-center justify-center gap-2 text-xs"
+            >
+              <Trash2 size={14} /> Reset Images
+            </button>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="bg-accent-lilac hover:bg-accent-lilac/80 text-(-primary-foreground) px-6 py-2.5 rounded-2xl font-black uppercase tracking-tighter transition-all flex items-center justify-center gap-2 shadow-xl shadow-accent-lilac/20 text-xs"
+            >
+              <Calendar size={14} /> Manage Leave
+            </button>
+          </div>
         </div>
       </div>
 
@@ -526,6 +571,152 @@ export default function ManageUserUI({
                 <p className="text-center mt-4 text-[9px] font-bold text-gray-500 uppercase tracking-widest italic">
                   Data ini akan langsung diproses oleh sistem Nismara.
                 </p>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* MODAL MANAGE GALLERY BAN */}
+      {isBanModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-[#161b22] w-full max-w-md border border-white/10 rounded-[2.5rem] p-8 space-y-6 shadow-2xl animate-in zoom-in duration-300">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-red-500/10 rounded-lg text-red-500">
+                  <ImageIcon size={20} />
+                </div>
+                <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">
+                  Manage Gallery Ban
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsBanModalOpen(false)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <XCircle size={24} />
+              </button>
+            </div>
+
+            <form onSubmit={handleBanSubmit} className="space-y-5">
+              <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10">
+                <label className="text-sm font-bold text-white">Enable Ban</label>
+                <input
+                  type="checkbox"
+                  className="w-5 h-5 accent-red-500 rounded"
+                  checked={banFormData.status}
+                  onChange={(e) => setBanFormData({ ...banFormData, status: e.target.checked })}
+                />
+              </div>
+
+              {banFormData.status && (
+                <>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="permanent"
+                      className="accent-red-500"
+                      checked={banFormData.isPermanent}
+                      onChange={(e) => setBanFormData({ ...banFormData, isPermanent: e.target.checked })}
+                    />
+                    <label htmlFor="permanent" className="text-xs font-bold text-gray-400">
+                      Banned Permanently
+                    </label>
+                  </div>
+
+                  {!banFormData.isPermanent && (
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest ml-1">
+                        Ban Until
+                      </label>
+                      <input
+                        type="date"
+                        required={!banFormData.isPermanent}
+                        className="w-full bg-white/5 border border-white/10 p-4 rounded-2xl text-white outline-none focus:border-red-500 transition-all text-xs font-bold"
+                        value={banFormData.expiredAt}
+                        onChange={(e) => setBanFormData({ ...banFormData, expiredAt: e.target.value })}
+                      />
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest ml-1">
+                      Reason
+                    </label>
+                    <textarea
+                      required
+                      placeholder="e.g. Uploading inappropriate content..."
+                      className="w-full bg-white/5 border border-white/10 p-4 rounded-2xl text-white outline-none focus:border-red-500 transition-all resize-none text-sm font-medium"
+                      rows={3}
+                      value={banFormData.reason}
+                      onChange={(e) => setBanFormData({ ...banFormData, reason: e.target.value })}
+                    />
+                  </div>
+                </>
+              )}
+
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  className={`w-full py-4 text-white font-black uppercase tracking-widest rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2 ${banFormData.status ? 'bg-red-600 hover:bg-red-700 shadow-red-500/20' : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20'}`}
+                >
+                  <CheckCircle2 size={18} /> {banFormData.status ? "Apply Ban" : "Save Changes"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* MODAL RESET IMAGES */}
+      {isResetModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-[#161b22] w-full max-w-md border border-white/10 rounded-[2.5rem] p-8 space-y-6 shadow-2xl animate-in zoom-in duration-300">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-500/10 rounded-lg text-orange-500">
+                  <Trash2 size={20} />
+                </div>
+                <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">
+                  Reset Profile Images
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsResetModalOpen(false)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <XCircle size={24} />
+              </button>
+            </div>
+
+            <form onSubmit={handleResetImages} className="space-y-5">
+              <div className="space-y-3">
+                <p className="text-sm text-gray-400 font-medium">
+                  If this user's profile images violate the rules, you can reset them here.
+                </p>
+                
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest ml-1">
+                    Select Type to Reset
+                  </label>
+                  <select
+                    className="w-full bg-white/5 border border-white/10 p-4 rounded-2xl text-white outline-none focus:border-orange-500 transition-all text-sm font-bold appearance-none"
+                    value={resetType}
+                    onChange={(e) => setResetType(e.target.value as any)}
+                  >
+                    <option value="all" className="bg-[#161b22]">All Images (Avatar, Banner, Background)</option>
+                    <option value="avatar" className="bg-[#161b22]">Avatar Only</option>
+                    <option value="banner" className="bg-[#161b22]">Banner Only</option>
+                    <option value="background" className="bg-[#161b22]">Background Only</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  className="w-full py-4 text-white font-black uppercase tracking-widest rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-700 shadow-orange-500/20"
+                >
+                  <Trash2 size={18} /> Force Reset
+                </button>
               </div>
             </form>
           </div>

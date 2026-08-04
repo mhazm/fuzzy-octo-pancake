@@ -13,8 +13,9 @@ import {
   Wallet,
   X,
   Info,
+  Ticket,
 } from "lucide-react";
-import { payPenaltyPoints, validateJobPoints } from "./actions";
+import { payPenaltyPoints, validateJobPoints, usePenaltyTicket } from "./actions";
 import { createPenaltyPayment } from "@/app/actions/payment";
 
 interface HistoryItem {
@@ -29,7 +30,8 @@ interface PenaltyClientUIProps {
   initialPoints: number;
   totalNC: number;
   pointPrice: number;
-  discountBooster: number; // Tambahan prop discount
+  discountBooster: number;
+  totalPenaltyTickets: number; // Added prop for penalty tickets
   history: HistoryItem[];
   eligibleJobs: any[];
 }
@@ -39,6 +41,7 @@ export default function PenaltyClientUI({
   totalNC,
   pointPrice,
   discountBooster,
+  totalPenaltyTickets = 0,
   history,
   eligibleJobs,
 }: PenaltyClientUIProps) {
@@ -51,6 +54,8 @@ export default function PenaltyClientUI({
     type: "success" | "error";
   } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isTicketLoading, setIsTicketLoading] = useState(false);
+  const [ticketAmountToUse, setTicketAmountToUse] = useState<number>(1);
   const ITEMS_PER_PAGE = 5;
 
   const totalItems = eligibleJobs.length;
@@ -105,6 +110,22 @@ export default function PenaltyClientUI({
     setIsLoading(false);
   };
 
+  const handleUseTicket = async () => {
+    setIsTicketLoading(true);
+    setMessage(null);
+
+    const result = await usePenaltyTicket(ticketAmountToUse);
+
+    if (result.success) {
+      setMessage({ text: result.message, type: "success" });
+      setTicketAmountToUse(1); // reset after success
+    } else {
+      setMessage({ text: result.message, type: "error" });
+    }
+
+    setIsTicketLoading(false);
+  };
+
   const handleValidation = async (jobId: string) => {
     if (!confirm("Validasi job ini untuk pengurangan poin penalti?")) return;
     setIsLoading(true);
@@ -153,7 +174,7 @@ export default function PenaltyClientUI({
   return (
     <div className="space-y-8">
       {/* Kartu Status Utama */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
           <div className="flex flex-row items-center justify-between pb-2 space-y-0">
             <h3 className="tracking-tight text-sm font-medium">
@@ -189,6 +210,24 @@ export default function PenaltyClientUI({
           </div>
           <p className="text-xs text-muted-foreground mt-1">
             Harga penebusan: {pointPrice.toLocaleString("id-ID")} NC / Poin
+          </p>
+        </div>
+
+        <div className="rounded-xl border bg-card text-card-foreground shadow p-6 border-red-500/20 relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+            <Ticket className="w-24 h-24 text-red-500" />
+          </div>
+          <div className="flex flex-row items-center justify-between pb-2 space-y-0 relative z-10">
+            <h3 className="tracking-tight text-sm font-medium">
+              Tiket Hapus Penalti
+            </h3>
+            <Ticket className="h-4 w-4 text-red-500" />
+          </div>
+          <div className="text-4xl font-bold text-red-500 relative z-10">
+            {totalPenaltyTickets}
+          </div>
+          <p className="text-xs text-muted-foreground mt-1 relative z-10">
+            Digunakan untuk validasi Job
           </p>
         </div>
 
@@ -229,6 +268,66 @@ export default function PenaltyClientUI({
           <span>50 (Pen. 3)</span>
         </div>
       </div>
+
+      {/* Penggunaan Tiket Penalti */}
+      {totalPenaltyTickets > 0 && (
+        <div className="rounded-xl border border-red-500/20 bg-card p-6 shadow-sm transition-all relative overflow-hidden group">
+          <div className="absolute -right-10 -top-10 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-500">
+            <Ticket className="w-48 h-48 text-red-500 rotate-12" />
+          </div>
+          
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+            <div className="flex items-center gap-2">
+              <Ticket className="w-5 h-5 text-red-500" />
+              <h3 className="font-bold text-red-500">Tiket Hapus Penalti</h3>
+              <span className="ml-2 px-2 py-0.5 bg-red-500/10 text-red-500 text-[10px] font-black rounded-full shadow-sm">
+                TOTAL: {totalPenaltyTickets} TIKET
+              </span>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <div className="flex items-center bg-background border border-border/50 rounded-xl overflow-hidden">
+                <button
+                  onClick={() => setTicketAmountToUse(p => Math.max(1, p - 1))}
+                  disabled={ticketAmountToUse <= 1 || isTicketLoading}
+                  className="px-3 py-3 hover:bg-muted disabled:opacity-50 transition-colors border-r border-border/50 text-foreground"
+                >
+                  -
+                </button>
+                <input
+                  type="number"
+                  min={1}
+                  max={Math.min(totalPenaltyTickets, initialPoints)}
+                  value={ticketAmountToUse}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value) || 1;
+                    setTicketAmountToUse(Math.min(Math.max(1, val), Math.min(totalPenaltyTickets, initialPoints)));
+                  }}
+                  disabled={isTicketLoading}
+                  className="w-16 text-center bg-transparent py-3 font-bold text-sm focus:outline-none"
+                />
+                <button
+                  onClick={() => setTicketAmountToUse(p => Math.min(Math.min(totalPenaltyTickets, initialPoints), p + 1))}
+                  disabled={ticketAmountToUse >= Math.min(totalPenaltyTickets, initialPoints) || isTicketLoading}
+                  className="px-3 py-3 hover:bg-muted disabled:opacity-50 transition-colors border-l border-border/50 text-foreground"
+                >
+                  +
+                </button>
+              </div>
+              <button
+                onClick={handleUseTicket}
+                disabled={isTicketLoading || initialPoints === 0 || ticketAmountToUse > initialPoints || ticketAmountToUse > totalPenaltyTickets}
+                className="px-6 py-3 bg-red-500 hover:bg-red-600 text-white text-sm font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-red-500/20 active:scale-95 whitespace-nowrap"
+              >
+                {isTicketLoading ? "Memproses..." : `Gunakan Tiket (-${ticketAmountToUse} Poin)`}
+              </button>
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground mt-4 max-w-2xl relative z-10">
+            Gunakan tiket ini untuk menghapus poin penalti secara instan tanpa perlu memvalidasi job hardcore atau menggunakan Nismara Coin.
+          </p>
+        </div>
+      )}
 
       <div className="rounded-xl border bg-card p-6 shadow-sm transition-all">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
