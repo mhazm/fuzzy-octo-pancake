@@ -11,6 +11,7 @@ import "@/lib/models/User";
 import "@/lib/models/FleetBrand";
 import { getCurrencyData } from "@/app/dashboard/currency/actions";
 
+import dbConnect from "@/lib/mongoose";
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const GUILD_ID = process.env.DISCORD_GUILD_ID;
 const CATEGORY_ID = process.env.DISCORD_PLUS_CATEGORY_ID; // Or any specific category for maintenance
@@ -33,9 +34,7 @@ export async function POST(request: Request) {
       );
     }
 
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
 
     const client = await clientPromise;
     const db = client.db();

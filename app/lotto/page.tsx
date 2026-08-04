@@ -13,15 +13,14 @@ import NismaraPlusBadge from "@/components/icons/NismaraPlusBadge";
 import ServerBoosterBadge from "@/components/icons/ServerBoosterBadge";
 import { getCurrencyData } from "@/app/dashboard/currency/actions";
 
+import dbConnect from "@/lib/mongoose";
 export const dynamic = "force-dynamic";
 
 export default async function LottoPage() {
   const session = await getServerSession(authOptions);
   await clientPromise;
 
-  if (mongoose.connection.readyState !== 1) {
-    await mongoose.connect(process.env.MONGODB_URI!);
-  }
+  await dbConnect();
 
   // 1. Fetch Active Period
   let activePeriod = await LottoPeriod.findOne({ status: "OPEN" }).lean();

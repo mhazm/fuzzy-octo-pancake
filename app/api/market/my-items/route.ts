@@ -4,6 +4,7 @@ import MarketItem from "@/lib/models/MarketItem";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/route";
 
+import dbConnect from "@/lib/mongoose";
 export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -14,9 +15,7 @@ export async function GET(request: Request) {
       );
     }
 
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
 
     // Ambil data barang yang dijual oleh user
     const items = await MarketItem.find({ sellerId: String(session.user.discordId) })

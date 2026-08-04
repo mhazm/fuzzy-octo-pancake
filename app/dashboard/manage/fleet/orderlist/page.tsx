@@ -10,6 +10,7 @@ import "@/lib/models/FleetStore";
 import "@/lib/models/FleetBrand";
 import "@/lib/models/User";
 
+import dbConnect from "@/lib/mongoose";
 export const dynamic = "force-dynamic";
 
 export default async function ManagerOrderListPage() {
@@ -20,9 +21,7 @@ export default async function ManagerOrderListPage() {
     redirect("/auth/signin");
   }
 
-  if (mongoose.connection.readyState !== 1) {
-    await mongoose.connect(process.env.MONGODB_URI!);
-  }
+  await dbConnect();
 
   const client = await clientPromise;
   const db = client.db();

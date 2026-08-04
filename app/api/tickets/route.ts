@@ -5,6 +5,7 @@ import clientPromise from "@/lib/mongodb";
 import mongoose from "mongoose";
 import Ticket from "@/lib/models/Ticket";
 
+import dbConnect from "@/lib/mongoose";
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const GUILD_ID = process.env.DISCORD_GUILD_ID;
 const CATEGORY_ID = process.env.DISCORD_TICKET_CATEGORY_ID || process.env.DISCORD_PLUS_CATEGORY_ID;
@@ -17,9 +18,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
 
     const discordId = session.user.discordId;
 
@@ -100,9 +99,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Semua field harus diisi" }, { status: 400 });
     }
 
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
 
     const client = await clientPromise;
     const db = client.db();

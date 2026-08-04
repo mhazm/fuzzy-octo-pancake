@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 import QuizQuestion from "@/lib/models/QuizQuestion";
 import QuizAttempt from "@/lib/models/QuizAttempt";
 
+import dbConnect from "@/lib/mongoose";
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
@@ -12,9 +13,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
 
     const discordId = String(session.user.discordId);
 

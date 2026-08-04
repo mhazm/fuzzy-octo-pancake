@@ -40,9 +40,9 @@ const fleetSchema = new mongoose.Schema(
     maintenance_start_date: { type: Date, default: null },
     maintenance_end_date: { type: Date, default: null },
     maintenance: {
-      engine: { type: Number, default: 45000 },
+      engine: { type: Number, default: 50000 },
       tires: { type: Number, default: 20000 },
-      transmission: { type: Number, default: 60000 },
+      transmission: { type: Number, default: 70000 },
       brakes: { type: Number, default: 35000 },
     },
     wear: {

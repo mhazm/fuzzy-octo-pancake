@@ -7,6 +7,7 @@ import { getMechanicConfig, generateMechanicName, MechanicSpecialty } from "@/li
 import mongoose from "mongoose";
 import { checkRateLimit } from "@/lib/rateLimit";
 
+import dbConnect from "@/lib/mongoose";
 const GUILD_ID = "863959415702028318";
 
 export async function POST(request: Request) {
@@ -33,9 +34,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid level" }, { status: 400 });
     }
 
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
 
     const client = await clientPromise;
     const db = client.db();

@@ -5,6 +5,7 @@ import clientPromise from "@/lib/mongodb";
 import mongoose from "mongoose";
 import FleetOrder from "@/lib/models/FleetOrder";
 
+import dbConnect from "@/lib/mongoose";
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
     const params = await context.params;
@@ -13,9 +14,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
 
     const order = await FleetOrder.findById(params.id);
     if (!order) {

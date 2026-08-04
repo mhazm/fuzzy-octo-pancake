@@ -8,15 +8,14 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/route";
 import { deleteFileFromR2 } from "@/lib/r2";
 
+import dbConnect from "@/lib/mongoose";
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
     const query = mongoose.isValidObjectId(id) 
       ? { $or: [{ slug: id }, { _id: id }] }
       : { slug: id };
@@ -68,9 +67,7 @@ export async function PUT(
       );
     }
 
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
 
     const query = mongoose.isValidObjectId(id) 
       ? { $or: [{ slug: id }, { _id: id }] }
@@ -232,9 +229,7 @@ export async function DELETE(
 
     const isManager = session.user.role === "manager" || session.user.role === "admin";
 
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
 
     const query = mongoose.isValidObjectId(id) 
       ? { $or: [{ slug: id }, { _id: id }] }

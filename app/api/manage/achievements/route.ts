@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import mongoose from "mongoose";
 
+import dbConnect from "@/lib/mongoose";
 // Import Achievement model (CommonJS)
 let Achievement: any;
 try {
@@ -18,9 +19,7 @@ export async function GET() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
 
     const achievements = await Achievement.find().sort({ category: 1, createdAt: -1 }).lean();
     return NextResponse.json({ success: true, achievements });
@@ -37,9 +36,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
 
     const data = await request.json();
 

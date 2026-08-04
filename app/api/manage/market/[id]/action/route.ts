@@ -5,6 +5,7 @@ import Notification from "@/lib/models/Notification";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
+import dbConnect from "@/lib/mongoose";
 export async function POST(
   request: Request,
   props: { params: Promise<{ id: string }> }
@@ -17,9 +18,7 @@ export async function POST(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
 
     const { action, reason, editData } = await request.json();
     const item = await MarketItem.findById(id);

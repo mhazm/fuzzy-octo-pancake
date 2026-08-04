@@ -4,6 +4,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import mongoose from "mongoose";
 import Notification from "@/lib/models/Notification";
 
+import dbConnect from "@/lib/mongoose";
 export async function POST() {
   try {
     const session = await getServerSession(authOptions);
@@ -11,9 +12,7 @@ export async function POST() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
 
     const discordId = session.user.discordId;
 

@@ -5,6 +5,7 @@ import clientPromise from "@/lib/mongodb";
 import mongoose from "mongoose";
 import Ticket from "@/lib/models/Ticket";
 
+import dbConnect from "@/lib/mongoose";
 export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -12,9 +13,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
 
     const discordId = session.user.discordId;
 

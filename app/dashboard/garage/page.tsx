@@ -10,6 +10,7 @@ import mongoose from "mongoose";
 import GarageClient from "./GarageClient";
 import "@/lib/models/User";
 
+import dbConnect from "@/lib/mongoose";
 export const dynamic = "force-dynamic";
 
 export default async function GarageDashboardPage() {
@@ -18,9 +19,7 @@ export default async function GarageDashboardPage() {
     redirect("/auth/signin");
   }
 
-  if (mongoose.connection.readyState !== 1) {
-    await mongoose.connect(process.env.MONGODB_URI!);
-  }
+  await dbConnect();
 
   const client = await clientPromise;
   const db = client.db();

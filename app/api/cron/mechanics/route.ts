@@ -4,6 +4,7 @@ import clientPromise from "@/lib/mongodb";
 import Garage from "@/lib/models/Garage";
 import { MechanicSpecialty } from "@/lib/constants/mechanics";
 
+import dbConnect from "@/lib/mongoose";
 const GUILD_ID = "863959415702028318";
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 
@@ -49,9 +50,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
 
     const client = await clientPromise;
     const db = client.db();

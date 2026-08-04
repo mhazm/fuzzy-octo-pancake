@@ -10,6 +10,7 @@ import Link from "next/link";
 import "@/lib/models/FleetStore"; // Register models
 import "@/lib/models/FleetBrand"; 
 
+import dbConnect from "@/lib/mongoose";
 export const dynamic = "force-dynamic";
 
 export default async function UserFleetOrdersPage() {
@@ -18,9 +19,7 @@ export default async function UserFleetOrdersPage() {
     redirect("/auth/signin");
   }
 
-  if (mongoose.connection.readyState !== 1) {
-    await mongoose.connect(process.env.MONGODB_URI!);
-  }
+  await dbConnect();
 
   const client = await clientPromise;
   const db = client.db();

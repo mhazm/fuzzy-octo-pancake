@@ -2,11 +2,10 @@ import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import FleetBrand from "@/lib/models/FleetBrand";
 
+import dbConnect from "@/lib/mongoose";
 export async function GET() {
   try {
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
     
     const brands = await FleetBrand.find({}).sort({ name: 1 }).lean();
     return NextResponse.json(brands, {
@@ -22,9 +21,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
     const data = await request.json();
 
     if (!data.id || !data.name) {

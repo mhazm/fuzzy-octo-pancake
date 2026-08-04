@@ -6,6 +6,7 @@ import "@/lib/models/User";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
+import dbConnect from "@/lib/mongoose";
 export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -13,9 +14,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Forbidden - Manager only" }, { status: 403 });
     }
 
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");

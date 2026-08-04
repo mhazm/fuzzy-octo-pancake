@@ -6,6 +6,7 @@ import QuizQuestion from "@/lib/models/QuizQuestion";
 import QuizAttempt from "@/lib/models/QuizAttempt";
 import clientPromise from "@/lib/mongodb";
 
+import dbConnect from "@/lib/mongoose";
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -13,9 +14,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
 
     const body = await req.json();
     const { attemptId, answers } = body;

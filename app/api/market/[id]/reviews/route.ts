@@ -7,15 +7,14 @@ import "@/lib/models/User";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../auth/[...nextauth]/route";
 
+import dbConnect from "@/lib/mongoose";
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
 
     const query = mongoose.isValidObjectId(id) 
       ? { $or: [{ slug: id }, { _id: id }] }
@@ -84,9 +83,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
 
     const query = mongoose.isValidObjectId(id) 
       ? { $or: [{ slug: id }, { _id: id }] }

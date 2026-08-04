@@ -7,11 +7,10 @@ import "@/lib/models/MarketReview";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/route";
 
+import dbConnect from "@/lib/mongoose";
 export async function GET(request: Request) {
   try {
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
 
     const { searchParams } = new URL(request.url);
     const game_id = searchParams.get("game_id");
@@ -63,9 +62,7 @@ export async function POST(request: Request) {
       );
     }
 
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
     const data = await request.json();
 
     if (!data.title || !data.description || !data.game_id || !data.download_url || !data.slug) {

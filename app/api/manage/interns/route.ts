@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 import clientPromise from "@/lib/mongodb";
 import { getCompanyMembersMap } from "@/lib/trucky";
 
+import dbConnect from "@/lib/mongoose";
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
@@ -12,9 +13,7 @@ export async function GET() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
 
     const client = await clientPromise;
     const db = client.db();

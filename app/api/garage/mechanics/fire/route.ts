@@ -5,6 +5,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import Garage from "@/lib/models/Garage";
 import mongoose from "mongoose";
 
+import dbConnect from "@/lib/mongoose";
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -18,9 +19,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid specialty" }, { status: 400 });
     }
 
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
 
     const garage = await Garage.findOne({ discordId: session.user.discordId });
     if (!garage) {

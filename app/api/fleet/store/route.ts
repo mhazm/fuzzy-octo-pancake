@@ -3,11 +3,10 @@ import mongoose from "mongoose";
 import FleetStore from "@/lib/models/FleetStore";
 import "@/lib/models/FleetBrand"; 
 
+import dbConnect from "@/lib/mongoose";
 export async function GET() {
   try {
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
     
     const stores = await FleetStore.find({}).populate("brand").sort({ game_id: 1, type: 1, name: 1 }).lean();
     return NextResponse.json(stores, {
@@ -23,9 +22,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
     const data = await request.json();
 
     if (!data.id || !data.name || !data.game_id || data.in_game_id === undefined || !data.type || !data.price || !data.brand || !data.photo_url) {

@@ -10,6 +10,7 @@ import FleetStore from "@/lib/models/FleetStore";
 import "@/lib/models/FleetBrand";
 import Garage from "@/lib/models/Garage";
 
+import dbConnect from "@/lib/mongoose";
 export const dynamic = "force-dynamic";
 
 export default async function BuyFleetPage() {
@@ -34,9 +35,7 @@ export default async function BuyFleetPage() {
   }
 
   // Ensure mongoose connection for populate
-  if (mongoose.connection.readyState !== 1) {
-    await mongoose.connect(process.env.MONGODB_URI!);
-  }
+  await dbConnect();
 
   // Fetch stores and populate brands
   const stores = await FleetStore.find({}).populate("brand").sort({ price: 1 }).lean();

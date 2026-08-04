@@ -5,11 +5,10 @@ import "@/lib/models/FleetStore"; // Ensure it's registered for populate
 import "@/lib/models/User";       // Ensure it's registered for populate
 import "@/lib/models/FleetBrand"; 
 
+import dbConnect from "@/lib/mongoose";
 export async function GET() {
   try {
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
     
     const fleets = await Fleet.find({})
       .populate({
@@ -29,9 +28,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
     const data = await request.json();
 
     if (!data.id || !data.fleet_name || !data.game_id || !data.fleet_number || !data.model || data.odometer === undefined) {

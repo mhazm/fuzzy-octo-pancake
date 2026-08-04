@@ -7,6 +7,7 @@ import FleetOrder from "@/lib/models/FleetOrder";
 import FleetStore from "@/lib/models/FleetStore";
 import { getCurrencyData } from "@/app/dashboard/currency/actions";
 
+import dbConnect from "@/lib/mongoose";
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const GUILD_ID = process.env.DISCORD_GUILD_ID;
 const CATEGORY_ID = process.env.DISCORD_PLUS_CATEGORY_ID;
@@ -24,9 +25,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "fleetStoreId is required" }, { status: 400 });
     }
 
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
 
     const client = await clientPromise;
     const db = client.db();

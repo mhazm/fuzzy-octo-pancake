@@ -5,6 +5,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import Garage from "@/lib/models/Garage";
 import mongoose from "mongoose";
 
+import dbConnect from "@/lib/mongoose";
 const OPERATIONAL_COST_PER_SLOT = 250;
 
 export async function POST(request: Request) {
@@ -14,9 +15,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
 
     const garage = await Garage.findOne({ discordId: session.user.discordId });
     if (!garage) {

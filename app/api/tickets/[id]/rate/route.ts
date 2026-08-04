@@ -5,6 +5,7 @@ import clientPromise from "@/lib/mongodb";
 import mongoose from "mongoose";
 import Ticket from "@/lib/models/Ticket";
 
+import dbConnect from "@/lib/mongoose";
 const GUILD_ID = process.env.DISCORD_GUILD_ID;
 
 export async function POST(
@@ -23,9 +24,7 @@ export async function POST(
       return NextResponse.json({ error: "Rating harus antara 1-5" }, { status: 400 });
     }
 
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
 
     const query = mongoose.isValidObjectId(ticketId) 
       ? { $or: [{ _id: ticketId }, { ticketId }] }

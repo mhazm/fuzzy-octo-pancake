@@ -9,6 +9,7 @@ import "@/lib/models/FleetBrand";
 import User from "@/lib/models/User";
 import { sendPersonalNotification } from "@/lib/services/NotificationService";
 
+import dbConnect from "@/lib/mongoose";
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 
 // This should be secured via an API key or Vercel cron secret in production
@@ -19,9 +20,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
 
     const client = await clientPromise;
     const db = client.db();

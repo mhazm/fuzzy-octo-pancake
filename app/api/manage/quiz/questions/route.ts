@@ -4,6 +4,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import mongoose from "mongoose";
 import QuizQuestion from "@/lib/models/QuizQuestion";
 
+import dbConnect from "@/lib/mongoose";
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
@@ -11,9 +12,7 @@ export async function GET() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
 
     const questions = await QuizQuestion.find({}).sort({ createdAt: -1 });
 
@@ -31,9 +30,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
 
     const body = await req.json();
     const { question, options, correctOptionIndex, explanation } = body;

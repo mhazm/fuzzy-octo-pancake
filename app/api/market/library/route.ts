@@ -5,6 +5,7 @@ import "@/lib/models/MarketItem"; // Pastikan model ter-register sebelum populat
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/route";
 
+import dbConnect from "@/lib/mongoose";
 export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -15,9 +16,7 @@ export async function GET(request: Request) {
       );
     }
 
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
 
     // Ambil data pembelian dengan populasi marketItem
     const purchases = await MarketPurchase.find({ buyerId: String(session.user.discordId) })

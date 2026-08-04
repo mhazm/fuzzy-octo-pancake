@@ -5,6 +5,7 @@ import clientPromise from "@/lib/mongodb";
 import Notification from "@/lib/models/Notification";
 import mongoose from "mongoose";
 
+import dbConnect from "@/lib/mongoose";
 const DISCORD_COUPON_CHANNEL_ID = "1405533304442196049";
 
 async function sendDiscordCouponMessage(coupon: any) {
@@ -130,9 +131,7 @@ export async function POST(request: Request) {
       await sendDiscordCouponMessage(newCoupon);
 
       // Create Global Website Notification
-      if (mongoose.connection.readyState !== 1) {
-        await mongoose.connect(process.env.MONGODB_URI!);
-      }
+      await dbConnect();
       
       const isNC = type === "NC";
       await Notification.create({

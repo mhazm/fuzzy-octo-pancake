@@ -6,6 +6,7 @@ import Garage from "@/lib/models/Garage";
 import mongoose from "mongoose";
 import { checkRateLimit } from "@/lib/rateLimit";
 
+import dbConnect from "@/lib/mongoose";
 const GUILD_ID = "863959415702028318";
 const UPGRADE_COST = 1000;
 const OPERATIONAL_COST_PER_SLOT = 250;
@@ -23,9 +24,7 @@ export async function POST(request: Request) {
     }
 
 
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
 
     const client = await clientPromise;
     const db = client.db();

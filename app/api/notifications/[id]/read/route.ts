@@ -4,6 +4,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import mongoose from "mongoose";
 import Notification from "@/lib/models/Notification";
 
+import dbConnect from "@/lib/mongoose";
 export async function POST(
   request: Request,
   context: { params: Promise<{ id: string }> }
@@ -17,9 +18,7 @@ export async function POST(
     const params = await context.params;
     const { id } = params;
 
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
 
     const discordId = session.user.discordId;
 

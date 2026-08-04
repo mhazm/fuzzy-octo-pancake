@@ -4,11 +4,10 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import mongoose from "mongoose";
 import TicketCategory from "@/lib/models/TicketCategory";
 
+import dbConnect from "@/lib/mongoose";
 export async function GET(request: Request) {
   try {
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
 
     const categories = await TicketCategory.find({ isActive: true }).sort({ name: 1 });
     return NextResponse.json({ success: true, categories });
@@ -30,9 +29,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Nama kategori harus diisi" }, { status: 400 });
     }
 
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
 
     const newCategory = await TicketCategory.create({ name, isActive: true });
     return NextResponse.json({ success: true, category: newCategory });

@@ -4,6 +4,7 @@ import Fleet from "@/lib/models/Fleet";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
+import dbConnect from "@/lib/mongoose";
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -14,9 +15,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
 
     const { id } = await params;
 

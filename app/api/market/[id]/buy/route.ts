@@ -8,6 +8,7 @@ import clientPromise from "@/lib/mongodb";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { logExtremeActivity } from "@/lib/securityLogger";
 
+import dbConnect from "@/lib/mongoose";
 const GUILD_ID = process.env.DISCORD_GUILD_ID || "863959415702028318";
 
 export async function POST(
@@ -30,9 +31,7 @@ export async function POST(
     }
 
 
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI!);
-    }
+    await dbConnect();
 
     const query = mongoose.isValidObjectId(itemId) 
       ? { $or: [{ slug: itemId }, { _id: itemId }] }
