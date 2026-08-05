@@ -4,6 +4,12 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import TeamHQClient from "./TeamHQClient";
 
+export const metadata = {
+  title: "Hq Detail",
+};
+
+
+
 export default async function TeamHQPage({
   params,
 }: {

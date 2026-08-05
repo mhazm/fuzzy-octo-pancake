@@ -26,6 +26,12 @@ import {
   Heart,
   Grid3X3,
   ShoppingCart,
+  Gamepad2,
+  Package,
+  Fuel,
+  Sparkles,
+  FileText,
+  Shield,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -82,23 +88,24 @@ export default function NavbarClient({ session }: { session: any }) {
 
   // Standard top-level items (excluding Home and Events which are custom handled)
   const mainMenuItems = [
-    { name: "Jobs", href: "/jobs", icon: Briefcase },
     { name: "Convoy", href: "/convoy", icon: Truck },
     { name: "Gallery", href: "/gallery", icon: Grid3X3 },
     { name: "Market", href: "/market", icon: ShoppingCart },
     { name: "Leaderboard", href: "/leaderboard", icon: Trophy },
-    { name: "Lotto", href: "/lotto", icon: Ticket },
+    { name: "TimeZone", href: "/timezone", icon: Gamepad2 },
   ];
 
   // Mobile-specific menu items (flattened)
   const mobileMenuItems = [
     { name: "Home", href: "/", icon: Home },
-    { name: "Jobs", href: "/jobs", icon: Briefcase },
+    { name: "Jobs Details", href: "/jobs", icon: Briefcase },
+    { name: "Cargo Market", href: "/cargo-market", icon: Package },
+    { name: "Fuel Market", href: "/fuel-market", icon: Fuel },
     { name: "Convoy", href: "/convoy", icon: Truck },
     { name: "Gallery", href: "/gallery", icon: Grid3X3 },
     { name: "Market", href: "/market", icon: ShoppingCart },
     { name: "Leaderboard", href: "/leaderboard", icon: Trophy },
-    { name: "Lotto", href: "/lotto", icon: Ticket },
+    { name: "TimeZone", href: "/timezone", icon: Gamepad2 },
     {
       name: "Currency Boost",
       href: "/currency-boost",
@@ -155,6 +162,81 @@ export default function NavbarClient({ session }: { session: any }) {
                       <Home className="mr-2 h-4 w-4 text-muted-foreground" />
                       Home
                     </NavigationMenuLink>
+                  </NavigationMenuItem>
+
+                  {/* Jobs Mega Menu */}
+                  <NavigationMenuItem>
+                    <NavigationMenuTrigger className="bg-transparent hover:bg-muted/50 data-[state=open]:bg-muted/50">
+                      <Briefcase className="mr-2 h-4 w-4 text-muted-foreground" />
+                      Jobs
+                    </NavigationMenuTrigger>
+                    <NavigationMenuContent>
+                      <div className="flex w-[400px] gap-4 p-4 lg:w-[600px]">
+                        <ul className="grid w-full lg:w-2/3 grid-cols-1 lg:grid-cols-2 gap-2">
+                          <li>
+                            <NavigationMenuLink
+                              render={<Link href="/jobs" />}
+                              className="flex h-full w-full flex-col items-start gap-1 p-3"
+                            >
+                              <div className="flex items-center gap-2 font-medium">
+                                <Briefcase className="w-4 h-4 text-primary" />
+                                Jobs Details
+                              </div>
+                              <p className="text-xs text-muted-foreground line-clamp-2">
+                                Jelajahi lowongan pekerjaan yang tersedia di
+                                Nismara Transport.
+                              </p>
+                            </NavigationMenuLink>
+                          </li>
+                          <li>
+                            <NavigationMenuLink
+                              render={<Link href="/cargo-market" />}
+                              className="flex h-full w-full flex-col items-start gap-1 p-3"
+                            >
+                              <div className="flex items-center gap-2 font-medium">
+                                <Package className="w-4 h-4 text-primary" />
+                                Cargo Market
+                              </div>
+                              <p className="text-xs text-muted-foreground line-clamp-2">
+                                Akses pasar kargo dan logistik terbaik dari
+                                komunitas.
+                              </p>
+                            </NavigationMenuLink>
+                          </li>
+                          <li>
+                            <NavigationMenuLink
+                              render={<Link href="/fuel-market" />}
+                              className="flex h-full w-full flex-col items-start gap-1 p-3"
+                            >
+                              <div className="flex items-center gap-2 font-medium">
+                                <Fuel className="w-4 h-4 text-primary" />
+                                Fuel Market
+                              </div>
+                              <p className="text-xs text-muted-foreground line-clamp-2">
+                                Sistem transaksi bahan bakar terpusat.
+                              </p>
+                            </NavigationMenuLink>
+                          </li>
+                        </ul>
+                        <div className="hidden lg:block w-1/3 rounded-lg overflow-hidden relative bg-muted group/image">
+                          <img
+                            src="https://images.unsplash.com/photo-1519003722824-194d4455a60c?auto=format&fit=crop&w=400&q=80"
+                            alt="Jobs"
+                            className="object-cover w-full h-full opacity-80 transition-transform duration-500 group-hover/image:scale-110"
+                          />
+                          <div className="absolute inset-0 bg-linear-to-t from-background/90 via-background/20 to-transparent flex items-end p-4">
+                            <div className="space-y-1">
+                              <span className="font-bold text-sm text-foreground block">
+                                Jobs & Markets
+                              </span>
+                              <span className="text-xs text-muted-foreground block">
+                                Find the best opportunities
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </NavigationMenuContent>
                   </NavigationMenuItem>
 
                   {/* Events Mega Menu */}
@@ -367,8 +449,80 @@ export default function NavbarClient({ session }: { session: any }) {
                         />
                       }
                     >
-                      <LayoutDashboard className="mr-3 h-4 w-4 text-slate-400" />
+                      <Users className="mr-3 h-4 w-4 text-slate-400" />
                       <span className="font-medium">Teams</span>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem
+                      className="cursor-pointer rounded-lg hover:bg-white/5 focus:bg-white/5"
+                      render={
+                        <Link
+                          href="/dashboard/ticket"
+                          className="flex items-center w-full"
+                        />
+                      }
+                    >
+                      <FileText className="mr-3 h-4 w-4 text-slate-400" />
+                      <span className="font-medium">Tickets</span>
+                    </DropdownMenuItem>
+
+                    {(session.user?.role === "manager" || session.user?.role === "admin") && (
+                      <DropdownMenuItem
+                        className="cursor-pointer rounded-lg hover:bg-red-500/10 focus:bg-red-500/10"
+                        render={
+                          <Link
+                            href="/dashboard/manage"
+                            className="flex items-center w-full"
+                          />
+                        }
+                      >
+                        <Shield className="mr-3 h-4 w-4 text-red-400" />
+                        <span className="font-medium text-red-400">Manager Hub</span>
+                      </DropdownMenuItem>
+                    )}
+                  </div>
+
+                  <div className="h-px bg-border my-2 mx-2" />
+
+                  <div className="px-1 py-1">
+                    <DropdownMenuItem
+                      className={`cursor-pointer rounded-lg hover:bg-white/5 focus:bg-white/5 flex items-center justify-between group ${session.user?.nismaraplus?.status ? "bg-amber-400/10 hover:bg-amber-400/20 focus:bg-amber-400/20 border border-amber-400/20" : ""}`}
+                      render={
+                        <Link
+                          href="/dashboard/nismaraplus"
+                          className="flex items-center w-full"
+                        />
+                      }
+                    >
+                      <div className="flex items-center">
+                        <NismaraIcon
+                          className={`mr-3 h-4 w-4 ${session.user?.nismaraplus?.status ? "text-amber-400" : "text-slate-400 group-hover:text-amber-400 transition-colors"}`}
+                        />
+                        <div className="flex flex-col">
+                          <span
+                            className={`font-medium leading-none ${session.user?.nismaraplus?.status ? "text-amber-400 font-bold" : "group-hover:text-amber-400 transition-colors"}`}
+                          >
+                            Nismara+
+                          </span>
+                          {session.user?.nismaraplus?.status && (
+                            <span className="text-[9px] text-amber-500/80 uppercase tracking-widest font-black mt-1">
+                              Aktif s.d{" "}
+                              {new Date(
+                                session.user.nismaraplus.expiredAt,
+                              ).toLocaleDateString("id-ID", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              })}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {!session.user?.nismaraplus?.status && (
+                        <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full font-bold uppercase tracking-wider group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                          VIP
+                        </span>
+                      )}
                     </DropdownMenuItem>
                   </div>
 

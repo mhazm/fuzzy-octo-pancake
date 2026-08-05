@@ -34,8 +34,11 @@ export async function POST(request: Request) {
     garage.fleetSlot -= 1;
     garage.fleetSlotLevel -= 1;
     
-    // First slot is free, subsequent slots are 250 NC each
-    garage.operational_cost = garage.fleetSlot === 1 ? 0 : garage.fleetSlot * OPERATIONAL_COST_PER_SLOT;
+    garage.fleet_operational_cost = garage.fleetSlot === 1 ? 0 : garage.fleetSlot * OPERATIONAL_COST_PER_SLOT;
+    
+    // Kalkulasi total (Fleet + Fuel)
+    const fuelCost = garage.fuel_operational_cost || 0;
+    garage.operational_cost = garage.fleet_operational_cost + fuelCost;
     
     await garage.save();
 

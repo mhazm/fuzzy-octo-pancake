@@ -4,6 +4,12 @@ import { redirect } from "next/navigation";
 import clientPromise from "@/lib/mongodb";
 import CreateTeamForm from "./CreateTeamForm";
 
+export const metadata = {
+  title: "Create",
+};
+
+
+
 export default async function CreateTeamPage() {
   const session = await getServerSession(authOptions);
 

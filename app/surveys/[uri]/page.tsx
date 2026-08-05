@@ -19,6 +19,12 @@ import {
 } from "@/components/ui/card";
 import DriverSurveyForm from "./DriverSurveyForm";
 
+export const metadata = {
+  title: "Surveys Detail",
+};
+
+
+
 export const dynamic = "force-dynamic";
 
 export default async function DriverSurveyDetailPage({

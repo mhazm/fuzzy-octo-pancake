@@ -1,18 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { 
-  Search, 
-  Filter, 
-  Edit2, 
-  Save, 
-  X, 
-  CheckCircle2, 
+import {
+  Search,
+  Filter,
+  Edit2,
+  Save,
+  X,
+  CheckCircle2,
   XCircle,
   Truck,
   Plus,
   Zap,
-  User
+  User,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -21,7 +21,7 @@ export default function FleetAssignManager() {
   const [stores, setStores] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   // Filters
   const [search, setSearch] = useState("");
   const [gameFilter, setGameFilter] = useState("all");
@@ -30,8 +30,17 @@ export default function FleetAssignManager() {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [formData, setFormData] = useState({ 
-    _id: "", id: "", fleet_name: "", game_id: "1", fleet_number: "", driver: "", model: "", odometer: 0, wheels: "4x2", status: "active" 
+  const [formData, setFormData] = useState({
+    _id: "",
+    id: "",
+    fleet_name: "",
+    game_id: "1",
+    fleet_number: "",
+    driver: "",
+    model: "",
+    odometer: 0,
+    wheels: "4x2",
+    status: "active",
   });
   const [isSaving, setIsSaving] = useState(false);
 
@@ -51,12 +60,12 @@ export default function FleetAssignManager() {
       const [resFleets, resStores, resUsers] = await Promise.all([
         fetch("/api/fleet/assign"),
         fetch("/api/fleet/store"),
-        fetch("/api/users")
+        fetch("/api/users"),
       ]);
       const dataFleets = await resFleets.json();
       const dataStores = await resStores.json();
       const dataUsers = await resUsers.json();
-      
+
       setFleets(Array.isArray(dataFleets) ? dataFleets : []);
       setStores(Array.isArray(dataStores) ? dataStores : []);
       setUsers(Array.isArray(dataUsers) ? dataUsers : []);
@@ -72,30 +81,31 @@ export default function FleetAssignManager() {
       fleet.fleet_name?.toLowerCase().includes(search.toLowerCase()) ||
       fleet.id?.toLowerCase().includes(search.toLowerCase()) ||
       fleet.fleet_number?.toLowerCase().includes(search.toLowerCase());
-      
+
     const matchesGame =
       gameFilter === "all" || fleet.game_id?.toString() === gameFilter;
-      
+
     let matchesDriver = true;
     if (driverFilter === "assigned") matchesDriver = !!fleet.driver;
     else if (driverFilter === "unassigned") matchesDriver = !fleet.driver;
-    else if (driverFilter !== "all") matchesDriver = fleet.driver?._id === driverFilter;
+    else if (driverFilter !== "all")
+      matchesDriver = fleet.driver?._id === driverFilter;
 
     return matchesSearch && matchesGame && matchesDriver;
   });
 
   const handleEditClick = (fleet: any) => {
-    setFormData({ 
+    setFormData({
       _id: fleet._id,
-      id: fleet.id, 
-      fleet_name: fleet.fleet_name, 
-      game_id: fleet.game_id.toString(), 
+      id: fleet.id,
+      fleet_name: fleet.fleet_name,
+      game_id: fleet.game_id.toString(),
       fleet_number: fleet.fleet_number,
-      driver: fleet.driver?._id || "", 
-      model: fleet.model?._id || fleet.model || "", 
+      driver: fleet.driver?._id || "",
+      model: fleet.model?._id || fleet.model || "",
       odometer: fleet.odometer || 0,
       wheels: fleet.wheels || "4x2",
-      status: fleet.status || "active"
+      status: fleet.status || "active",
     });
     setIsEditMode(true);
     setIsModalOpen(true);
@@ -104,9 +114,11 @@ export default function FleetAssignManager() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const url = isEditMode ? `/api/fleet/assign/${formData._id}` : `/api/fleet/assign`;
+      const url = isEditMode
+        ? `/api/fleet/assign/${formData._id}`
+        : `/api/fleet/assign`;
       const method = isEditMode ? "PATCH" : "POST";
-      
+
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
@@ -114,7 +126,7 @@ export default function FleetAssignManager() {
       });
 
       if (!res.ok) throw new Error("Gagal menyimpan data");
-      
+
       showToast("Fleet berhasil diupdate!", "success");
       setIsModalOpen(false);
       fetchData();
@@ -177,15 +189,24 @@ export default function FleetAssignManager() {
               <Plus size={16} /> Buy / Add Fleet
             </Link>
             <div className="relative flex items-center">
-              <Filter className="absolute left-4 text-foreground/20" size={16} />
+              <Filter
+                className="absolute left-4 text-foreground/20"
+                size={16}
+              />
               <select
                 value={gameFilter}
                 onChange={(e) => setGameFilter(e.target.value)}
                 className="bg-white/5 border border-border rounded-2xl py-4 pl-10 pr-8 text-foreground focus:outline-none focus:border-amber-500 appearance-none font-bold text-xs uppercase tracking-widest cursor-pointer"
               >
-                <option value="all" className="bg-card">All Games</option>
-                <option value="1" className="bg-card">ETS2</option>
-                <option value="2" className="bg-card">ATS</option>
+                <option value="all" className="bg-card">
+                  All Games
+                </option>
+                <option value="1" className="bg-card">
+                  ETS2
+                </option>
+                <option value="2" className="bg-card">
+                  ATS
+                </option>
               </select>
             </div>
             <div className="relative flex items-center flex-1 sm:flex-none min-w-[200px]">
@@ -195,12 +216,27 @@ export default function FleetAssignManager() {
                 onChange={(e) => setDriverFilter(e.target.value)}
                 className="w-full bg-white/5 border border-border rounded-2xl py-4 pl-10 pr-8 text-foreground focus:outline-none focus:border-amber-500 appearance-none font-bold text-xs uppercase tracking-widest cursor-pointer"
               >
-                <option value="all" className="bg-card">All Drivers</option>
-                <option value="assigned" className="bg-card">Has Driver</option>
-                <option value="unassigned" className="bg-card">No Driver (Available)</option>
-                <optgroup label="Specific User" className="bg-card text-foreground/40">
-                  {users.map(u => (
-                    <option key={u._id} value={u._id} className="bg-card text-foreground">{u.name || "Unknown"}</option>
+                <option value="all" className="bg-card">
+                  All Drivers
+                </option>
+                <option value="assigned" className="bg-card">
+                  Has Driver
+                </option>
+                <option value="unassigned" className="bg-card">
+                  No Driver (Available)
+                </option>
+                <optgroup
+                  label="Specific User"
+                  className="bg-card text-foreground/40"
+                >
+                  {users.map((u) => (
+                    <option
+                      key={u._id}
+                      value={u._id}
+                      className="bg-card text-foreground"
+                    >
+                      {u.name || "Unknown"}
+                    </option>
                   ))}
                 </optgroup>
               </select>
@@ -224,7 +260,10 @@ export default function FleetAssignManager() {
               <tbody className="divide-y divide-border">
                 {loading ? (
                   <tr>
-                    <td colSpan={5} className="px-8 py-20 text-center text-foreground/20 font-black uppercase tracking-[0.2em] italic">
+                    <td
+                      colSpan={5}
+                      className="px-8 py-20 text-center text-foreground/20 font-black uppercase tracking-[0.2em] italic"
+                    >
                       <div className="flex justify-center items-center gap-3">
                         <Truck className="animate-pulse" size={24} />
                         Loading fleets data...
@@ -255,7 +294,11 @@ export default function FleetAssignManager() {
                       <td className="px-8 py-4">
                         <div className="flex items-center gap-3">
                           {fleet.model?.photo_url && (
-                            <img src={fleet.model.photo_url} alt="Model" className="w-12 h-8 object-cover rounded border border-border" />
+                            <img
+                              src={fleet.model.photo_url}
+                              alt="Model"
+                              className="w-12 h-8 object-cover rounded border border-border"
+                            />
                           )}
                           <div className="flex flex-col">
                             <span className="text-xs font-bold text-foreground uppercase tracking-wider">
@@ -273,7 +316,11 @@ export default function FleetAssignManager() {
                         {fleet.driver ? (
                           <div className="flex items-center gap-2">
                             {fleet.driver.image ? (
-                              <img src={fleet.driver.image} alt={fleet.driver.name} className="w-6 h-6 rounded-full border border-amber-500/50" />
+                              <img
+                                src={fleet.driver.image}
+                                alt={fleet.driver.name}
+                                className="w-6 h-6 rounded-full border border-amber-500/50"
+                              />
                             ) : (
                               <div className="w-6 h-6 rounded-full bg-amber-500/20 text-amber-500 flex items-center justify-center text-[10px] font-black uppercase">
                                 {fleet.driver.name?.charAt(0) || "U"}
@@ -302,11 +349,15 @@ export default function FleetAssignManager() {
                               ATS
                             </div>
                           )}
-                          <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase border ${
-                            fleet.status === 'active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 
-                            fleet.status === 'onservice' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
-                            'bg-foreground/10 text-foreground/60 border-foreground/20'
-                          }`}>
+                          <div
+                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase border ${
+                              fleet.status === "active"
+                                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                                : fleet.status === "onservice"
+                                  ? "bg-red-500/10 text-red-400 border-red-500/20"
+                                  : "bg-foreground/10 text-foreground/60 border-foreground/20"
+                            }`}
+                          >
                             {fleet.status}
                           </div>
                         </div>
@@ -347,13 +398,13 @@ export default function FleetAssignManager() {
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 animate-in fade-in duration-200">
           <div className="glass-panel p-8 rounded-[2rem] border border-border/50 max-w-3xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto">
-            <button 
+            <button
               onClick={() => setIsModalOpen(false)}
               className="absolute top-6 right-6 text-foreground/40 hover:text-foreground transition-colors"
             >
               <X size={20} />
             </button>
-            
+
             <div className="mb-6">
               <div className="flex items-center gap-3 mb-2">
                 <div className="p-2 bg-amber-500/10 rounded-lg text-amber-500 border border-amber-500/20">
@@ -377,7 +428,9 @@ export default function FleetAssignManager() {
                   type="text"
                   value={formData.id}
                   disabled
-                  onChange={(e) => setFormData({ ...formData, id: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, id: e.target.value })
+                  }
                   className="w-full bg-white/5 border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-amber-500 transition-all disabled:opacity-50 cursor-not-allowed"
                   placeholder="e.g. F-001"
                 />
@@ -390,7 +443,9 @@ export default function FleetAssignManager() {
                   type="text"
                   value={formData.fleet_name}
                   disabled
-                  onChange={(e) => setFormData({ ...formData, fleet_name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, fleet_name: e.target.value })
+                  }
                   className="w-full bg-white/5 border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-amber-500 transition-all uppercase disabled:opacity-50 cursor-not-allowed"
                   placeholder="e.g. B 1234 CD"
                 />
@@ -403,7 +458,9 @@ export default function FleetAssignManager() {
                   type="text"
                   value={formData.fleet_number}
                   disabled
-                  onChange={(e) => setFormData({ ...formData, fleet_number: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, fleet_number: e.target.value })
+                  }
                   className="w-full bg-white/5 border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-amber-500 transition-all disabled:opacity-50 cursor-not-allowed"
                   placeholder="e.g. 01"
                 />
@@ -415,11 +472,17 @@ export default function FleetAssignManager() {
                 <select
                   value={formData.game_id}
                   disabled
-                  onChange={(e) => setFormData({ ...formData, game_id: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, game_id: e.target.value })
+                  }
                   className="w-full bg-white/5 border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-amber-500 transition-all appearance-none cursor-not-allowed disabled:opacity-50"
                 >
-                  <option value="1" className="bg-card">ETS2</option>
-                  <option value="2" className="bg-card">ATS</option>
+                  <option value="1" className="bg-card">
+                    ETS2
+                  </option>
+                  <option value="2" className="bg-card">
+                    ATS
+                  </option>
                 </select>
               </div>
 
@@ -436,10 +499,14 @@ export default function FleetAssignManager() {
                     <select
                       value={formData.model}
                       disabled
-                      onChange={(e) => setFormData({ ...formData, model: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, model: e.target.value })
+                      }
                       className="w-full bg-white/5 border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-amber-500 transition-all appearance-none cursor-not-allowed disabled:opacity-50"
                     >
-                      <option value="" disabled className="bg-card">Pilih Model dari Store</option>
+                      <option value="" disabled className="bg-card">
+                        Pilih Model dari Store
+                      </option>
                       {stores.map((s) => (
                         <option key={s._id} value={s._id} className="bg-card">
                           {s.name} ({s.game_id === 1 ? "ETS2" : "ATS"})
@@ -453,12 +520,23 @@ export default function FleetAssignManager() {
                     </label>
                     <select
                       value={formData.driver}
-                      onChange={(e) => setFormData({ ...formData, driver: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, driver: e.target.value })
+                      }
                       className="w-full bg-white/5 border border-border rounded-xl px-4 py-3 text-amber-500 font-bold focus:outline-none focus:border-amber-500 transition-all appearance-none cursor-pointer"
                     >
-                      <option value="" className="bg-card font-normal text-foreground">-- Kosongkan (Unassigned) --</option>
+                      <option
+                        value=""
+                        className="bg-card font-normal text-foreground"
+                      >
+                        -- Kosongkan (Unassigned) --
+                      </option>
                       {users.map((u) => (
-                        <option key={u._id} value={u._id} className="bg-card text-foreground">
+                        <option
+                          key={u._id}
+                          value={u._id}
+                          className="bg-card text-foreground"
+                        >
                           {u.name}
                         </option>
                       ))}
@@ -478,7 +556,12 @@ export default function FleetAssignManager() {
                       type="number"
                       value={formData.odometer}
                       disabled={isEditMode} // Usually odometer updates from jobs
-                      onChange={(e) => setFormData({ ...formData, odometer: parseInt(e.target.value) || 0 })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          odometer: parseInt(e.target.value) || 0,
+                        })
+                      }
                       className="w-full bg-white/5 border border-border rounded-xl px-4 py-3 text-foreground font-mono focus:outline-none focus:border-amber-500 transition-all disabled:opacity-50"
                     />
                   </div>
@@ -488,12 +571,20 @@ export default function FleetAssignManager() {
                     </label>
                     <select
                       value={formData.wheels}
-                      onChange={(e) => setFormData({ ...formData, wheels: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, wheels: e.target.value })
+                      }
                       className="w-full bg-white/5 border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-amber-500 transition-all appearance-none cursor-pointer"
                     >
-                      <option value="4x2" className="bg-card">4x2</option>
-                      <option value="4x6" className="bg-card">4x6</option>
-                      <option value="4x8" className="bg-card">4x8</option>
+                      <option value="4x2" className="bg-card">
+                        4x2
+                      </option>
+                      <option value="4x6" className="bg-card">
+                        4x6
+                      </option>
+                      <option value="4x8" className="bg-card">
+                        4x8
+                      </option>
                     </select>
                   </div>
                   <div>
@@ -502,12 +593,20 @@ export default function FleetAssignManager() {
                     </label>
                     <select
                       value={formData.status}
-                      onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, status: e.target.value })
+                      }
                       className="w-full bg-white/5 border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-amber-500 transition-all appearance-none cursor-pointer"
                     >
-                      <option value="active" className="bg-card">Active</option>
-                      <option value="inactive" className="bg-card">Inactive</option>
-                      <option value="onservice" className="bg-card">On Service</option>
+                      <option value="active" className="bg-card">
+                        Active
+                      </option>
+                      <option value="inactive" className="bg-card">
+                        Inactive
+                      </option>
+                      <option value="onservice" className="bg-card">
+                        On Service
+                      </option>
                     </select>
                   </div>
                 </div>
@@ -526,7 +625,13 @@ export default function FleetAssignManager() {
                 disabled={isSaving || !formData.id}
                 className="inline-flex items-center gap-2 px-6 py-3 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/20 disabled:opacity-50 rounded-xl font-black text-xs uppercase tracking-widest transition-all"
               >
-                {isSaving ? "Saving..." : <><Save size={14} /> Save Changes</>}
+                {isSaving ? (
+                  "Saving..."
+                ) : (
+                  <>
+                    <Save size={14} /> Save Changes
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -536,14 +641,20 @@ export default function FleetAssignManager() {
       {/* TOAST NOTIFICATION */}
       <div
         className={`fixed bottom-8 right-8 px-6 py-4 rounded-2xl font-bold text-sm shadow-xl transition-all duration-300 flex items-center gap-3 backdrop-blur-md border z-50 ${
-          toast.show ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0 pointer-events-none"
+          toast.show
+            ? "translate-y-0 opacity-100"
+            : "translate-y-4 opacity-0 pointer-events-none"
         } ${
-          toast.type === "error" 
-            ? "bg-red-500/10 text-red-400 border-red-500/20" 
+          toast.type === "error"
+            ? "bg-red-500/10 text-red-400 border-red-500/20"
             : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
         }`}
       >
-        {toast.type === "error" ? <XCircle size={18} /> : <CheckCircle2 size={18} />}
+        {toast.type === "error" ? (
+          <XCircle size={18} />
+        ) : (
+          <CheckCircle2 size={18} />
+        )}
         {toast.message}
       </div>
     </main>

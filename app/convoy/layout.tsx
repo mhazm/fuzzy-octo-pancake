@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import React from "react";
 
 export const metadata: Metadata = {
-  title: "Convoy - Nismara Transport",
+  title: "Convoy",
   description:
     "Lihat berbagai aktifitas konvoi yang diadakan oleh Nismara Transport",
   openGraph: {
-    title: "Convoy - Nismara Transport",
+    title: "Convoy",
     description:
       "Lihat berbagai aktifitas konvoi yang diadakan oleh Nismara Transport",
     images: ["https://images.nismara.my.id/227300_188.jpg"],

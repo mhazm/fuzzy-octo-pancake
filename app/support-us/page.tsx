@@ -17,6 +17,12 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+export const metadata = {
+  title: "Support Us",
+};
+
+
+
 export const revalidate = 86400;
 
 async function getLeaderboardData() {
@@ -128,7 +134,7 @@ export default async function SupportUsPage() {
         <div className="text-center max-w-4xl mx-auto mb-16 space-y-6">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary font-bold uppercase tracking-widest text-xs mb-4">
             <Heart size={14} className="fill-current animate-pulse" />
-            Dukung Nismara Logistics
+            Dukung Nismara Transport
           </div>
           <h1 className="text-5xl md:text-7xl font-black tracking-tighter uppercase italic text-foreground leading-tight">
             Support Our <br className="hidden md:block" /> <span className="text-gradient">Journey</span>

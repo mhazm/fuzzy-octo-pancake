@@ -6,6 +6,12 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import ManageUserUI from "./ManageUserUI";
 import { getDriverStats, getCompanyMemberStats } from "@/lib/trucky";
 
+export const metadata = {
+  title: "Manage Users Detail",
+};
+
+
+
 export default async function AdminUserDetailPage({
   params,
 }: {

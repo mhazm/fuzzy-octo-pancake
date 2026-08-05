@@ -14,10 +14,12 @@ const fleetOrderSchema = new mongoose.Schema(
     discordChannelId: { type: String, required: true }, // ID of the temporary Discord ticket channel
     basePrice: { type: Number, required: true },
     adminFee: { type: Number, required: true, default: 500 },
+    taxFee: { type: Number, required: true, default: 0 },
     nismaraPlusDiscount: { type: Number, default: 0 },
     boosterDiscount: { type: Number, default: 0 },
     totalPrice: { type: Number, required: true },
     requiresGarageUpgrade: { type: Boolean, default: false },
+    upgradeSlotCount: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

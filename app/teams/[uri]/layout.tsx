@@ -23,7 +23,7 @@ export async function generateMetadata(
 
   if (!team) {
     return {
-      title: "Team Not Found | Nismara Logistics",
+      title: "Team Not Found",
     };
   }
 
@@ -42,10 +42,10 @@ export async function generateMetadata(
     title: `${teamName} | Nismara Teams`,
     description: teamDescription,
     openGraph: {
-      title: `${teamName} - Nismara Logistics`,
+      title: `${teamName}`,
       description: teamDescription,
-      url: `https://nismara.web.id/teams/${uri}`,
-      siteName: "Nismara Logistics",
+      url: `https://transport.nismara.web.id/teams/${uri}`,
+      siteName: "Nismara Transport",
       images: [
         {
           url: ogImage,
@@ -58,12 +58,12 @@ export async function generateMetadata(
     },
     twitter: {
       card: "summary_large_image",
-      title: `${teamName} | Nismara Logistics`,
+      title: `${teamName}`,
       description: teamDescription,
       images: [ogImage],
     },
     alternates: {
-      canonical: `https://nismara.web.id/teams/${uri}`,
+      canonical: `https://transport.nismara.web.id/teams/${uri}`,
     },
   };
 }

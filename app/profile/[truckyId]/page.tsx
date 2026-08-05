@@ -38,6 +38,12 @@ import Link from "next/link";
 import { formatDistanceToNow, format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 
+export const metadata = {
+  title: "Profile Detail",
+};
+
+
+
 export default async function PublicProfilePage(props: {
   params: Promise<{ truckyId: string }>;
 }) {
@@ -159,16 +165,12 @@ export default async function PublicProfilePage(props: {
     recentDuration: 0,
   };
   const recentHours = Math.floor(jobStats.recentDuration / 3600);
-
-  if (!currencies || !points) notFound();
   const membersMap = await getCompanyMembersMap(35643);
   const member = membersMap[Number(truckyId)];
 
-  if (!member) notFound();
-
   // Helper formatting
   const formatNum = (num: number) => num?.toLocaleString("id-ID") || "0";
-  const rankColor = member.rank?.color || "#7e57c2";
+  const rankColor = member?.rank?.color || "#7e57c2";
 
   // XP & Level calculations
   const level = user.level || 1;
@@ -230,9 +232,9 @@ export default async function PublicProfilePage(props: {
               >
                 <img
                   src={
-                    user.image || member.avatar_url || "/placeholder-avatar.png"
+                    user.image || member?.avatar_url || "/placeholder-avatar.png"
                   }
-                  alt={member.name}
+                  alt={user.name || member?.name || "Driver"}
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -244,14 +246,14 @@ export default async function PublicProfilePage(props: {
                 <div>
                   <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
                     <h1 className="text-3xl md:text-5xl font-black text-foreground tracking-tight drop-shadow-md">
-                      {user.name || member.name}
+                      {user.name || member?.name || "Driver"}
                     </h1>
                     {user.isBooster === true && <ServerBoosterBadge className="w-8 h-8 md:w-10 md:h-10" />}
                     {user.nismaraplus?.status === true && <NismaraPlusBadge className="w-7 h-7 md:w-9 md:h-9" />}
                   </div>
                   <p className="text-muted-foreground font-medium mt-1 md:mt-2 text-sm md:text-base flex items-center justify-center md:justify-start gap-2">
                     <MapPin className="w-4 h-4" />{" "}
-                    {member.language || "Indonesian"}
+                    {member?.language || "Indonesian"}
                   </p>
                 </div>
 
@@ -283,7 +285,7 @@ export default async function PublicProfilePage(props: {
                     backgroundColor: `${rankColor}11`,
                   }}
                 >
-                  {member.rank?.name || "Driver"}
+                  {member?.rank?.name || user.discordRole || "Intern / Driver"}
                 </span>
                 {user.nismaraplus?.status && (
                   <span 
@@ -351,7 +353,7 @@ export default async function PublicProfilePage(props: {
                   <div className="flex flex-wrap items-center gap-6 mt-4">
                     <div>
                       <p className="text-3xl font-light text-foreground">
-                        {formatNum(member.total_driven_distance_km)}
+                        {formatNum(member?.total_driven_distance_km || 0)}
                       </p>
                       <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold mt-1">
                         KM Driven
@@ -412,7 +414,7 @@ export default async function PublicProfilePage(props: {
               <div className="bg-card/40 backdrop-blur-sm p-5 rounded-2xl border border-border/50 text-center hover:bg-card/60 transition-colors">
                 <Coins className="w-6 h-6 mx-auto mb-2 text-yellow-500" />
                 <p className="text-xl font-black text-foreground">
-                  {formatNum(currencies.totalNC)}
+                  {formatNum(currencies?.totalNC || 0)}
                 </p>
                 <p className="text-[10px] font-bold text-muted-foreground uppercase mt-1">
                   Saldo NC
@@ -421,7 +423,7 @@ export default async function PublicProfilePage(props: {
               <div className="bg-card/40 backdrop-blur-sm p-5 rounded-2xl border border-border/50 text-center hover:bg-card/60 transition-colors">
                 <Package className="w-6 h-6 mx-auto mb-2 text-emerald-500" />
                 <p className="text-xl font-black text-foreground">
-                  {formatNum(member.total_cargo_mass_t)}
+                  {formatNum(member?.total_cargo_mass_t || 0)}
                 </p>
                 <p className="text-[10px] font-bold text-muted-foreground uppercase mt-1">
                   Total Kargo (t)
@@ -439,7 +441,7 @@ export default async function PublicProfilePage(props: {
               <div className="bg-card/40 backdrop-blur-sm p-5 rounded-2xl border border-border/50 text-center hover:bg-card/60 transition-colors">
                 <TriangleAlert className="w-6 h-6 mx-auto mb-2 text-red-500" />
                 <p className="text-xl font-black text-foreground">
-                  {formatNum(points.totalPoints)}
+                  {formatNum(points?.totalPoints || 0)}
                 </p>
                 <p className="text-[10px] font-bold text-muted-foreground uppercase mt-1">
                   Penalti
@@ -529,7 +531,7 @@ export default async function PublicProfilePage(props: {
                     Bergabung
                   </span>
                   <span className="text-sm font-bold text-foreground bg-background/50 px-2 py-1 rounded border border-border/50">
-                    {new Date(member?.created_at).toLocaleDateString("id-ID")}
+                    {new Date(member?.created_at || user.createdAt || Date.now()).toLocaleDateString("id-ID")}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
@@ -537,7 +539,7 @@ export default async function PublicProfilePage(props: {
                     Role
                   </span>
                   <span className="text-sm font-bold text-foreground">
-                    {member?.role?.name}
+                    {member?.role?.name || user.discordRole || "Member"}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
@@ -675,8 +677,8 @@ export default async function PublicProfilePage(props: {
             isOwner={isOwner} 
             discordId={String(loggedInDiscordId || "")} 
             loggedInUserTruckyId={loggedInUserTruckyId}
-            profileName={user.name || member.name || "Pemilik"}
-            profileAvatar={user.image || member.avatar_url || "/placeholder-avatar.png"}
+            profileName={user.name || member?.name || "Pemilik"}
+            profileAvatar={user.image || member?.avatar_url || "/placeholder-avatar.png"}
             profileDiscordId={userDiscordId}
             profileIsNismaraPlus={user.nismaraplus?.status === true}
             profileIsBooster={user.isBooster === true}

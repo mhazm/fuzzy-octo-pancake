@@ -44,6 +44,7 @@ export default function BuyFleetWizard({
   // Kalkulasi harga (Total diskon gabungan maskimal 40% jika Nismara+ dan Booster)
   const basePrice = selectedModel?.price || 0;
   const adminFee = 500;
+  const taxFee = Math.round(basePrice * 0.11);
 
   let nismaraPlusDiscount = 0;
   let boosterDiscount = 0;
@@ -51,11 +52,19 @@ export default function BuyFleetWizard({
   if (user.isNismaraPlus) nismaraPlusDiscount = basePrice * 0.2;
   if (user.isBooster) boosterDiscount = basePrice * 0.2;
 
-  const needsUpgrade = garage ? garage.fleetSlotUsed >= garage.fleetSlot : false;
-  const upgradeFee = needsUpgrade ? 1000 : 0;
+  let upgradeFee = 0;
+  let upgradeSlotCount = 0;
+  let needsUpgrade = false;
+
+  if (garage && garage.fleetSlotUsed >= garage.fleetSlot) {
+    needsUpgrade = true;
+    const deficit = garage.fleetSlotUsed - garage.fleetSlot;
+    upgradeSlotCount = deficit + 1;
+    upgradeFee = upgradeSlotCount * 1000;
+  }
 
   const totalPrice =
-    basePrice - nismaraPlusDiscount - boosterDiscount + adminFee + upgradeFee;
+    basePrice + taxFee - nismaraPlusDiscount - boosterDiscount + adminFee + upgradeFee;
   const canAfford = user.balance >= totalPrice;
 
   const handleConfirm = async () => {
@@ -329,6 +338,18 @@ export default function BuyFleetWizard({
 
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-muted-foreground font-bold flex items-center gap-2">
+                        Pajak{" "}
+                        <span className="px-2 py-0.5 bg-muted rounded text-[9px] uppercase tracking-widest">
+                          11%
+                        </span>
+                      </span>
+                      <span className="font-black tabular-nums">
+                        +{taxFee.toLocaleString("id-ID")} NC
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground font-bold flex items-center gap-2">
                         Biaya Admin{" "}
                         <span className="px-2 py-0.5 bg-muted rounded text-[9px] uppercase tracking-widest">
                           Fixed
@@ -342,7 +363,7 @@ export default function BuyFleetWizard({
                     {needsUpgrade && (
                       <div className="flex justify-between items-center text-sm">
                         <span className="text-muted-foreground font-bold flex items-center gap-2">
-                          Upgrade Slot Garasi{" "}
+                          Upgrade Slot Garasi (+{upgradeSlotCount} Slot){" "}
                           <span className="px-2 py-0.5 bg-amber-500/20 text-amber-500 rounded text-[9px] uppercase tracking-widest">
                             Wajib
                           </span>

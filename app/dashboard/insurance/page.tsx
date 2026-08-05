@@ -14,6 +14,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+export const metadata = {
+  title: "Insurance",
+};
+
 export const dynamic = "force-dynamic";
 
 export default async function InsurancePage() {
@@ -95,13 +99,18 @@ export default async function InsurancePage() {
 
   // Kalkulasi harga dinamis di UI jika mau beli
   const isBooster = (session.user as any)?.isBooster;
+  const isNismaraPlus = (session.user as any)?.nismaraplus?.status === true;
   const BASE_PRICE = 5000;
   const currentRating = insurance.rating ?? 100;
   let currentPrice = BASE_PRICE + (100 - currentRating) * 50;
   const originalPrice = currentPrice;
 
-  if (isBooster) {
-    currentPrice = Math.floor(currentPrice * 0.7);
+  let totalDiscountPercent = 0;
+  if (isBooster) totalDiscountPercent += 30;
+  if (isNismaraPlus) totalDiscountPercent += 30;
+
+  if (totalDiscountPercent > 0) {
+    currentPrice = Math.floor(currentPrice * (1 - totalDiscountPercent / 100));
   }
 
   return (
@@ -133,7 +142,7 @@ export default async function InsurancePage() {
           <p className="text-muted-foreground text-sm mt-1">
             Aktifkan Asuransi untuk proteksi dari denda kerusakan selama
             pengiriman barang. Asuransi dapat mengkompensasi denda kerusakaan
-            sebanyak 40% dari denda kerusakaan disetiap pekerjaan anda. Proteksi
+            sebanyak 30% dari denda kerusakaan disetiap pekerjaan anda. Proteksi
             berlaku selama 30 hari
           </p>
 
@@ -164,6 +173,14 @@ export default async function InsurancePage() {
             {isBooster && (
               <div className="flex justify-between text-emerald-500 font-bold border-t border-border pt-3 mt-1">
                 <span>Diskon Server Booster (30%):</span>
+                <span>
+                  -{Math.floor(originalPrice * 0.3).toLocaleString()} NC
+                </span>
+              </div>
+            )}
+            {isNismaraPlus && (
+              <div className="flex justify-between text-emerald-500 font-bold border-t border-border pt-2 mt-1">
+                <span>Diskon Nismara+ VIP (30%):</span>
                 <span>
                   -{Math.floor(originalPrice * 0.3).toLocaleString()} NC
                 </span>

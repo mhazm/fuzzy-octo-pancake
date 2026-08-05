@@ -6,6 +6,12 @@ import { Truck, Plus, History, Activity, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+export const metadata = {
+  title: "Fleet",
+};
+
+
+
 export const dynamic = "force-dynamic";
 
 export default async function FleetDashboardPage() {

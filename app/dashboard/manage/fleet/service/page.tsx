@@ -14,6 +14,12 @@ import {
 import Link from "next/link";
 import ServiceActionClient from "./ServiceActionClient";
 
+export const metadata = {
+  title: "Manage Service",
+};
+
+
+
 export const dynamic = "force-dynamic";
 
 export default async function ManagerServicePage() {

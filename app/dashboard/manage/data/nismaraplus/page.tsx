@@ -4,6 +4,12 @@ import clientPromise from "@/lib/mongodb";
 import { redirect } from "next/navigation";
 import NismaraPlusManagerClient from "./NismaraPlusManagerClient";
 
+export const metadata = {
+  title: "Manage Nismaraplus",
+};
+
+
+
 export const dynamic = "force-dynamic";
 
 export function Loading() {

@@ -6,6 +6,12 @@ import RegisterFormClient from "./RegisterFormClient";
 import { FileCheck, ShieldAlert, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
+export const metadata = {
+  title: "Register",
+};
+
+
+
 export default async function RegisterPage() {
   const session = await getServerSession(authOptions);
 

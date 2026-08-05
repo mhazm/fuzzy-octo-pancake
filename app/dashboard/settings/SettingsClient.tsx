@@ -13,7 +13,9 @@ import {
   CheckCircle,
   UploadCloud,
   ShieldAlert,
+  Link,
 } from "lucide-react";
+import { compressImageToWebP } from "@/lib/imageUtils";
 
 export default function SettingsClient() {
   const { data: session, update } = useSession();
@@ -36,6 +38,16 @@ export default function SettingsClient() {
     background: false,
   });
 
+  const [socialMedia, setSocialMedia] = useState({
+    youtube: "",
+    facebook: "",
+    instagram: "",
+    twitter: "",
+    tiktok: "",
+    world_of_truck: "",
+    website: "",
+  });
+
   // LOGIKA PENGAMBILAN DATA AWAL
   useEffect(() => {
     async function fetchInitialData() {
@@ -45,6 +57,17 @@ export default function SettingsClient() {
         setAvatarUrl(data.image);
         setBannerUrl(data.bannerUrl);
         setBgUrl(data.backgroundUrl);
+        if (data.social_media) {
+          setSocialMedia({
+            youtube: data.social_media.youtube || "",
+            facebook: data.social_media.facebook || "",
+            instagram: data.social_media.instagram || "",
+            twitter: data.social_media.twitter || "",
+            tiktok: data.social_media.tiktok || "",
+            world_of_truck: data.social_media.world_of_truck || "",
+            website: data.social_media.website || "",
+          });
+        }
       }
       setIsInitialLoading(false);
     }
@@ -59,23 +82,35 @@ export default function SettingsClient() {
     e: React.ChangeEvent<HTMLInputElement>,
     type: "avatar" | "banner" | "background",
   ) => {
-    const file = e.target.files?.[0];
+    let file = e.target.files?.[0];
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      alert("Format tidak didukung!");
+      alert("Format tidak didukung! Harap unggah gambar.");
       return;
     }
 
-    const MAX_SIZE = 4 * 1024 * 1024;
+    const isNismaraPlus = (session?.user as any)?.nismaraplus?.status === true;
+    
+    // Validasi Format
+    if (!isNismaraPlus && file.type === "image/gif") {
+      alert("Hanya member Nismara+ yang diizinkan mengunggah GIF.");
+      return;
+    }
+
+    // Validasi Ukuran
+    const MAX_SIZE = isNismaraPlus ? 10 * 1024 * 1024 : 3 * 1024 * 1024;
     if (file.size > MAX_SIZE) {
-      alert(`Maksimal 4MB.`);
+      alert(`Maksimal ukuran file adalah ${isNismaraPlus ? "10MB" : "3MB"}.`);
       return;
     }
 
     setIsUploading((prev) => ({ ...prev, [type]: true }));
 
     try {
+      // Kompresi (otomatis bypass GIF di imageUtils)
+      file = await compressImageToWebP(file, isNismaraPlus ? 10 : 3, 1920);
+
       const res = await fetch("/api/upload", {
         method: "POST",
         body: JSON.stringify({
@@ -99,6 +134,7 @@ export default function SettingsClient() {
       }
     } catch (error) {
       console.error(error);
+      alert("Gagal mengunggah gambar.");
     } finally {
       setIsUploading((prev) => ({ ...prev, [type]: false }));
       e.target.value = "";
@@ -108,6 +144,24 @@ export default function SettingsClient() {
   async function handleSubmit(formData: FormData) {
     setIsLoading(true);
     setMessage(null);
+
+    // Validasi URL Sosial Media
+    const validators = {
+      youtube: (url: string) => url === "" || url.includes("youtube.com") || url.includes("youtu.be"),
+      facebook: (url: string) => url === "" || url.includes("facebook.com") || url.includes("fb.com"),
+      instagram: (url: string) => url === "" || url.includes("instagram.com"),
+      twitter: (url: string) => url === "" || url.includes("twitter.com") || url.includes("x.com"),
+      tiktok: (url: string) => url === "" || url.includes("tiktok.com"),
+      world_of_truck: (url: string) => url === "" || url.includes("worldoftrucks.com"),
+    };
+
+    for (const [key, validator] of Object.entries(validators)) {
+      if (!validator(formData.get(key) as string)) {
+        setMessage({ type: "error", text: `Link ${key} tidak valid. Pastikan sesuai dengan platformnya!` });
+        setIsLoading(false);
+        return;
+      }
+    }
 
     const result = await updateProfile(formData);
 
@@ -127,15 +181,15 @@ export default function SettingsClient() {
   // Tampilan saat loading data dari DB
   if (isInitialLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="flex items-center justify-center py-32">
         <Loader2 className="w-10 h-10 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <main className="min-h-screen pt-24 pb-12 bg-background">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <main className="p-6">
+      <div className="max-w-4xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-black text-foreground">
             Profile Settings
@@ -297,6 +351,37 @@ export default function SettingsClient() {
                 </label>
                 <input type="hidden" name="backgroundUrl" value={bgUrl} />
               </div>
+            </div>
+          </div>
+
+          <div className="glass-panel p-8 rounded-[2rem] border-border/50">
+            <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
+              <Link className="text-pink-500 w-5 h-5" /> Tautan Sosial Media
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {[
+                { id: "youtube", label: "YouTube URL", placeholder: "https://youtube.com/..." },
+                { id: "facebook", label: "Facebook URL", placeholder: "https://facebook.com/..." },
+                { id: "instagram", label: "Instagram URL", placeholder: "https://instagram.com/..." },
+                { id: "twitter", label: "Twitter / X URL", placeholder: "https://twitter.com/..." },
+                { id: "tiktok", label: "TikTok URL", placeholder: "https://tiktok.com/..." },
+                { id: "world_of_truck", label: "World of Trucks URL", placeholder: "https://worldoftrucks.com/..." },
+                { id: "website", label: "Website Pribadi", placeholder: "https://my-website.com" },
+              ].map((platform) => (
+                <div key={platform.id} className="space-y-2">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                    {platform.label}
+                  </label>
+                  <input
+                    type="url"
+                    name={platform.id}
+                    value={socialMedia[platform.id as keyof typeof socialMedia]}
+                    onChange={(e) => setSocialMedia({ ...socialMedia, [platform.id]: e.target.value })}
+                    placeholder={platform.placeholder}
+                    className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-pink-500 transition-colors"
+                  />
+                </div>
+              ))}
             </div>
           </div>
 

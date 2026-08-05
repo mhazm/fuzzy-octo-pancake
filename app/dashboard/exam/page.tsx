@@ -4,6 +4,12 @@ import { redirect } from "next/navigation";
 import clientPromise from "@/lib/mongodb";
 import ExamClient from "./ExamClient";
 
+export const metadata = {
+  title: "Exam",
+};
+
+
+
 export default async function ExamPage() {
   const session = await getServerSession(authOptions);
 

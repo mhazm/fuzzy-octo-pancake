@@ -7,6 +7,12 @@ import SettingsClient from "./SettingsClient"; // Kita pindahkan logic form ke s
 import { ShieldAlert, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
+export const metadata = {
+  title: "Settings",
+};
+
+
+
 export default async function SettingsPage() {
   const session = await getServerSession(authOptions);
 

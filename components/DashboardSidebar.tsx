@@ -18,6 +18,7 @@ import {
   ReceiptText,
   BookOpen,
   User2,
+  Shield,
 } from "lucide-react";
 
 const menuItems = [
@@ -28,6 +29,7 @@ const menuItems = [
   { name: "Nismara Coin", href: "/dashboard/currency", icon: Coins },
   { name: "Points Penalty", href: "/dashboard/points", icon: TriangleAlert },
   { name: "Tickets", href: "/dashboard/ticket", icon: FileText },
+  { name: "Insurance", href: "/dashboard/insurance", icon: Shield },
   { name: "My Market", href: "/dashboard/my-market", icon: Briefcase },
   { name: "My Library", href: "/dashboard/library", icon: FileText },
   { name: "Profile Settings", href: "/dashboard/settings", icon: Settings },
@@ -36,7 +38,7 @@ const menuItems = [
 const managementItems = [
   { name: "Manager Overview", href: "/dashboard/manage", icon: ShieldCheck },
   {
-    name: "User Data",
+    name: "Manage Data",
     href: "/dashboard/manage/data",
     icon: User2,
   },

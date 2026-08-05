@@ -7,6 +7,10 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import Link from "next/link";
 import { ArrowLeft, MonitorPlay } from "lucide-react";
 
+
+
+
+
 export async function generateMetadata(props: { params: Promise<{ postId: string }> }): Promise<Metadata> {
   const { postId } = await props.params;
 
@@ -21,7 +25,7 @@ export async function generateMetadata(props: { params: Promise<{ postId: string
 
     const user = await db.collection("users").findOne({ discordId: post.userId });
     const title = user?.name ? `Postingan Truk dari ${user.name}` : "Galeri Truk Nismara";
-    const desc = post.caption || "Lihat koleksi foto perjalanan dan armada kebanggaan di Nismara Logistics.";
+    const desc = post.caption || "Lihat koleksi foto perjalanan dan armada kebanggaan di Nismara Transport.";
 
     return {
       title,

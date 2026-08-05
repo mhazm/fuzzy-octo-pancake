@@ -3,6 +3,12 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
 import AchievementManagerClient from "./AchievementManagerClient";
 
+export const metadata = {
+  title: "Manage Achievement",
+};
+
+
+
 export default async function AchievementPage() {
   const session = await getServerSession(authOptions);
 

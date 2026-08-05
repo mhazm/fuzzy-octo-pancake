@@ -2,27 +2,30 @@ import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import Fleet from "@/lib/models/Fleet";
 import "@/lib/models/FleetStore"; // Ensure it's registered for populate
-import "@/lib/models/User";       // Ensure it's registered for populate
-import "@/lib/models/FleetBrand"; 
+import "@/lib/models/User"; // Ensure it's registered for populate
+import "@/lib/models/FleetBrand";
 
 import dbConnect from "@/lib/mongoose";
 export async function GET() {
   try {
     await dbConnect();
-    
+
     const fleets = await Fleet.find({})
       .populate({
         path: "model",
-        populate: { path: "brand" }
+        populate: { path: "brand" },
       })
-      .populate("driver")
+      .populate("owner")
       .sort({ createdAt: -1 })
       .lean();
-      
+
     return NextResponse.json(fleets);
   } catch (error) {
     console.error("GET Fleet Assign Error:", error);
-    return NextResponse.json({ error: "Gagal mengambil data fleet assign" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Gagal mengambil data fleet assign" },
+      { status: 500 },
+    );
   }
 }
 
@@ -31,8 +34,18 @@ export async function POST(request: Request) {
     await dbConnect();
     const data = await request.json();
 
-    if (!data.id || !data.fleet_name || !data.game_id || !data.fleet_number || !data.model || data.odometer === undefined) {
-      return NextResponse.json({ error: "Kolom wajib belum diisi" }, { status: 400 });
+    if (
+      !data.id ||
+      !data.fleet_name ||
+      !data.game_id ||
+      !data.fleet_number ||
+      !data.model ||
+      data.odometer === undefined
+    ) {
+      return NextResponse.json(
+        { error: "Kolom wajib belum diisi" },
+        { status: 400 },
+      );
     }
 
     const newFleet = await Fleet.create({
@@ -49,9 +62,16 @@ export async function POST(request: Request) {
       has_insurance: data.has_insurance || false,
     });
 
-    return NextResponse.json({ success: true, message: "Fleet berhasil ditambahkan!", data: newFleet });
+    return NextResponse.json({
+      success: true,
+      message: "Fleet berhasil ditambahkan!",
+      data: newFleet,
+    });
   } catch (error) {
     console.error("POST Fleet Assign Error:", error);
-    return NextResponse.json({ error: "Gagal menambahkan fleet" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Gagal menambahkan fleet" },
+      { status: 500 },
+    );
   }
 }

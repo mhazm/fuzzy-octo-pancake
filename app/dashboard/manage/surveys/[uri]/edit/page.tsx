@@ -4,6 +4,12 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import EditSurveyForm from "./EditSurveyForm";
 
+export const metadata = {
+  title: "Manage Edit",
+};
+
+
+
 export const dynamic = "force-dynamic";
 
 // Menggunakan tipe "any" sementara untuk params agar aman dari perubahan versi Next.js

@@ -17,6 +17,12 @@ import {
 } from "lucide-react";
 import DriverAccessBlocker from "@/components/DriverAccessBlocker";
 
+export const metadata = {
+  title: "Jobs",
+};
+
+
+
 // 1. PERBAIKAN: Ubah tipe searchParams menjadi Promise
 interface JobsPageProps {
   searchParams: Promise<{

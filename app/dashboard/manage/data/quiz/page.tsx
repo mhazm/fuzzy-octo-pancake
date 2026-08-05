@@ -3,6 +3,12 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
 import QuizManagerClient from "./QuizManagerClient";
 
+export const metadata = {
+  title: "Manage Quiz",
+};
+
+
+
 export default async function QuizManagerPage() {
   const session = await getServerSession(authOptions);
 

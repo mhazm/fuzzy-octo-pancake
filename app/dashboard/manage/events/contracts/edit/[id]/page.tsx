@@ -6,6 +6,12 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import EditContractForm from "./EditContractForm";
 import { FileEdit } from "lucide-react";
 
+export const metadata = {
+  title: "Manage Edit Detail",
+};
+
+
+
 export default async function EditContractPage({
   params,
 }: {

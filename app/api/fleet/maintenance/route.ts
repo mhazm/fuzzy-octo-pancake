@@ -14,7 +14,7 @@ import { getCurrencyData } from "@/app/dashboard/currency/actions";
 import dbConnect from "@/lib/mongoose";
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const GUILD_ID = process.env.DISCORD_GUILD_ID;
-const CATEGORY_ID = process.env.DISCORD_PLUS_CATEGORY_ID; // Or any specific category for maintenance
+const CATEGORY_ID = process.env.DISCORD_SERVICE_FLEET_CATEGORY_ID; // Or any specific category for maintenance
 const MANAGER_ROLE_ID = process.env.DISCORD_MANAGER_ROLE_ID;
 
 export async function POST(request: Request) {
@@ -147,12 +147,12 @@ export async function POST(request: Request) {
     if (isReplace) {
       if (needsEngine) serviceDuration += getBoostedDuration(9, "mesin");
       if (needsTires) serviceDuration += getBoostedDuration(3, "ban");
-      if (needsTransmission) serviceDuration += getBoostedDuration(15, "mesin"); // Transmission falls under mesin usually
+      if (needsTransmission) serviceDuration += getBoostedDuration(12, "mesin"); // Transmission falls under mesin usually
       if (needsBrakes) serviceDuration += getBoostedDuration(3, "umum"); // Brakes under umum
     } else {
       if (needsEngine) serviceDuration += getBoostedDuration(3, "mesin");
       if (needsTires) serviceDuration += getBoostedDuration(1, "ban");
-      if (needsTransmission) serviceDuration += getBoostedDuration(5, "mesin");
+      if (needsTransmission) serviceDuration += getBoostedDuration(4, "mesin");
       if (needsBrakes) serviceDuration += getBoostedDuration(1, "umum");
     }
 

@@ -3,24 +3,27 @@ import Link from "next/link";
 import clientPromise from "@/lib/mongodb";
 import { Session } from "next-auth";
 
-export default async function DriverAccessBlocker({ session }: { session: Session }) {
-  if (!session?.user?.discordId) return null;
+export default async function DriverAccessBlocker({ session }: { session: Session | null }) {
+  let isPending = false;
+  let discordChannelLink = "#";
 
-  const client = await clientPromise;
-  const db = client.db();
-  
-  // Periksa apakah user memiliki pendaftaran yang sedang pending
-  const registration = await db.collection("registrations").findOne({ 
-    userId: session.user.discordId,
-    status: "pending"
-  });
+  if (session?.user?.discordId) {
+    const client = await clientPromise;
+    const db = client.db();
+    
+    // Periksa apakah user memiliki pendaftaran yang sedang pending
+    const registration = await db.collection("registrations").findOne({ 
+      userId: session.user.discordId,
+      status: "pending"
+    });
 
-  const isPending = !!registration;
-  
-  // Jika pending, buat link langsung ke channel tiket Discord mereka
-  const discordChannelLink = registration?.discordChannelId 
-    ? `https://discord.com/channels/${process.env.DISCORD_GUILD_ID || "123456789"}/${registration.discordChannelId}`
-    : "#";
+    isPending = !!registration;
+    
+    // Jika pending, buat link langsung ke channel tiket Discord mereka
+    discordChannelLink = registration?.discordChannelId 
+      ? `https://discord.com/channels/${process.env.DISCORD_GUILD_ID || "123456789"}/${registration.discordChannelId}`
+      : "#";
+  }
 
   return (
     <main className="min-h-[80vh] w-full flex items-center justify-center p-6 bg-background">
@@ -43,7 +46,7 @@ export default async function DriverAccessBlocker({ session }: { session: Sessio
           <p className="text-foreground/50 font-medium leading-relaxed">
             {isPending 
               ? "Kamu sedang dalam proses pendaftaran VTC. Silakan cek channel tiket discord kamu untuk berkomunikasi dengan Staff HR kami."
-              : "Kamu belum terdaftar sebagai pengemudi resmi Nismara Logistics. Fitur dashboard ini hanya tersedia untuk anggota aktif."}
+              : "Kamu belum terdaftar sebagai pengemudi resmi Nismara Transport. Fitur dashboard ini hanya tersedia untuk anggota aktif."}
           </p>
         </div>
 

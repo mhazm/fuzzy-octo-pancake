@@ -6,6 +6,7 @@ import HeroSlider from "@/components/HeroSlider";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import Link from "next/link";
 import { NismaraIcon } from "@/components/icons/SocialMedia";
+import { getMonthlyStats } from "@/lib/trucky";
 import {
   ShieldCheck,
   Trophy,
@@ -20,6 +21,7 @@ import {
   Map,
   Plane,
   CarFront,
+  BarChart3,
 } from "lucide-react";
 
 const getGameInfo = (id: string) => {
@@ -36,6 +38,7 @@ export default async function Home() {
   const db = client.db();
   const guildId = process.env.DISCORD_GUILD_ID;
   const now = new Date();
+  const NISMARA_COMPANY_ID = process.env.TRUCKY_COMPANY_ID || "4138";
 
   // 1. Fetch Real Data Secara Paralel
   const [
@@ -45,47 +48,29 @@ export default async function Home() {
     ncStats,
     activeEvents,
     activeContracts,
+    monthlyStats,
   ] = await Promise.all([
+    // All-time Stats
     db.collection("driverlinks").countDocuments({ guildId }),
-    db
-      .collection("jobhistories")
-      .countDocuments({ guildId, jobStatus: "COMPLETED" }),
-    db
-      .collection("jobhistories")
-      .aggregate([
-        { $match: { guildId, jobStatus: "COMPLETED" } },
-        { $group: { _id: null, total: { $sum: "$distanceKm" } } },
-      ])
-      .toArray(),
-    db
-      .collection("currencies")
-      .aggregate([
-        { $match: { guildId } },
-        { $group: { _id: null, total: { $sum: "$totalNC" } } },
-      ])
-      .toArray(),
-    // Ambil Event yang rentang waktunya sekarang (startDate <= now <= endDate)
-    db
-      .collection("ncevents")
-      .find({
-        guildId,
-        startDate: { $lte: now },
-        endDate: { $gte: now },
-      })
-      .toArray(),
-    // Ambil Contract yang rentang waktunya sekarang (setAt <= now <= endAt)
-    db
-      .collection("contracts")
-      .find({
-        guildId,
-        setAt: { $lte: now },
-        endAt: { $gte: now },
-      })
-      .toArray(),
+    db.collection("jobhistories").countDocuments({ guildId, jobStatus: "COMPLETED" }),
+    db.collection("jobhistories").aggregate([
+      { $match: { guildId, jobStatus: "COMPLETED" } },
+      { $group: { _id: null, total: { $sum: "$distanceKm" } } },
+    ]).toArray(),
+    db.collection("currencies").aggregate([
+      { $match: { guildId } },
+      { $group: { _id: null, total: { $sum: "$totalNC" } } },
+    ]).toArray(),
+    // Live Ops
+    db.collection("ncevents").find({ guildId, startDate: { $lte: now }, endDate: { $gte: now } }).toArray(),
+    db.collection("contracts").find({ guildId, setAt: { $lte: now }, endAt: { $gte: now } }).toArray(),
+    // This Month Stats from Trucky
+    getMonthlyStats(NISMARA_COMPANY_ID),
   ]);
 
   const totalKm = kmStats[0]?.total || 0;
   const totalNC = ncStats[0]?.total || 0;
+
   const hasLiveOps = activeEvents.length > 0 || activeContracts.length > 0;
   const slugify = (text: string) => text.toLowerCase().replace(/\s+/g, "-");
 
@@ -94,46 +79,25 @@ export default async function Home() {
       {/* 1. HERO SECTION */}
       <HeroSlider isDriver={isDriver} />
 
-      {/* 2. REAL-TIME STATS BAR */}
-      <section className="border-y border-border/50 bg-card/30 backdrop-blur-sm relative z-20 -mt-1">
-        <div className="max-w-7xl mx-auto px-4 py-12 grid grid-cols-2 md:grid-cols-4 gap-8 text-center divide-x divide-border/50">
-          <ScrollReveal delay={0.1}>
-            <p className="text-4xl font-black text-gradient mb-2">
-              {completedJobs.toLocaleString("id-ID")}
-            </p>
-            <p className="text-sm text-gray-400 font-medium uppercase tracking-widest">
-              Pengiriman Sukses
-            </p>
-          </ScrollReveal>
-          <ScrollReveal delay={0.2}>
-            <p className="text-4xl font-black text-gradient mb-2">
-              {totalKm.toLocaleString("id-ID")}
-            </p>
-            <p className="text-sm text-gray-400 font-medium uppercase tracking-widest">
-              KM Jarak Tempuh
-            </p>
-          </ScrollReveal>
-          <ScrollReveal delay={0.3}>
-            <p className="text-4xl font-black text-gradient mb-2">
-              {totalDrivers}
-            </p>
-            <p className="text-sm text-gray-400 font-medium uppercase tracking-widest">
-              Driver Aktif
-            </p>
-          </ScrollReveal>
-          <ScrollReveal delay={0.4}>
-            <p className="text-4xl font-black text-gradient mb-2">
-              {totalNC.toLocaleString("id-ID")}
-            </p>
-            <p className="text-sm text-gray-400 font-medium uppercase tracking-widest">
-              Pendapatan NC
-            </p>
-          </ScrollReveal>
-        </div>
+      {/* 2. ABOUT NISMARA SECTION */}
+      <section className="relative pt-28 pb-12 overflow-hidden z-10">
+         <div className="max-w-4xl mx-auto px-4 text-center space-y-6">
+            <ScrollReveal direction="up">
+               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-4">
+                 <ShieldCheck size={14} /> Tentang Kami
+               </div>
+               <h2 className="text-4xl md:text-5xl font-extrabold text-foreground tracking-tight leading-tight">
+                  Lebih dari sekadar <br className="hidden md:block" /> <span className="text-primary">Komunitas Virtual.</span>
+               </h2>
+               <p className="text-lg md:text-xl text-foreground/60 leading-relaxed font-medium mt-6">
+                  Nismara Transport didirikan dengan visi untuk menciptakan ekosistem simulasi logistik paling profesional, tertata, dan imersif di Indonesia. Kami menggabungkan keseruan bermain Euro Truck Simulator 2 dan American Truck Simulator dengan sistem manajemen Virtual Trucking Company (VTC) berskala nyata.
+               </p>
+            </ScrollReveal>
+         </div>
       </section>
 
-      {/* 2. FEATURES SECTION */}
-      <section className="relative pt-32 pb-48 overflow-hidden border-t border-border/10">
+      {/* 3. FEATURES SECTION */}
+      <section className="relative py-24 overflow-hidden border-t border-border/5">
         {/* Nismara Watermark & Spinning Text */}
         <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none overflow-hidden">
           <div className="relative flex items-center justify-center opacity-[0.03]">
@@ -152,88 +116,198 @@ export default async function Home() {
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-32">
-        {/* Fitur 1 */}
-        <div className="flex flex-col lg:flex-row items-center gap-16">
-          <ScrollReveal direction="right" className="w-full lg:w-1/2">
-            <div className="relative rounded-[3rem] overflow-hidden shadow-2xl border border-primary/20 group">
-              <div className="absolute inset-0 bg-primary/10 group-hover:bg-transparent transition-colors z-10" />
-              <img
-                src="https://images.nismara.my.id/227300_188.jpg"
-                alt="Trucking Operation"
-                className="w-full h-[450px] object-cover group-hover:scale-105 transition-transform duration-1000"
-              />
-            </div>
-          </ScrollReveal>
-          <ScrollReveal direction="left" className="w-full lg:w-1/2 space-y-6">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-bold border border-primary/20">
-              <Radio className="w-4 h-4 animate-pulse" /> Telemetri Real-Time
-            </div>
-            <h2 className="text-4xl md:text-5xl font-extrabold text-(-foreground) leading-tight">
-              Sistem pencatatan <br />
-              otomatis tanpa ribet.
-            </h2>
-            <p className="text-lg text-gray-400 leading-relaxed">
-              Fokus pada jalanan, biarkan sistem kami yang mencatat pekerjaanmu.
-              Terintegrasi penuh dengan Trucky API, setiap kilometer, konsumsi
-              bahan bakar, dan kargo yang Anda bawa akan tersinkronisasi
-              langsung ke dalam profil logbook Anda begitu mesin dimatikan.
-            </p>
-            <ul className="space-y-4 pt-4">
-              <li className="flex items-center gap-3 text-gray-300 font-medium">
-                <CheckCircle className="w-5 h-5 text-green-400" /> Sinkronisasi
-                Otomatis ETS2 & ATS
-              </li>
-              <li className="flex items-center gap-3 text-gray-300 font-medium">
-                <CheckCircle className="w-5 h-5 text-green-400" /> Kalkulasi
-                Nismara Coins (NC) Instan
-              </li>
-            </ul>
-          </ScrollReveal>
-        </div>
+          {/* Fitur 1 */}
+          <div className="flex flex-col lg:flex-row items-center gap-16">
+            <ScrollReveal direction="right" className="w-full lg:w-1/2">
+              <div className="relative rounded-[3rem] overflow-hidden shadow-2xl border border-primary/20 group">
+                <div className="absolute inset-0 bg-primary/10 group-hover:bg-transparent transition-colors z-10" />
+                <img
+                  src="https://images.nismara.my.id/227300_188.jpg"
+                  alt="Trucking Operation"
+                  className="w-full h-[450px] object-cover group-hover:scale-105 transition-transform duration-1000"
+                />
+              </div>
+            </ScrollReveal>
+            <ScrollReveal direction="left" className="w-full lg:w-1/2 space-y-6">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-bold border border-primary/20">
+                <Radio className="w-4 h-4 animate-pulse" /> Telemetri Real-Time
+              </div>
+              <h2 className="text-4xl md:text-5xl font-extrabold text-foreground leading-tight tracking-tight">
+                Sistem pencatatan <br />
+                otomatis tanpa ribet.
+              </h2>
+              <p className="text-lg text-gray-400 leading-relaxed font-medium">
+                Fokus pada jalanan, biarkan sistem kami yang mencatat pekerjaanmu.
+                Terintegrasi penuh dengan Trucky API, setiap kilometer, konsumsi
+                bahan bakar, dan kargo yang Anda bawa akan tersinkronisasi
+                langsung ke dalam profil logbook Anda begitu mesin dimatikan.
+              </p>
+              <ul className="space-y-4 pt-4">
+                <li className="flex items-center gap-3 text-gray-300 font-medium">
+                  <CheckCircle className="w-5 h-5 text-green-400" /> Sinkronisasi
+                  Otomatis ETS2 & ATS
+                </li>
+                <li className="flex items-center gap-3 text-gray-300 font-medium">
+                  <CheckCircle className="w-5 h-5 text-green-400" /> Kalkulasi
+                  Nismara Coins (NC) Instan
+                </li>
+              </ul>
+            </ScrollReveal>
+          </div>
 
-        {/* Fitur 2 */}
-        <div className="flex flex-col lg:flex-row-reverse items-center gap-16">
-          <ScrollReveal direction="left" className="w-full lg:w-1/2">
-            <div className="relative rounded-[3rem] overflow-hidden shadow-2xl border border-accent-sky/20 group">
-              <div className="absolute inset-0 bg-accent-sky/10 group-hover:bg-transparent transition-colors z-10" />
-              <img
-                src="https://images.nismara.my.id/eut2_hq_68a9a9fe.webp"
-                alt="Global Logistics"
-                className="w-full h-[500px] object-cover group-hover:scale-105 transition-transform duration-1000"
-              />
-            </div>
-          </ScrollReveal>
-          <ScrollReveal direction="right" className="w-full lg:w-1/2 space-y-6">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent-sky/10 text-accent-sky text-sm font-bold border border-accent-sky/20">
-              <Map className="w-4 h-4" /> Global Assignment
-            </div>
-            <h2 className="text-4xl md:text-5xl font-extrabold text-(-foreground) leading-tight">
-              Special Contracts & <br />
-              Papan Peringkat Adil.
-            </h2>
-            <p className="text-lg text-gray-400 leading-relaxed">
-              Bergabunglah dengan ratusan pengemudi lain untuk menyelesaikan
-              misi komunitas global. Kami menerapkan aturan ketat yang
-              memisahkan statistik Ranked (Real Miles) dan Unranked, memastikan
-              kompetisi yang adil bagi seluruh member Nismara.
-            </p>
-            <div className="flex items-center gap-4 pt-4">
-              <Link
-                href="/special-contracts"
-                className="flex items-center gap-2 text-(-foreground) font-bold hover:text-accent-sky transition-colors group"
-              >
-                Lihat Kontrak Aktif{" "}
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </Link>
-            </div>
-          </ScrollReveal>
-        </div>
+          {/* Fitur 2 */}
+          <div className="flex flex-col lg:flex-row-reverse items-center gap-16">
+            <ScrollReveal direction="left" className="w-full lg:w-1/2">
+              <div className="relative rounded-[3rem] overflow-hidden shadow-2xl border border-accent-sky/20 group">
+                <div className="absolute inset-0 bg-accent-sky/10 group-hover:bg-transparent transition-colors z-10" />
+                <img
+                  src="https://images.nismara.my.id/eut2_hq_68a9a9fe.webp"
+                  alt="Global Logistics"
+                  className="w-full h-[500px] object-cover group-hover:scale-105 transition-transform duration-1000"
+                />
+              </div>
+            </ScrollReveal>
+            <ScrollReveal direction="right" className="w-full lg:w-1/2 space-y-6">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent-sky/10 text-accent-sky text-sm font-bold border border-accent-sky/20">
+                <Map className="w-4 h-4" /> Global Assignment
+              </div>
+              <h2 className="text-4xl md:text-5xl font-extrabold text-foreground leading-tight tracking-tight">
+                Special Contracts & <br />
+                Papan Peringkat Adil.
+              </h2>
+              <p className="text-lg text-gray-400 leading-relaxed font-medium">
+                Bergabunglah dengan ratusan pengemudi lain untuk menyelesaikan
+                misi komunitas global. Kami menerapkan aturan ketat yang
+                memisahkan statistik Ranked (Real Miles) dan Unranked, memastikan
+                kompetisi yang adil bagi seluruh member Nismara.
+              </p>
+              <div className="flex items-center gap-4 pt-4">
+                <Link
+                  href="/special-contracts"
+                  className="flex items-center gap-2 text-foreground font-bold hover:text-accent-sky transition-colors group"
+                >
+                  Lihat Kontrak Aktif{" "}
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </Link>
+              </div>
+            </ScrollReveal>
+          </div>
         </div>
       </section>
 
-      {/* 4. EKOSISTEM SECTION */}
+      {/* 4. STATISTICS SECTION (ALL TIME & THIS MONTH) */}
+      <section className="border-y border-border/20 bg-card/40 backdrop-blur-md relative z-20 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 py-24 space-y-16">
+          <ScrollReveal direction="up" className="text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-4">
+              <BarChart3 size={14} /> Data Telemetri
+            </div>
+            <h2 className="text-4xl md:text-5xl font-extrabold text-foreground tracking-tight">
+              Pencapaian Komunitas
+            </h2>
+          </ScrollReveal>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-8 divide-y lg:divide-y-0 lg:divide-x divide-border/20">
+            {/* Bulan Ini (Trucky API) */}
+            <div className="space-y-10 lg:pr-8">
+               <h3 className="text-xl font-bold text-foreground/80 text-center uppercase tracking-widest border-b border-border/10 pb-4">
+                  Bulan Ini {monthlyStats?.month ? `(${monthlyStats.month}/${monthlyStats.year})` : ""}
+               </h3>
+               
+               <div className="grid grid-cols-2 gap-8 text-center">
+                 {/* ETS2 */}
+                 <ScrollReveal delay={0.1} className="space-y-6">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 text-xs font-bold border border-blue-500/20">
+                      ETS2
+                    </div>
+                    <div>
+                      <p className="text-4xl font-black text-gradient mb-2">
+                        {monthlyStats?.ets2?.jobs_completed?.toLocaleString("id-ID") || 0}
+                      </p>
+                      <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">
+                        Pengiriman
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-4xl font-black text-gradient mb-2">
+                        {((monthlyStats?.ets2?.real_km || 0) + (monthlyStats?.ets2?.race_km || 0)).toLocaleString("id-ID")}
+                      </p>
+                      <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">
+                        KM Tempuh
+                      </p>
+                    </div>
+                 </ScrollReveal>
+
+                 {/* ATS */}
+                 <ScrollReveal delay={0.2} className="space-y-6">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 text-red-400 text-xs font-bold border border-red-500/20">
+                      ATS
+                    </div>
+                    <div>
+                      <p className="text-4xl font-black text-gradient mb-2">
+                        {monthlyStats?.ats?.jobs_completed?.toLocaleString("id-ID") || 0}
+                      </p>
+                      <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">
+                        Pengiriman
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-4xl font-black text-gradient mb-2">
+                        {((monthlyStats?.ats?.real_km || 0) + (monthlyStats?.ats?.race_km || 0)).toLocaleString("id-ID")}
+                      </p>
+                      <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">
+                        KM Tempuh
+                      </p>
+                    </div>
+                 </ScrollReveal>
+               </div>
+            </div>
+
+            {/* Sepanjang Waktu */}
+            <div className="space-y-10 lg:pl-8 pt-12 lg:pt-0">
+               <h3 className="text-xl font-bold text-foreground/80 text-center uppercase tracking-widest border-b border-border/10 pb-4">Sepanjang Waktu</h3>
+               <div className="grid grid-cols-2 gap-8 text-center">
+                 <ScrollReveal delay={0.1}>
+                   <p className="text-4xl font-black text-gradient mb-2">
+                     {completedJobs.toLocaleString("id-ID")}
+                   </p>
+                   <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">
+                     Total Pengiriman
+                   </p>
+                 </ScrollReveal>
+                 <ScrollReveal delay={0.2}>
+                   <p className="text-4xl font-black text-gradient mb-2">
+                     {totalKm.toLocaleString("id-ID")}
+                   </p>
+                   <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">
+                     Total KM Tempuh
+                   </p>
+                 </ScrollReveal>
+                 <ScrollReveal delay={0.3}>
+                   <p className="text-4xl font-black text-gradient mb-2">
+                     {totalDrivers}
+                   </p>
+                   <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">
+                     Total Anggota
+                   </p>
+                 </ScrollReveal>
+                 <ScrollReveal delay={0.4}>
+                   <p className="text-4xl font-black text-gradient mb-2">
+                     {totalNC.toLocaleString("id-ID")}
+                   </p>
+                   <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">
+                     NC Beredar
+                   </p>
+                 </ScrollReveal>
+               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 5. EKOSISTEM SECTION */}
       <section 
-        className="pt-64 pb-64 bg-card/40 relative overflow-hidden -mt-[150px] mb-10 z-10"
+        className="pt-48 pb-48 bg-card/40 relative overflow-hidden -mt-[100px] mb-10 z-10"
         style={{
           WebkitMaskImage: `
             url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 200' preserveAspectRatio='none'%3E%3Cpath fill='black' d='M0,200 L0,100 C150,200 250,0 400,100 C550,200 650,0 800,100 C950,200 1050,0 1200,100 L1200,200 Z'/%3E%3C/svg%3E"),
@@ -280,12 +354,12 @@ export default async function Home() {
             direction="up"
             className="text-center max-w-3xl mx-auto mb-20"
           >
-            <h2 className="text-4xl md:text-5xl font-bold text-(-foreground) mb-6">
+            <h2 className="text-4xl md:text-5xl font-extrabold text-foreground mb-6 tracking-tight">
               Satu Identitas. <br />
               Membuka Seluruh <span className="text-primary">Ekosistem</span>.
             </h2>
-            <p className="text-xl text-gray-400">
-              Cukup menggunakan satu akun Discord, kredensial Nismara Logistics
+            <p className="text-xl text-gray-400 font-medium">
+              Cukup menggunakan satu akun Discord, kredensial Nismara Transport
               Anda berlaku untuk seluruh divisi simulasi kami.
             </p>
           </ScrollReveal>
@@ -300,10 +374,10 @@ export default async function Home() {
                     className="w-10 h-10 object-contain"
                   />
                 </div>
-                <h3 className="text-2xl font-bold text-(-foreground) mb-4">
+                <h3 className="text-2xl font-bold text-foreground mb-4">
                   Nismara Transport
                 </h3>
-                <p className="text-gray-400">
+                <p className="text-gray-400 font-medium">
                   Divisi logistik darat utama kami untuk Euro Truck Simulator 2
                   dan American Truck Simulator.
                 </p>
@@ -314,10 +388,10 @@ export default async function Home() {
                 <div className="w-20 h-20 mx-auto bg-accent-sky/10 rounded-2xl flex items-center justify-center mb-8 group-hover:-translate-y-2 transition-transform">
                   <NismaraIcon className="w-10 h-10 text-accent-sky"></NismaraIcon>
                 </div>
-                <h3 className="text-2xl font-bold text-(-foreground) mb-4">
+                <h3 className="text-2xl font-bold text-foreground mb-4">
                   Nismara Airlines
                 </h3>
-                <p className="text-gray-400">
+                <p className="text-gray-400 font-medium">
                   Menguasai ruang udara virtual melalui Microsoft Flight
                   Simulator dengan rute komersial global.
                 </p>
@@ -333,10 +407,10 @@ export default async function Home() {
                       className="w-15 h-15 object-contain"
                     />
                   </div>
-                  <h3 className="text-2xl font-bold text-(-foreground) mb-4">
+                  <h3 className="text-2xl font-bold text-foreground mb-4">
                     Nismara Racing
                   </h3>
-                  <p className="text-gray-400">
+                  <p className="text-gray-400 font-medium">
                     Divisi motorsport kompetitif. Berpacu di sirkuit kelas dunia
                     melalui Assetto Corsa.
                   </p>
@@ -347,7 +421,7 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* 3. LIVE OPERATIONS (CONDITIONAL RENDER) */}
+      {/* 6. LIVE OPERATIONS (CONDITIONAL RENDER) */}
       {hasLiveOps && (
         <section className="py-24 bg-gradient-to-b from-transparent to-primary/5">
           <div className="max-w-7xl mx-auto px-4">
@@ -355,7 +429,7 @@ export default async function Home() {
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-4">
                 <Activity size={14} className="animate-pulse" /> Live Status
               </div>
-              <h2 className="text-5xl font-black text-(-foreground) uppercase tracking-tighter">
+              <h2 className="text-4xl md:text-5xl font-extrabold text-foreground uppercase tracking-tight">
                 Current <span className="text-primary">Operations</span>
               </h2>
             </ScrollReveal>
@@ -377,7 +451,7 @@ export default async function Home() {
                       <span className="text-[10px] font-black text-primary uppercase tracking-[0.4em] flex items-center justify-center sm:justify-start gap-2">
                         <Zap size={12} className="fill-current" /> Special Event
                       </span>
-                      <h3 className="text-2xl font-black text-(-foreground) uppercase italic mt-1 tracking-tight">
+                      <h3 className="text-2xl font-black text-foreground uppercase mt-1 tracking-tight">
                         {event.nameEvent}
                       </h3>
                       <div className="flex items-center justify-center sm:justify-start gap-4 mt-3 text-gray-400">
@@ -419,7 +493,7 @@ export default async function Home() {
                         <span className="text-[10px] font-black text-accent-sky uppercase tracking-[0.4em] flex items-center justify-center sm:justify-start gap-2">
                           <Truck size={12} /> Live Contract
                         </span>
-                        <h3 className="text-2xl font-black text-(-foreground) uppercase mt-1 tracking-tight">
+                        <h3 className="text-2xl font-black text-foreground uppercase mt-1 tracking-tight">
                           {contract.contractName}
                         </h3>
                         <p className="text-xs font-bold text-gray-400 mt-1 uppercase tracking-widest">
@@ -457,7 +531,7 @@ export default async function Home() {
         </section>
       )}
 
-      {/* 4. CALL TO ACTION (REGISTER) */}
+      {/* 7. CALL TO ACTION (REGISTER) */}
       <section className="py-32 relative overflow-hidden">
         {/* Background Accent */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-200 h-200 bg-primary/5 blur-[120px] rounded-full pointer-events-none" />
@@ -467,7 +541,7 @@ export default async function Home() {
           className="max-w-4xl mx-auto px-4 text-center relative z-10"
         >
           <NismaraIcon className="w-20 h-20 text-primary mx-auto mb-8 animate-pulse" />
-          <h2 className="text-6xl font-black text-(-foreground) mb-8 tracking-tighter leading-none">
+          <h2 className="text-5xl md:text-6xl font-extrabold text-foreground mb-8 tracking-tight leading-tight">
             Siap Menghidupkan <br />{" "}
             <span className="text-primary">Mesin Anda?</span>
           </h2>
@@ -480,14 +554,14 @@ export default async function Home() {
             {isDriver ? (
               <Link
                 href="/dashboard"
-                className="px-10 py-5 bg-primary text-white font-black text-sm uppercase tracking-[0.2em] rounded-2xl hover:bg-primary/80 transition-all shadow-[0_0_40px_rgba(126,87,194,0.3)] flex items-center gap-3"
+                className="px-10 py-5 bg-primary text-white font-black text-sm uppercase tracking-[0.2em] rounded-2xl hover:bg-primary/80 transition-all shadow-[0_0_40px_rgba(126,87,194,0.3)] flex items-center justify-center gap-3"
               >
                 Buka Dashboard Utama <ArrowRight size={18} />
               </Link>
             ) : (
               <Link
                 href="/login"
-                className="px-10 py-5 bg-primary text-white font-black text-sm uppercase tracking-[0.2em] rounded-2xl hover:bg-primary/80 transition-all shadow-[0_0_40px_rgba(126,87,194,0.3)] flex items-center gap-3"
+                className="px-10 py-5 bg-primary text-white font-black text-sm uppercase tracking-[0.2em] rounded-2xl hover:bg-primary/80 transition-all shadow-[0_0_40px_rgba(126,87,194,0.3)] flex items-center justify-center gap-3"
               >
                 Daftar Sekarang <ArrowRight size={18} />
               </Link>

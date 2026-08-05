@@ -5,11 +5,11 @@ import GalleryIndexClient from "./GalleryIndexClient";
 import { Grid3X3 } from "lucide-react";
 
 export const metadata = {
-  title: "Galeri | Nismara Transport",
+  title: "Galeri",
   description:
     "Kumpulan foto perjalanan, armada, dan momen terbaik dari komunitas driver Nismara Transport.",
   openGraph: {
-    title: "Galeri | Nismara Transport",
+    title: "Galeri",
     description:
       "Jelajahi karya visual dan dokumentasi konvoi dari ratusan driver Nismara Transport.",
     type: "website",

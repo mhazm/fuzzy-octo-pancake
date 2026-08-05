@@ -3,12 +3,19 @@ import Link from "next/link";
 import { ArrowLeft, Users, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
+
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+
+export const metadata = {
+  title: "Manage Results",
+};
+
+
 
 // Memaksa Next.js agar selalu mengambil data hasil survey terbaru (tanpa cache)
 export const dynamic = "force-dynamic";

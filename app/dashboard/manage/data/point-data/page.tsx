@@ -7,6 +7,12 @@ import { getCompanyMembersMap } from "@/lib/trucky";
 import PointDataUI from "./PointDataUI";
 import { AlertTriangle } from "lucide-react";
 
+export const metadata = {
+  title: "Manage Point Data",
+};
+
+
+
 export default async function PointDataPage() {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "manager") redirect("/dashboard");

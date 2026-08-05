@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
+
   Card,
   CardContent,
   CardHeader,
@@ -18,6 +19,12 @@ import {
   CardDescription,
   CardFooter,
 } from "@/components/ui/card";
+
+export const metadata = {
+  title: "Surveys",
+};
+
+
 
 export const dynamic = "force-dynamic";
 
@@ -67,7 +74,7 @@ export default async function SurveysIndexPage() {
             Survey & Polling <span className="text-transparent bg-clip-text bg-linear-to-r from-primary to-accent-sky">Nismara</span>
           </h1>
           <p className="text-lg text-foreground/60 leading-relaxed">
-            Suara Anda sangat berarti bagi perkembangan Nismara Logistics. Ikuti survey yang tersedia, berikan tanggapan Anda, dan dapatkan hadiah Nismara Coin!
+            Suara Anda sangat berarti bagi perkembangan Nismara Transport. Ikuti survey yang tersedia, berikan tanggapan Anda, dan dapatkan hadiah Nismara Coin!
           </p>
         </header>
 

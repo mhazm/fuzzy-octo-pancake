@@ -5,6 +5,12 @@ import CouponClientCard from "./CouponClientCard";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
+export const metadata = {
+  title: "Coupons",
+};
+
+
+
 export const revalidate = 86400;
 
 // 1. Definisikan Tipe Data (Berdasarkan JSON nismara_db.couponhistories)

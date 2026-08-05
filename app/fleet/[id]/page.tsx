@@ -4,6 +4,12 @@ import { Truck, Activity, AlertCircle, History, Wrench, Coins, XCircle, ArrowLef
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+export const metadata = {
+  title: "Fleet Detail",
+};
+
+
+
 export const revalidate = 120;
 
 export default async function PublicFleetProfilePage({ 

@@ -4,6 +4,12 @@ import { redirect } from "next/navigation";
 import DriverAccessBlocker from "@/components/DriverAccessBlocker";
 import TicketClient from "./TicketClient";
 
+export const metadata = {
+  title: "Ticket",
+};
+
+
+
 export default async function TicketPage() {
   const session = await getServerSession(authOptions);
   

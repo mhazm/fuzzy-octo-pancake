@@ -4,6 +4,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import {
+
   Plus,
   Timer,
   History,
@@ -12,6 +13,12 @@ import {
   ExternalLink,
   ChevronRight,
 } from "lucide-react";
+
+export const metadata = {
+  title: "Manage Convoy",
+};
+
+
 
 async function getConvoyData() {
   const client = await clientPromise;

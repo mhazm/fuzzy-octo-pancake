@@ -4,7 +4,7 @@ import { getCompanyMembersMap } from "@/lib/trucky";
 import DriversClient from "./DriversClient";
 
 export const metadata: Metadata = {
-  title: "Daftar Driver - Nismara Transport",
+  title: "Daftar Driver",
   description:
     "Lihat daftar lengkap seluruh armada pengemudi yang tergabung dalam Nismara Transport.",
 };

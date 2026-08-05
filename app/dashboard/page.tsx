@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getDriverStats, getCompanyMemberStats } from "@/lib/trucky";
 import {
+
   Truck,
   MapPin,
   Gauge,
@@ -23,6 +24,12 @@ import {
   ArrowRight,
   ShieldAlert,
 } from "lucide-react";
+
+export const metadata = {
+  title: "Dashboard",
+};
+
+
 
 function formatWIB(dateInput: string | Date | undefined) {
   if (!dateInput) return "-";

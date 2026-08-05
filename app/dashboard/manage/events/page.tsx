@@ -1,6 +1,7 @@
 // app/dashboard/manage-events/page.tsx
 import Link from "next/link";
 import {
+
   Calendar,
   FileText,
   Zap,
@@ -9,6 +10,12 @@ import {
   ClipboardList,
   Gift,
 } from "lucide-react";
+
+export const metadata = {
+  title: "Manage Events",
+};
+
+
 
 export default function ManageEventsHub() {
   const menu = [

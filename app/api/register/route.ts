@@ -11,7 +11,7 @@ export async function POST(req: Request) {
 
   // Create channel name
   const safeUsername = data.username.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
-  const channelName = `pendaftaran-${safeUsername}`.substring(0, 100);
+  const channelName = `📄|pendaftaran-${safeUsername}`.substring(0, 100);
 
   let discordChannelId = null;
 

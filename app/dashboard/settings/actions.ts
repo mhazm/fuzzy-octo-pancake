@@ -18,6 +18,16 @@ export async function updateProfile(formData: FormData) {
   const bannerUrl = formData.get("bannerUrl") as string; // URL Baru dari R2
   const backgroundUrl = formData.get("backgroundUrl") as string; // URL Baru dari R2
 
+  const social_media = {
+    youtube: formData.get("youtube") as string || "",
+    facebook: formData.get("facebook") as string || "",
+    instagram: formData.get("instagram") as string || "",
+    twitter: formData.get("twitter") as string || "",
+    tiktok: formData.get("tiktok") as string || "",
+    world_of_truck: formData.get("world_of_truck") as string || "",
+    website: formData.get("website") as string || "",
+  };
+
   try {
     const client = await clientPromise;
     const db = client.db();
@@ -61,6 +71,7 @@ export async function updateProfile(formData: FormData) {
           image: image,
           bannerUrl: bannerUrl,
           backgroundUrl: backgroundUrl,
+          social_media: social_media,
           updatedAt: new Date(),
         },
       },
@@ -101,6 +112,15 @@ export async function getUserSettings() {
       image: user.image || "",
       bannerUrl: user.bannerUrl || "",
       backgroundUrl: user.backgroundUrl || "",
+      social_media: user.social_media || {
+        youtube: "",
+        facebook: "",
+        instagram: "",
+        twitter: "",
+        tiktok: "",
+        world_of_truck: "",
+        website: "",
+      },
     };
   } catch (error) {
     console.error("Error fetching settings:", error);

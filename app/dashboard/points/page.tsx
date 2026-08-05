@@ -16,8 +16,8 @@ interface HistoryItem {
 }
 
 export const metadata = {
-  title: "Poin & Penalti | Nismara Logistics",
-  description: "Pantau dan kelola poin penalti Anda di Nismara Logistics.",
+  title: "Poin & Penalti",
+  description: "Pantau dan kelola poin penalti Anda di Nismara Transport.",
 };
 
 export default async function PointsPage() {
@@ -47,7 +47,7 @@ export default async function PointsPage() {
       </div>
 
       <p className="text-muted-foreground max-w-3xl">
-        Pantau poin penalti Anda di Nismara Logistics. Poin yang melewati batas
+        Pantau poin penalti Anda di Nismara Transport. Poin yang melewati batas
         maksimal dapat mengakibatkan sanksi. Anda dapat menebus poin penalti
         menggunakan Nismara Coin (NC).
       </p>

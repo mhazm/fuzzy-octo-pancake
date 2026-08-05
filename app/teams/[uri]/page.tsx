@@ -5,6 +5,10 @@ import { getServerSession } from "next-auth"; // Wajib untuk cek session
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"; // Sesuaikan path ini
 import TeamProfileUI from "./TeamProfileUI";
 
+
+
+
+
 interface PageProps {
   params: Promise<{
     uri: string;

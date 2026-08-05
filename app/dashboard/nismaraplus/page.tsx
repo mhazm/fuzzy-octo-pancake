@@ -21,6 +21,10 @@ import DriverAccessBlocker from "@/components/DriverAccessBlocker";
 import NismaraPlusClient from "./NismaraPlusClient";
 import NismaraPlusClaimClient from "./NismaraPlusClaimClient";
 
+export const metadata = {
+  title: "Nismaraplus",
+};
+
 export const dynamic = "force-dynamic";
 
 // 💡 CONFIG DAFTAR BENEFIT (Sangat Mudah Di-extend Tinggal Tambah Baris Di Sini)
@@ -36,7 +40,7 @@ const PREMIUM_FEATURES = [
   },
   {
     id: "damage-reduction",
-    title: "Potongan Biaya Kerusakan 50%",
+    title: "Potongan Biaya Kerusakan 30%",
     description:
       "Diskon setengah harga denda perbaikan jika armada atau kargo Anda mengalami crash/kerusakan selama trip.",
     icon: Wrench,
@@ -148,15 +152,19 @@ export default async function NismaraPlusPage() {
       {/* KONDISI 1: JIKA USER SUDAH AKTIF PREMIUM-NYA */}
       {isActive ? (
         <div className="space-y-8 animate-in fade-in duration-500">
-          
-          <NismaraPlusClaimClient 
-            lastClaimAt={nismaraplus.lastClaimAt ? new Date(nismaraplus.lastClaimAt).toISOString() : null} 
+          <NismaraPlusClaimClient
+            lastClaimAt={
+              nismaraplus.lastClaimAt
+                ? new Date(nismaraplus.lastClaimAt).toISOString()
+                : null
+            }
           />
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-6">
               <h2 className="text-xl font-bold text-foreground tracking-tight flex items-center gap-2">
-                <Sparkles className="text-amber-400" size={24} /> Benefit Aktif Anda
+                <Sparkles className="text-amber-400" size={24} /> Benefit Aktif
+                Anda
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {PREMIUM_FEATURES.map((feature) => {
@@ -166,7 +174,9 @@ export default async function NismaraPlusPage() {
                       key={feature.id}
                       className="bg-card border border-amber-400/20 p-5 rounded-2xl shadow-sm space-y-2 hover:border-amber-400/50 transition-colors"
                     >
-                      <div className={`p-2.5 ${feature.bgColor} ${feature.iconColor} w-fit rounded-xl`}>
+                      <div
+                        className={`p-2.5 ${feature.bgColor} ${feature.iconColor} w-fit rounded-xl`}
+                      >
                         <IconComponent size={20} />
                       </div>
                       <h3 className="font-bold text-foreground text-sm">
@@ -182,31 +192,51 @@ export default async function NismaraPlusPage() {
             </div>
 
             <div className="space-y-6">
-              <h2 className="text-xl font-bold text-foreground tracking-tight">Status Keanggotaan</h2>
+              <h2 className="text-xl font-bold text-foreground tracking-tight">
+                Status Keanggotaan
+              </h2>
               <div className="bg-card border border-border rounded-2xl p-6 space-y-6 shadow-sm relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-40 h-40 bg-primary/5 rounded-full blur-3xl" />
                 <p className="text-muted-foreground text-sm leading-relaxed relative z-10">
-                  Terima kasih atas kontribusi Anda! Status VIP Premium akun Anda sedang aktif menikmati semua benefit eksklusif.
+                  Terima kasih atas kontribusi Anda! Status VIP Premium akun
+                  Anda sedang aktif menikmati semua benefit eksklusif.
                 </p>
 
                 <div className="space-y-4 relative z-10">
                   <div className="bg-muted/40 p-4 rounded-xl border border-border/50">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tanggal Diaktifkan</p>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Tanggal Diaktifkan
+                    </p>
                     <p className="text-base font-bold text-foreground mt-1">
                       {nismaraplus.startedAt
-                        ? new Date(nismaraplus.startedAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
+                        ? new Date(nismaraplus.startedAt).toLocaleDateString(
+                            "id-ID",
+                            { day: "numeric", month: "long", year: "numeric" },
+                          )
                         : "-"}
                     </p>
                   </div>
-                  
+
                   <div className="bg-muted/40 p-4 rounded-xl border border-amber-400/30 bg-amber-400/5">
-                    <p className="text-xs font-semibold text-amber-500 uppercase tracking-wider">Sisa Waktu</p>
+                    <p className="text-xs font-semibold text-amber-500 uppercase tracking-wider">
+                      Sisa Waktu
+                    </p>
                     <h3 className="text-3xl font-black text-foreground mt-1 tracking-tight">
-                      {Math.ceil((new Date(nismaraplus.expiredAt).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))}
-                      <span className="text-sm font-bold text-muted-foreground ml-1">Hari Lagi</span>
+                      {Math.ceil(
+                        (new Date(nismaraplus.expiredAt).getTime() -
+                          now.getTime()) /
+                          (1000 * 60 * 60 * 24),
+                      )}
+                      <span className="text-sm font-bold text-muted-foreground ml-1">
+                        Hari Lagi
+                      </span>
                     </h3>
                     <p className="text-xs text-muted-foreground mt-2">
-                      Berlaku hingga {new Date(nismaraplus.expiredAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
+                      Berlaku hingga{" "}
+                      {new Date(nismaraplus.expiredAt).toLocaleDateString(
+                        "id-ID",
+                        { day: "numeric", month: "short", year: "numeric" },
+                      )}
                     </p>
                   </div>
                 </div>

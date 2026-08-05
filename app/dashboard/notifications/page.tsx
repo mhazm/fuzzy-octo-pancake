@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import NotificationsClient from "./NotificationsClient";
 
 export const metadata: Metadata = {
-  title: "Notifikasi - Nismara Transport",
+  title: "Notifikasi",
   description: "Lihat semua riwayat notifikasi dan pemberitahuan sistem Anda.",
 };
 

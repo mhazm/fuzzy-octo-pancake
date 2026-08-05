@@ -43,7 +43,7 @@ async function sendDiscordLog(embed: any) {
           {
             ...embed,
             timestamp: new Date().toISOString(),
-            footer: { text: "Nismara Logistics Logging System" },
+            footer: { text: "Nismara Transport Logging System" },
           },
         ],
       }),

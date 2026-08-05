@@ -3,6 +3,12 @@ import { notFound } from "next/navigation";
 import { ObjectId } from "mongodb";
 import EditConvoyForm from "./EditConvoyForm";
 
+export const metadata = {
+  title: "Manage Edit Detail",
+};
+
+
+
 export default async function EditConvoyPage({
   params,
 }: {

@@ -4,6 +4,12 @@ import clientPromise from "@/lib/mongodb";
 import { redirect } from "next/navigation";
 import RegisterManagerUI from "./RegisterManagerUI";
 
+export const metadata = {
+  title: "Manage Register User",
+};
+
+
+
 export default async function ManageRegistrationPage() {
   const session = await getServerSession(authOptions);
 

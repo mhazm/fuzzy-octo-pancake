@@ -3,20 +3,27 @@ import { Noto_Sans, Geist } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import NismaraPlusAdPopup from "@/components/NismaraPlusAdPopup";
 import { Providers } from "@/components/Providers";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import { cn } from "@/lib/utils";
 
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 
 const roboto = Noto_Sans({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Nismara Transport - Virtual Trucking & Logistics Company Indonesia",
+  title: {
+    template: "%s - Nismara Transport",
+    default: "Nismara Transport - Virtual Trucking & Logistics Company Indonesia",
+  },
   description:
     "Nismara Transport adalah perusahaan virtual trucking dan logistik Indonesia yang menghadirkan sistem pengiriman modern, komunitas driver profesional, event convoy, dan manajemen transportasi terintegrasi",
   openGraph: {
-    title: "Nismara Transport - Virtual Trucking & Logistics Company Indonesia",
+    title: {
+      template: "%s - Nismara Transport",
+      default: "Nismara Transport - Virtual Trucking & Logistics Company Indonesia",
+    },
     description:
       "Nismara Transport adalah perusahaan virtual trucking dan logistik Indonesia yang menghadirkan sistem pengiriman modern, komunitas driver profesional, event convoy, dan manajemen transportasi terintegrasi",
     images: ["https://images.nismara.my.id/227300_188.jpg"],
@@ -24,10 +31,13 @@ export const metadata: Metadata = {
   keywords: [
     "Nismara Transport",
     "Nismara Group",
+    "tmp vtc indonesia",
+    "vtc tmp indonesia",
     "Virtual Trucking Company",
     "VTC Indonesia",
     "Truck Simulator Indonesia",
     "ETS2 Indonesia",
+    "VTC ETS2 Indonesia",
     "American Truck Simulator",
     "Komunitas Trucking",
     "Logistics Company",
@@ -37,6 +47,9 @@ export const metadata: Metadata = {
     "Transport Management",
     "Pengiriman Barang",
     "Virtual Driver",
+    "euro truck simulator 2",
+    "american truk simulator",
+    "komunitas ets2 indonesia",
   ],
   robots: {
     index: true,
@@ -62,14 +75,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id" className={cn("dark", "font-sans", geist.variable, "overflow-x-hidden")}>
-      <body className={`${roboto.className} flex flex-col min-h-screen overflow-x-hidden`}>
+    <html
+      lang="id"
+      className={cn("dark", "font-sans", geist.variable, "overflow-x-hidden")}
+    >
+      <body
+        className={`${roboto.className} flex flex-col min-h-screen overflow-x-hidden`}
+      >
         {/* Navbar akan selalu ada di paling atas */}
         <Providers>
           <Navbar />
 
-          <div className="flex-1 w-full max-w-full overflow-x-hidden">{children}</div>
+          <div className="flex-1 w-full max-w-full overflow-x-hidden">
+            {children}
+          </div>
           <Footer />
+          <NismaraPlusAdPopup />
         </Providers>
       </body>
       {process.env.NEXT_PUBLIC_GA_ID && (

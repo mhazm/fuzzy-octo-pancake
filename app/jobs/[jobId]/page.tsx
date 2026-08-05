@@ -6,6 +6,7 @@ import Link from "next/link";
 import { getTruckyFullJobData, getCompanyMembersMap } from "@/lib/trucky";
 import IncidentLogs from "@/components/IncidentLogs";
 import {
+
   ArrowLeft,
   Truck,
   Navigation,
@@ -26,6 +27,10 @@ import {
   Star,
   HelpCircle,
 } from "lucide-react";
+
+
+
+
 
 // Helper Format Waktu (Durasi)
 function formatDuration(seconds: number) {

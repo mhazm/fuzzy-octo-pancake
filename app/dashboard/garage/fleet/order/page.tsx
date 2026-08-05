@@ -11,6 +11,12 @@ import "@/lib/models/FleetStore"; // Register models
 import "@/lib/models/FleetBrand"; 
 
 import dbConnect from "@/lib/mongoose";
+
+export const metadata = {
+  title: "Order",
+};
+
+
 export const dynamic = "force-dynamic";
 
 export default async function UserFleetOrdersPage() {

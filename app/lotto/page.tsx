@@ -12,14 +12,25 @@ import { Ticket, Coins, Trophy, Calendar, Users, History } from "lucide-react";
 import NismaraPlusBadge from "@/components/icons/NismaraPlusBadge";
 import ServerBoosterBadge from "@/components/icons/ServerBoosterBadge";
 import { getCurrencyData } from "@/app/dashboard/currency/actions";
+import DriverAccessBlocker from "@/components/DriverAccessBlocker";
 
 import dbConnect from "@/lib/mongoose";
+
+export const metadata = {
+  title: "Lotto",
+};
+
+
 export const dynamic = "force-dynamic";
 
 export default async function LottoPage() {
   const session = await getServerSession(authOptions);
-  await clientPromise;
 
+  if (!session || !session.user?.isDriver) {
+    return <DriverAccessBlocker session={session} />;
+  }
+
+  await clientPromise;
   await dbConnect();
 
   // 1. Fetch Active Period

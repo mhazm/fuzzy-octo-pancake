@@ -17,6 +17,12 @@ import { redirect } from "next/navigation";
 import FleetMaintenanceClient from "./FleetMaintenanceClient";
 import ToggleDriverClient from "./ToggleDriverClient";
 
+export const metadata = {
+  title: "Fleet Detail",
+};
+
+
+
 export const dynamic = "force-dynamic";
 
 export default async function FleetDetailPage({

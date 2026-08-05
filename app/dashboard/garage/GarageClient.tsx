@@ -9,6 +9,7 @@ import {
   ArrowRight,
   AlertTriangle,
   AlertCircle,
+  Fuel,
 } from "lucide-react";
 import Link from "next/link";
 import HireMechanicModal from "./HireMechanicModal";
@@ -26,6 +27,8 @@ export default function GarageClient({ garage }: GarageClientProps) {
 
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const [downgradeModalOpen, setDowngradeModalOpen] = useState(false);
+  const [fuelUpgradeModalOpen, setFuelUpgradeModalOpen] = useState(false);
+  const [fuelDowngradeModalOpen, setFuelDowngradeModalOpen] = useState(false);
 
   const [loadingAction, setLoadingAction] = useState(false);
   const [firing, setFiring] = useState<MechanicSpecialty | null>(null);
@@ -67,6 +70,46 @@ export default function GarageClient({ garage }: GarageClientProps) {
     } finally {
       setLoadingAction(false);
       setDowngradeModalOpen(false);
+    }
+  };
+
+  const handleFuelUpgrade = async () => {
+    setLoadingAction(true);
+    try {
+      const res = await fetch("/api/garage/fuel-upgrade", {
+        method: "POST",
+      });
+      const data = await res.json();
+
+      if (!res.ok)
+        throw new Error(data.error || "Gagal meng-upgrade fuel tank");
+
+      window.location.reload();
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setLoadingAction(false);
+      setFuelUpgradeModalOpen(false);
+    }
+  };
+
+  const handleFuelDowngrade = async () => {
+    setLoadingAction(true);
+    try {
+      const res = await fetch("/api/garage/fuel-downgrade", {
+        method: "POST",
+      });
+      const data = await res.json();
+
+      if (!res.ok)
+        throw new Error(data.error || "Gagal men-downgrade fuel tank");
+
+      window.location.reload();
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setLoadingAction(false);
+      setFuelDowngradeModalOpen(false);
     }
   };
 
@@ -133,8 +176,61 @@ export default function GarageClient({ garage }: GarageClientProps) {
   const canDowngrade =
     garage.fleetSlot > 1 && garage.fleetSlot > garage.fleetSlotUsed;
 
+  const canDowngradeFuel = (garage.fuelTankLevel || 1) > 1;
+
+  // Dynamic Upgrade Calculation
+  const deficit = Math.max(0, (garage.fleetSlotUsed || 0) - garage.fleetSlot);
+  const slotsToAdd = deficit > 0 ? deficit + 1 : 1;
+  const newFleetSlot = garage.fleetSlot + slotsToAdd;
+  const upgradeCost = slotsToAdd * 1000;
+  const newOpCost = newFleetSlot * 250;
+
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-10 pb-10 animate-in fade-in duration-700">
+    <div className="max-w-7xl mx-auto p-6 space-y-10 pb-10 animate-in fade-in duration-700 relative">
+      {/* SUSPENDED OVERLAY */}
+      {garage.status === "suspended" && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/95 backdrop-blur-sm rounded-3xl border border-red-500/50 p-8 text-center">
+          <div className="w-full max-w-lg space-y-6">
+            <div className="w-24 h-24 bg-red-500/20 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
+              <AlertTriangle size={48} />
+            </div>
+            <h2
+              className="text-4xl font-black text-red-500 uppercase tracking-widest border-y border-red-500/30 py-4"
+              style={{
+                backgroundImage:
+                  "repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(239,68,68,0.1) 10px, rgba(239,68,68,0.1) 20px)",
+              }}
+            >
+              GARASI DISITA
+            </h2>
+            <p className="text-foreground text-lg font-medium leading-relaxed">
+              Anda gagal melunasi tagihan biaya operasional bulanan sebesar{" "}
+              <strong className="text-red-500">
+                {garage.operational_cost.toLocaleString("id-ID")} NC
+              </strong>
+              . Seluruh akses ke garasi dan armada Anda telah{" "}
+              <strong>dikunci</strong>.
+            </p>
+            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mt-6">
+              <p className="text-sm text-red-400 font-bold uppercase tracking-wider mb-2">
+                Langkah Penyelesaian:
+              </p>
+              <p className="text-xs text-muted-foreground mb-4">
+                Silakan buka tiket (Ticket) di Pusat Bantuan Nismara Transport
+                untuk berdiskusi dengan Manajer guna menyelesaikan tunggakan
+                Anda (misal: dengan menjual paksa aset armada truk Anda).
+              </p>
+              <Link
+                href="/dashboard/ticket"
+                className="inline-flex items-center justify-center w-full py-3 bg-red-500 text-white font-bold rounded-lg hover:bg-red-600 transition-colors uppercase tracking-widest text-xs"
+              >
+                Buat Tiket Bantuan
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* HEADER SECTION */}
       <div className="flex flex-col md:flex-row justify-between items-end gap-4">
         <div className="space-y-1">
@@ -212,11 +308,20 @@ export default function GarageClient({ garage }: GarageClientProps) {
             <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold mb-1">
               Biaya Operasional (Bulan)
             </p>
-            <div className="flex items-baseline gap-2 mb-2">
-              <span className="text-3xl font-black text-red-400">
-                {garage.operational_cost.toLocaleString("id-ID")}
-              </span>
-              <span className="text-muted-foreground font-bold">NC</span>
+            <div className="flex flex-col mb-3">
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-black text-red-400">
+                  {garage.operational_cost.toLocaleString("id-ID")}
+                </span>
+                <span className="text-muted-foreground font-bold">NC</span>
+              </div>
+              <div className="text-[10px] font-medium text-muted-foreground mt-1">
+                (Fleet:{" "}
+                {(garage.fleet_operational_cost || 0).toLocaleString("id-ID")}{" "}
+                NC | Fuel Tank:{" "}
+                {(garage.fuel_operational_cost || 0).toLocaleString("id-ID")}{" "}
+                NC)
+              </div>
             </div>
             {garage.next_payment_date ? (
               <p className="text-[10px] text-muted-foreground uppercase font-medium flex items-center gap-1">
@@ -234,22 +339,48 @@ export default function GarageClient({ garage }: GarageClientProps) {
 
         <div className="bg-card border border-border/50 rounded-2xl p-6 relative overflow-hidden shadow-lg group hover:border-primary/50 transition-colors">
           <div className="absolute right-0 top-0 p-6 opacity-10 rotate-12 group-hover:rotate-0 group-hover:scale-110 transition-transform duration-500">
-            <AlertTriangle size={120} />
+            <Fuel size={120} />
           </div>
           <div className="relative z-10">
             <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold mb-1 flex items-center gap-2">
-              <AlertTriangle size={12} className="text-amber-500" />
-              WIP Fuel Tank
+              <Fuel size={12} className="text-accent-sky" />
+              Kapasitas Fuel Tank
             </p>
             <div className="flex items-baseline gap-2 mb-2">
-              <span className="text-3xl font-black text-accent-sky">100</span>
+              <span className="text-3xl font-black text-accent-sky">
+                {(garage.fuelStock || 0).toLocaleString("id-ID")}
+              </span>
               <span className="text-muted-foreground font-bold">
-                / 1.000 Liter
+                / {(garage.fuelCapacity || 2000).toLocaleString("id-ID")} L
               </span>
             </div>
-            <p className="text-[10px] text-muted-foreground uppercase font-medium">
-              Fitur pengisian bensin segera hadir
-            </p>
+            <div className="flex flex-col mt-3 pt-3 border-t border-border/50 space-y-3">
+              <p className="text-[10px] text-muted-foreground uppercase font-medium">
+                Tangki Level {garage.fuelTankLevel || 1}
+              </p>
+              <div className="flex gap-2">
+                <Link
+                  href="/fuel-market"
+                  className="flex-1 text-center text-[10px] font-bold uppercase tracking-widest bg-blue-500/10 text-blue-500 px-2 py-1.5 rounded-lg hover:bg-blue-500/20 transition-colors"
+                >
+                  Pasar BBM
+                </Link>
+                {canDowngradeFuel && (
+                  <button
+                    onClick={() => setFuelDowngradeModalOpen(true)}
+                    className="flex-1 text-[10px] font-bold uppercase tracking-widest bg-red-500/10 text-red-500 px-2 py-1.5 rounded-lg hover:bg-red-500/20 transition-colors"
+                  >
+                    Downgrade
+                  </button>
+                )}
+                <button
+                  onClick={() => setFuelUpgradeModalOpen(true)}
+                  className="flex-1 text-[10px] font-bold uppercase tracking-widest bg-accent-sky/10 text-accent-sky px-2 py-1.5 rounded-lg hover:bg-accent-sky/20 transition-colors"
+                >
+                  Upgrade
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -388,30 +519,39 @@ export default function GarageClient({ garage }: GarageClientProps) {
             <Warehouse className="shrink-0" />
             <div>
               <p className="font-bold text-sm mb-1">Konfirmasi Upgrade</p>
-              <p className="text-xs opacity-90 leading-relaxed">
-                Anda akan menambahkan kapasitas armada menjadi{" "}
-                <strong>{garage.fleetSlot + 1} Slot</strong>. Upgrade ini
-                membutuhkan biaya awal sebesar <strong>1.000 NC</strong>.
-              </p>
+              {deficit > 0 ? (
+                <p className="text-xs opacity-90 leading-relaxed">
+                  Anda sedang mengalami defisit slot armada (<strong>{garage.fleetSlotUsed}/{garage.fleetSlot}</strong>). 
+                  Sistem akan otomatis meng-upgrade hingga kapasitas armada Anda mencukupi, menjadi{" "}
+                  <strong>{newFleetSlot} Slot</strong> (+{slotsToAdd} Slot). Upgrade ini
+                  membutuhkan biaya sebesar <strong>{upgradeCost.toLocaleString("id-ID")} NC</strong>.
+                </p>
+              ) : (
+                <p className="text-xs opacity-90 leading-relaxed">
+                  Anda akan menambahkan kapasitas armada menjadi{" "}
+                  <strong>{newFleetSlot} Slot</strong>. Upgrade ini
+                  membutuhkan biaya awal sebesar <strong>{upgradeCost.toLocaleString("id-ID")} NC</strong>.
+                </p>
+              )}
             </div>
           </div>
 
           <div className="space-y-3">
             <div className="flex justify-between text-sm items-center py-2 border-b border-border/50">
               <span className="text-muted-foreground">Kapasitas Baru</span>
-              <span className="font-bold">{garage.fleetSlot + 1} Slot</span>
+              <span className="font-bold">{newFleetSlot} Slot</span>
             </div>
             <div className="flex justify-between text-sm items-center py-2 border-b border-border/50">
               <span className="text-muted-foreground">
                 Tagihan Operasional (Bulan)
               </span>
               <span className="font-bold text-red-400">
-                {((garage.fleetSlot + 1) * 250).toLocaleString("id-ID")} NC
+                {newOpCost.toLocaleString("id-ID")} NC
               </span>
             </div>
             <div className="flex justify-between text-sm items-center py-2 border-b border-border/50">
               <span className="text-muted-foreground">Biaya Upgrade</span>
-              <span className="font-black text-lg text-primary">1.000 NC</span>
+              <span className="font-black text-lg text-primary">{upgradeCost.toLocaleString("id-ID")} NC</span>
             </div>
           </div>
 
@@ -484,6 +624,139 @@ export default function GarageClient({ garage }: GarageClientProps) {
             </button>
             <button
               onClick={handleDowngrade}
+              className="flex-1 py-3 rounded-xl font-bold text-sm bg-red-500 text-white hover:bg-red-600 transition-all uppercase tracking-wider shadow-lg hover:shadow-red-500/25 disabled:opacity-50 flex justify-center items-center gap-2"
+              disabled={loadingAction}
+            >
+              {loadingAction ? "Memproses..." : "Lanjutkan Downgrade"}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Fuel Upgrade Modal */}
+      <Modal
+        isOpen={fuelUpgradeModalOpen}
+        onClose={() => !loadingAction && setFuelUpgradeModalOpen(false)}
+        title="Upgrade Fuel Tank"
+      >
+        <div className="space-y-6">
+          <div className="bg-accent-sky/10 border border-accent-sky/20 rounded-xl p-4 flex gap-3 text-accent-sky">
+            <Fuel className="shrink-0" />
+            <div>
+              <p className="font-bold text-sm mb-1">
+                Konfirmasi Upgrade Tangki
+              </p>
+              <p className="text-xs opacity-90 leading-relaxed">
+                Anda akan menambahkan kapasitas tangki BBM menjadi{" "}
+                <strong>
+                  {((garage.fuelCapacity || 2000) + 1000).toLocaleString(
+                    "id-ID",
+                  )}{" "}
+                  Liter
+                </strong>{" "}
+                (Level {(garage.fuelTankLevel || 1) + 1}). Upgrade ini
+                membutuhkan biaya awal sebesar <strong>500 NC</strong>.
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex justify-between text-sm items-center py-2 border-b border-border/50">
+              <span className="text-muted-foreground">Kapasitas Baru</span>
+              <span className="font-bold">
+                {((garage.fuelCapacity || 2000) + 1000).toLocaleString("id-ID")}{" "}
+                L
+              </span>
+            </div>
+            <div className="flex justify-between text-sm items-center py-2 border-b border-border/50">
+              <span className="text-muted-foreground">
+                Tambahan Ops. Cost / Bulan
+              </span>
+              <span className="font-bold text-red-400">+200 NC</span>
+            </div>
+            <div className="flex justify-between text-sm items-center py-2 border-b border-border/50">
+              <span className="text-muted-foreground">Biaya Upgrade</span>
+              <span className="font-black text-lg text-accent-sky">500 NC</span>
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={() => setFuelUpgradeModalOpen(false)}
+              className="flex-1 py-3 rounded-xl font-bold text-sm bg-card border border-border hover:bg-muted transition-colors uppercase tracking-wider"
+              disabled={loadingAction}
+            >
+              Batal
+            </button>
+            <button
+              onClick={handleFuelUpgrade}
+              className="flex-1 py-3 rounded-xl font-bold text-sm bg-accent-sky text-white hover:bg-accent-sky/90 transition-all uppercase tracking-wider shadow-lg hover:shadow-accent-sky/25 disabled:opacity-50 flex justify-center items-center gap-2"
+              disabled={loadingAction}
+            >
+              {loadingAction ? "Memproses..." : "Bayar & Upgrade"}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Fuel Downgrade Modal */}
+      <Modal
+        isOpen={fuelDowngradeModalOpen}
+        onClose={() => !loadingAction && setFuelDowngradeModalOpen(false)}
+        title="Downgrade Fuel Tank"
+      >
+        <div className="space-y-6">
+          <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex gap-3 text-red-500">
+            <AlertCircle className="shrink-0" />
+            <div>
+              <p className="font-bold text-sm mb-1">
+                Konfirmasi Downgrade Tangki
+              </p>
+              <p className="text-xs opacity-90 leading-relaxed">
+                Anda akan mengurangi kapasitas tangki BBM menjadi{" "}
+                <strong>
+                  {((garage.fuelCapacity || 2000) - 1000).toLocaleString(
+                    "id-ID",
+                  )}{" "}
+                  Liter
+                </strong>{" "}
+                (Level {(garage.fuelTankLevel || 1) - 1}). Tindakan ini tidak
+                memakan biaya, namun <strong>500 NC</strong> dari saat Anda
+                upgrade sebelumnya <strong>tidak akan direfund</strong>.
+              </p>
+              <p className="text-xs font-bold mt-2 text-red-400">
+                Pastikan stok bensin Anda tidak melebihi kapasitas baru, atau
+                downgrade akan dibatalkan otomatis oleh sistem.
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex justify-between text-sm items-center py-2 border-b border-border/50">
+              <span className="text-muted-foreground">Kapasitas Baru</span>
+              <span className="font-bold">
+                {((garage.fuelCapacity || 2000) - 1000).toLocaleString("id-ID")}{" "}
+                L
+              </span>
+            </div>
+            <div className="flex justify-between text-sm items-center py-2 border-b border-border/50">
+              <span className="text-muted-foreground">
+                Pengurangan Ops. Cost / Bulan
+              </span>
+              <span className="font-bold text-emerald-500">-200 NC</span>
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={() => setFuelDowngradeModalOpen(false)}
+              className="flex-1 py-3 rounded-xl font-bold text-sm bg-card border border-border hover:bg-muted transition-colors uppercase tracking-wider"
+              disabled={loadingAction}
+            >
+              Batal
+            </button>
+            <button
+              onClick={handleFuelDowngrade}
               className="flex-1 py-3 rounded-xl font-bold text-sm bg-red-500 text-white hover:bg-red-600 transition-all uppercase tracking-wider shadow-lg hover:shadow-red-500/25 disabled:opacity-50 flex justify-center items-center gap-2"
               disabled={loadingAction}
             >

@@ -9,6 +9,12 @@ import CargoMarketHistory from "@/lib/models/CargoMarketHistory.js";
 import NismaraPlusBadge from "@/components/icons/NismaraPlusBadge";
 import ServerBoosterBadge from "@/components/icons/ServerBoosterBadge";
 
+export const metadata = {
+  title: "Game_id Detail",
+};
+
+
+
 export const dynamic = "force-dynamic";
 
 export default async function CargoDetailPage({

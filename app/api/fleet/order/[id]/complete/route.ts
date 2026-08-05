@@ -165,14 +165,16 @@ export async function POST(
       });
       // If requiresGarageUpgrade was somehow true without garage existing, apply it
       if (order.requiresGarageUpgrade) {
-        garage.fleetSlot += 1;
-        garage.fleetSlotLevel += 1;
+        const slotsToAdd = order.upgradeSlotCount || 1;
+        garage.fleetSlot += slotsToAdd;
+        garage.fleetSlotLevel += slotsToAdd;
       }
     } else {
       garage.fleetSlotUsed += 1;
       if (order.requiresGarageUpgrade) {
-        garage.fleetSlot += 1;
-        garage.fleetSlotLevel += 1;
+        const slotsToAdd = order.upgradeSlotCount || 1;
+        garage.fleetSlot += slotsToAdd;
+        garage.fleetSlotLevel += slotsToAdd;
       }
     }
 

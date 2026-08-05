@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Ticket, Settings, CheckCircle, AlertCircle, Play, UserCheck, MessageSquare, Plus } from "lucide-react";
+import { Ticket, Settings, CheckCircle, AlertCircle, Play, UserCheck, MessageSquare, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import { useSession } from "next-auth/react";
 
 export default function ManageTicketsPage() {
@@ -13,6 +13,10 @@ export default function ManageTicketsPage() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterManager, setFilterManager] = useState("all");
   const [staffList, setStaffList] = useState<{id: string, name: string}[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalTickets, setTotalTickets] = useState(0);
+  const [pageLoading, setPageLoading] = useState(false);
   
   // Category Management
   const [categories, setCategories] = useState<any[]>([]);
@@ -25,10 +29,17 @@ export default function ManageTicketsPage() {
   const [closeReason, setCloseReason] = useState("");
   const [isClosing, setIsClosing] = useState(false);
 
-  const fetchData = async () => {
+  const fetchData = async (page = 1, status = filterStatus, manager = filterManager) => {
     try {
+      setPageLoading(true);
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: "10",
+        ...(status !== "all" && { status }),
+        ...(manager !== "all" && { managerId: manager }),
+      });
       const [ticketsRes, catsRes] = await Promise.all([
-        fetch("/api/manage/tickets"),
+        fetch(`/api/manage/tickets?${params}`),
         fetch("/api/manage/tickets/category")
       ]);
       const ticketsData = await ticketsRes.json();
@@ -39,6 +50,11 @@ export default function ManageTicketsPage() {
         setStats(ticketsData.stats);
         if (ticketsData.globalStats) setGlobalStats(ticketsData.globalStats);
         if (ticketsData.staffList) setStaffList(ticketsData.staffList);
+        if (ticketsData.pagination) {
+          setCurrentPage(ticketsData.pagination.currentPage);
+          setTotalPages(ticketsData.pagination.totalPages);
+          setTotalTickets(ticketsData.pagination.totalTickets);
+        }
       }
       if (catsData.success) {
         setCategories(catsData.categories);
@@ -47,6 +63,7 @@ export default function ManageTicketsPage() {
       console.error("Error fetching data:", error);
     } finally {
       setLoading(false);
+      setPageLoading(false);
     }
   };
 
@@ -68,7 +85,7 @@ export default function ManageTicketsPage() {
       const data = await res.json();
       if (data.success) {
         setNewCategoryName("");
-        fetchData();
+        fetchData(1, filterStatus, filterManager);
       } else {
         alert(data.error);
       }
@@ -85,7 +102,7 @@ export default function ManageTicketsPage() {
       });
       const data = await res.json();
       if (data.success) {
-        fetchData();
+        fetchData(currentPage, filterStatus, filterManager);
       } else {
         alert(data.error);
       }
@@ -109,7 +126,7 @@ export default function ManageTicketsPage() {
         setCloseTicketId(null);
         setCloseReason("");
         setCloseStatus("resolved");
-        fetchData();
+        fetchData(currentPage, filterStatus, filterManager);
         alert("Tiket berhasil ditutup! Anda mendapatkan 500 NC.");
       } else {
         alert(data.error);
@@ -282,7 +299,11 @@ export default function ManageTicketsPage() {
         <div className="flex gap-3">
           <select
             value={filterManager}
-            onChange={(e) => setFilterManager(e.target.value)}
+            onChange={(e) => {
+              setFilterManager(e.target.value);
+              setCurrentPage(1);
+              fetchData(1, filterStatus, e.target.value);
+            }}
             className="bg-black/50 border border-border/50 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-accent-lilac text-sm"
           >
             <option value="all">Semua Staff</option>
@@ -292,7 +313,11 @@ export default function ManageTicketsPage() {
           </select>
           <select
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
+            onChange={(e) => {
+              setFilterStatus(e.target.value);
+              setCurrentPage(1);
+              fetchData(1, e.target.value, filterManager);
+            }}
             className="bg-black/50 border border-border/50 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-accent-lilac text-sm"
           >
             <option value="all">Semua Status</option>
@@ -304,9 +329,13 @@ export default function ManageTicketsPage() {
         </div>
       </div>
 
-      {tickets.filter(t => (filterStatus === "all" || t.status === filterStatus) && (filterManager === "all" || t.managerId === filterManager)).length > 0 ? (
+      {pageLoading ? (
+        <div className="flex justify-center items-center py-16">
+          <div className="animate-spin w-8 h-8 border-4 border-accent-lilac/20 border-t-accent-lilac rounded-full"></div>
+        </div>
+      ) : tickets.length > 0 ? (
         <div className="space-y-4">
-          {tickets.filter(t => (filterStatus === "all" || t.status === filterStatus) && (filterManager === "all" || t.managerId === filterManager)).map((t) => {
+          {tickets.map((t) => {
             const isMine = t.managerId === session?.user?.discordId;
             return (
               <div key={t._id} className="bg-card/50 border border-border/50 rounded-2xl p-6">
@@ -396,6 +425,57 @@ export default function ManageTicketsPage() {
               </div>
             );
           })}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 bg-card/30 border border-border/50 rounded-2xl p-4">
+              <p className="text-sm text-gray-400">
+                Menampilkan halaman <span className="font-bold text-white">{currentPage}</span> dari{" "}
+                <span className="font-bold text-white">{totalPages}</span>
+                <span className="text-gray-500 ml-1">({totalTickets} tiket)</span>
+              </p>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => { const p = currentPage - 1; setCurrentPage(p); fetchData(p, filterStatus, filterManager); }}
+                  disabled={currentPage <= 1}
+                  className="p-2 rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 2)
+                  .reduce((acc: (number | string)[], p, idx, arr) => {
+                    if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push("...");
+                    acc.push(p);
+                    return acc;
+                  }, [])
+                  .map((p, idx) =>
+                    typeof p === "string" ? (
+                      <span key={`ellipsis-${idx}`} className="px-2 text-gray-500">…</span>
+                    ) : (
+                      <button
+                        key={p}
+                        onClick={() => { setCurrentPage(p); fetchData(p, filterStatus, filterManager); }}
+                        className={`w-9 h-9 rounded-lg text-sm font-bold transition-colors ${
+                          currentPage === p
+                            ? "bg-accent-lilac text-white shadow-lg shadow-accent-lilac/30"
+                            : "bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 hover:text-white"
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    )
+                  )}
+                <button
+                  onClick={() => { const p = currentPage + 1; setCurrentPage(p); fetchData(p, filterStatus, filterManager); }}
+                  disabled={currentPage >= totalPages}
+                  className="p-2 rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="text-center py-20 bg-card/30 border border-border/50 rounded-2xl">

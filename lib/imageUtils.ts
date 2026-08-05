@@ -19,6 +19,11 @@ export async function compressImageToWebP(
     return imageFile;
   }
 
+  // Bypass GIF untuk mencegah animasi rusak
+  if (imageFile.type === "image/gif") {
+    return imageFile;
+  }
+
   const options = {
     maxSizeMB,
     maxWidthOrHeight,

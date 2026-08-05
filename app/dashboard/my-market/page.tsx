@@ -4,6 +4,12 @@ import { redirect } from "next/navigation";
 import DriverAccessBlocker from "@/components/DriverAccessBlocker";
 import MyMarketClient from "./MyMarketClient";
 
+export const metadata = {
+  title: "My Market",
+};
+
+
+
 export default async function MyMarketPage() {
   const session = await getServerSession(authOptions);
   

@@ -6,6 +6,12 @@ import DriverGuideClient from "./DriverGuideClient";
 import { ShieldAlert, ArrowRight, Lock } from "lucide-react";
 import Link from "next/link";
 
+export const metadata = {
+  title: "Driver Guide",
+};
+
+
+
 export default async function DriverGuidePage() {
   const session = await getServerSession(authOptions);
 

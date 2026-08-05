@@ -30,8 +30,14 @@ export async function buyInsurance() {
     let finalPrice = BASE_PRICE + penaltyPrice;
 
     const isBooster = (session.user as any)?.isBooster;
-    if (isBooster) {
-      finalPrice = Math.floor(finalPrice * 0.7); // 30% Discount
+    const isNismaraPlus = (session.user as any)?.nismaraplus?.status === true;
+    
+    let totalDiscountPercent = 0;
+    if (isBooster) totalDiscountPercent += 30;
+    if (isNismaraPlus) totalDiscountPercent += 30;
+
+    if (totalDiscountPercent > 0) {
+      finalPrice = Math.floor(finalPrice * (1 - totalDiscountPercent / 100));
     }
 
     // 3. Cek saldo NC

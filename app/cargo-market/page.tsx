@@ -4,6 +4,12 @@ import { PackageOpen, Coins, Search, ChevronLeft, ChevronRight, AlertTriangle, S
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+export const metadata = {
+  title: "Cargo Market",
+};
+
+
+
 export const dynamic = "force-dynamic";
 
 export default async function CargoMarketPage({

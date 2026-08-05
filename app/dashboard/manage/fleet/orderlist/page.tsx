@@ -11,6 +11,12 @@ import "@/lib/models/FleetBrand";
 import "@/lib/models/User";
 
 import dbConnect from "@/lib/mongoose";
+
+export const metadata = {
+  title: "Manage Orderlist",
+};
+
+
 export const dynamic = "force-dynamic";
 
 export default async function ManagerOrderListPage() {

@@ -13,11 +13,16 @@ const garageSchema = new mongoose.Schema(
     fleetSlotLevel: { type: Number, required: true, default: 1 },
     status: {
       type: String,
-      enum: ["operational", "closed", "on_construction"],
+      enum: ["operational", "closed", "on_construction", "suspended"],
       default: "operational",
     },
     operational_cost: { type: Number, required: true, default: 0 },
+    fleet_operational_cost: { type: Number, required: true, default: 0 },
+    fuel_operational_cost: { type: Number, required: true, default: 0 },
     next_payment_date: { type: Date, default: null },
+    fuelCapacity: { type: Number, required: true, default: 2000 },
+    fuelStock: { type: Number, required: true, default: 0 },
+    fuelTankLevel: { type: Number, required: true, default: 1 },
     mechanics: {
       umum: {
         name: { type: String, default: null },

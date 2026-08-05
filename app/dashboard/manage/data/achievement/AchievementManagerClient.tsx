@@ -186,7 +186,7 @@ export default function AchievementManagerClient() {
         <div>
           <h1 className="text-3xl font-black text-white mb-2">Manage Achievement</h1>
           <p className="text-gray-400 text-sm">
-            Kelola seluruh achievement yang tersedia di Nismara Logistics.
+            Kelola seluruh achievement yang tersedia di Nismara Transport.
           </p>
         </div>
         <button

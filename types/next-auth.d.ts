@@ -18,7 +18,12 @@ declare module "next-auth" {
       level: number;
       joinedConvoy: number;
       isBooster: boolean;
-      nismaraplus: boolean;
+      nismaraplus: {
+        status: boolean;
+        startedAt?: Date | string | null;
+        expiredAt?: Date | string | null;
+        lastClaimAt?: Date | string | null;
+      };
     } & DefaultSession["user"];
   }
 

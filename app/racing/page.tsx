@@ -4,12 +4,12 @@ import DriverAccessBlocker from "@/components/DriverAccessBlocker";
 import RacingClient from "./RacingClient";
 
 export const metadata = {
-  title: "Nismara Racing - Dashboard",
+  title: "Truck Drag Race",
 };
 
 export default async function RacingPage() {
   const session = await getServerSession(authOptions);
-  
+
   if (!session || !session.user) {
     return <DriverAccessBlocker session={session as any} />;
   }

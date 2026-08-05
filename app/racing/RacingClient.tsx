@@ -38,6 +38,10 @@ const TRUCKS = [
   { id: 2, name: "Thunder", color: "text-blue-500", bg: "bg-blue-500" },
   { id: 3, name: "Viper", color: "text-green-500", bg: "bg-green-500" },
   { id: 4, name: "Flash", color: "text-yellow-500", bg: "bg-yellow-500" },
+  { id: 5, name: "Shadow", color: "text-purple-500", bg: "bg-purple-500" },
+  { id: 6, name: "Blaze", color: "text-orange-500", bg: "bg-orange-500" },
+  { id: 7, name: "Frost", color: "text-cyan-500", bg: "bg-cyan-500" },
+  { id: 8, name: "Titan", color: "text-pink-500", bg: "bg-pink-500" },
 ];
 
 const MULTIPLIERS = [1, 2, 5, 10];
@@ -55,7 +59,9 @@ export default function RacingClient({
   const [selectedTruck, setSelectedTruck] = useState<number | null>(null);
   const [multiplier, setMultiplier] = useState<number>(1);
   const [raceState, setRaceState] = useState<RaceState>("idle");
-  const [positions, setPositions] = useState<number[]>([0, 0, 0, 0]); // 0 to 100
+  const [positions, setPositions] = useState<number[]>([
+    0, 0, 0, 0, 0, 0, 0, 0,
+  ]); // 0 to 100
   const [winner, setWinner] = useState<number | null>(null);
   const [prizeToReveal, setPrizeToReveal] = useState<number>(0);
 
@@ -66,6 +72,15 @@ export default function RacingClient({
   });
 
   const raceInterval = useRef<NodeJS.Timeout | null>(null);
+  const truckParamsRef = useRef<
+    {
+      baseSpeed: number;
+      ceiling: number;
+      dragStart: number;
+      burstChance: number;
+      burstPower: number;
+    }[]
+  >([]);
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ show: true, message, type });
@@ -115,7 +130,7 @@ export default function RacingClient({
     }
 
     setRaceState("racing");
-    setPositions([0, 0, 0, 0]);
+    setPositions([0, 0, 0, 0, 0, 0, 0, 0]);
     setWinner(null);
     setPrizeToReveal(0);
 
@@ -137,26 +152,67 @@ export default function RacingClient({
       const serverWinnerId = data.winningTruckId;
       setPrizeToReveal(data.prizeWon);
 
+      // Generate unique race parameters per truck for realistic animation
+      truckParamsRef.current = TRUCKS.map((_, i) => {
+        const isWinner = i + 1 === serverWinnerId;
+        return {
+          // Slower base speeds for a visible race (~8-12 seconds total)
+          baseSpeed: 0.5 + Math.random() * 0.5,
+          // Winner reaches 100; losers cap at varied ceilings (85-97)
+          ceiling: isWinner ? 100 : 85 + Math.random() * 12,
+          // Drag starts late so trucks stay competitive longer
+          dragStart: isWinner ? 88 : 65 + Math.random() * 17,
+          // Occasional speed bursts for drama & lead changes
+          burstChance: 0.08 + Math.random() * 0.07,
+          burstPower: 1.6 + Math.random() * 1.0,
+        };
+      });
+
       raceInterval.current = setInterval(() => {
         setPositions((prev) => {
           const next = [...prev];
           let potentialWinner = null;
+          const params = truckParamsRef.current;
 
           for (let i = 0; i < next.length; i++) {
-            // Random step between 0.5 and 4.0
-            const step = Math.random() * 3.5 + 0.5;
-            next[i] += step;
+            const p = params[i];
+            if (!p) continue;
 
-            // Rig the animation: If it's not the server winner, cap at 95%
-            if (i + 1 !== serverWinnerId && next[i] > 95) {
-              next[i] = 95;
-            }
-
-            if (next[i] >= 100) {
-              next[i] = 100;
-              if (i + 1 === serverWinnerId) {
+            // Already at ceiling, skip
+            if (next[i] >= p.ceiling) {
+              next[i] = p.ceiling;
+              if (p.ceiling >= 100 && i + 1 === serverWinnerId) {
                 potentialWinner = i + 1;
               }
+              continue;
+            }
+
+            // Calculate speed with gentle deceleration
+            let speedMultiplier = 1;
+
+            if (next[i] > p.dragStart) {
+              // Linear ease-out with a high floor — slows down but never crawls
+              const progress =
+                (next[i] - p.dragStart) / (p.ceiling - p.dragStart);
+              const clamped = Math.min(progress, 1);
+              speedMultiplier = Math.max(0.15, 1 - clamped * 0.85);
+            }
+
+            // Random burst for excitement (before and slightly into drag zone)
+            if (next[i] < p.dragStart + 10 && Math.random() < p.burstChance) {
+              speedMultiplier *= p.burstPower;
+            }
+
+            // Natural speed variance per tick (±25%)
+            const jitter = 0.75 + Math.random() * 0.5;
+            const step = p.baseSpeed * jitter * speedMultiplier;
+
+            next[i] = Math.min(next[i] + step, p.ceiling);
+
+            // Check for winner
+            if (next[i] >= 100 && i + 1 === serverWinnerId) {
+              next[i] = 100;
+              potentialWinner = i + 1;
             }
           }
 
@@ -169,7 +225,7 @@ export default function RacingClient({
 
           return next;
         });
-      }, 100);
+      }, 60);
     } catch (err) {
       console.error("Error starting race:", err);
       showToast("Terjadi kesalahan jaringan", "error");
@@ -197,7 +253,7 @@ export default function RacingClient({
 
   const resetRace = () => {
     setRaceState("idle");
-    setPositions([0, 0, 0, 0]);
+    setPositions([0, 0, 0, 0, 0, 0, 0, 0]);
     setWinner(null);
   };
 
@@ -252,7 +308,7 @@ export default function RacingClient({
               {TRUCKS.map((truck, idx) => (
                 <div
                   key={truck.id}
-                  className="relative h-12 flex items-center group"
+                  className="relative h-10 flex items-center group"
                 >
                   {/* Track line */}
                   <div className="absolute inset-0 bg-black/20 rounded-full"></div>
@@ -265,7 +321,7 @@ export default function RacingClient({
                     <div
                       className={`p-2 rounded-lg ${truck.bg} shadow-[0_0_15px_rgba(0,0,0,0.5)] flex items-center justify-center transform ${raceState === "racing" ? "scale-110 -rotate-2" : ""} transition-transform`}
                     >
-                      <Truck className="w-6 h-6 text-white" />
+                      <Truck className="w-5 h-5 text-white" />
                     </div>
                   </div>
 
@@ -326,7 +382,7 @@ export default function RacingClient({
               <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-3">
                 Pilih Truk Anda
               </p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-4 gap-2">
                 {TRUCKS.map((truck) => (
                   <button
                     key={truck.id}
@@ -334,14 +390,14 @@ export default function RacingClient({
                       raceState === "idle" && setSelectedTruck(truck.id)
                     }
                     disabled={raceState !== "idle"}
-                    className={`flex flex-col items-center p-3 rounded-xl border-2 transition-all ${
+                    className={`flex flex-col items-center p-2 rounded-xl border-2 transition-all ${
                       selectedTruck === truck.id
                         ? `border-${truck.bg.split("-")[1]}-500 bg-${truck.bg.split("-")[1]}-500/10`
                         : "border-border/50 hover:border-primary/50 bg-background/50"
                     } disabled:opacity-50 disabled:cursor-not-allowed`}
                   >
-                    <Truck className={`w-8 h-8 mb-2 ${truck.color}`} />
-                    <span className="text-xs font-black uppercase tracking-tight text-foreground text-center">
+                    <Truck className={`w-6 h-6 mb-1 ${truck.color}`} />
+                    <span className="text-[10px] font-black uppercase tracking-tight text-foreground text-center">
                       {truck.name}
                     </span>
                   </button>
@@ -411,11 +467,12 @@ export default function RacingClient({
             Informasi & Aturan Main
           </h4>
           <p className="text-sm text-foreground/80 leading-relaxed font-medium">
-            Setiap taruhan balapan diawali dari 500 N¢. Hasil balapan (truk yang
-            menang) diacak sepenuhnya di sisi server saat Anda menekan tombol
-            mulai, sehingga tidak dapat dimanipulasi. Jika jagoan Anda menang,
-            Anda berhak mendapatkan hadiah 3x lipat dari total taruhan Anda.
-            Mainkan dengan bijak!
+            Setiap taruhan balapan diawali dari 500 N¢. Terdapat 8 truk yang
+            bertanding, sehingga peluang menang adalah 12,5%. Hasil balapan
+            (truk yang menang) diacak sepenuhnya di sisi server saat Anda
+            menekan tombol mulai, sehingga tidak dapat dimanipulasi. Jika jagoan
+            Anda menang, Anda berhak mendapatkan hadiah 3x lipat dari total
+            taruhan Anda. Mainkan dengan bijak!
           </p>
         </div>
       </div>

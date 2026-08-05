@@ -4,6 +4,12 @@ import { redirect } from "next/navigation";
 import DriverAccessBlocker from "@/components/DriverAccessBlocker";
 import LibraryClient from "./LibraryClient";
 
+export const metadata = {
+  title: "Library",
+};
+
+
+
 export default async function LibraryPage() {
   const session = await getServerSession(authOptions);
   

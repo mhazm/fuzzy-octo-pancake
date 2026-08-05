@@ -6,7 +6,7 @@ import Notification from "@/lib/models/Notification";
 import mongoose from "mongoose";
 
 import dbConnect from "@/lib/mongoose";
-const DISCORD_COUPON_CHANNEL_ID = "1405533304442196049";
+const DISCORD_COUPON_CHANNEL_ID = process.env.DISCORD_GENERAL_DRIVER_ID_CHANNEL;
 
 async function sendDiscordCouponMessage(coupon: any) {
   const botToken = process.env.DISCORD_BOT_TOKEN;
@@ -22,12 +22,12 @@ async function sendDiscordCouponMessage(coupon: any) {
 
   const embed = {
     title: "🎟️ KUPON BARU TERSEDIA!",
-    description: `Kupon baru telah diterbitkan! Segera klaim sebelum kedaluwarsa.\n\n**Kode Kupon:** \`${coupon.codeCoupon}\`\n**Tipe Hadiah:** ${isNC ? "Nismara Coin" : "Tiket Hapus Penalti"}\n**Total Hadiah:** ${rewardText}\n**Durasi:** ${coupon.durationDays} Hari\n\n[🔗 Klik di sini untuk Klaim Kupon!](https://nismara.web.id/coupons)`,
+    description: `Kupon baru telah diterbitkan! Segera klaim sebelum kedaluwarsa.\n\n**Kode Kupon:** \`${coupon.codeCoupon}\`\n**Tipe Hadiah:** ${isNC ? "Nismara Coin" : "Tiket Hapus Penalti"}\n**Total Hadiah:** ${rewardText}\n**Durasi:** ${coupon.durationDays} Hari\n\n[🔗 Klik di sini untuk Klaim Kupon!](https://transport.nismara.web.id/coupons)`,
     color: isNC ? 0xfacc15 : 0xef4444, // Yellow for NC, Red for Penalty
     image: coupon.imageUrl ? { url: coupon.imageUrl } : undefined,
     timestamp: new Date().toISOString(),
     footer: {
-      text: "Nismara Logistics - Event System",
+      text: "Nismara Transport - Event System",
     },
   };
 
@@ -43,7 +43,7 @@ async function sendDiscordCouponMessage(coupon: any) {
         body: JSON.stringify({
           embeds: [embed],
         }),
-      }
+      },
     );
 
     if (!res.ok) {
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
     ) {
       return NextResponse.json(
         { error: "Forbidden: Management only" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -104,7 +104,9 @@ export async function POST(request: Request) {
     const db = client.db();
 
     const startDate = new Date();
-    const endDate = new Date(startDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
+    const endDate = new Date(
+      startDate.getTime() + durationDays * 24 * 60 * 60 * 1000,
+    );
 
     const newCoupon = {
       guildId: "863959415702028318",
@@ -132,12 +134,12 @@ export async function POST(request: Request) {
 
       // Create Global Website Notification
       await dbConnect();
-      
+
       const isNC = type === "NC";
       await Notification.create({
         recipient: "global",
         title: "🎟️ Kupon Baru Tersedia!",
-        message: `Kupon ${nameCoupon} telah terbit. Hadiah berupa ${isNC ? 'Nismara Coin' : 'Tiket Penghapusan Penalti'}. Segera klaim sebelum kehabisan!`,
+        message: `Kupon ${nameCoupon} telah terbit. Hadiah berupa ${isNC ? "Nismara Coin" : "Tiket Penghapusan Penalti"}. Segera klaim sebelum kehabisan!`,
         type: "info",
         link: "/coupons",
         isRead: false,
@@ -151,7 +153,7 @@ export async function POST(request: Request) {
     console.error("Create Coupon Error:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -2,8 +2,10 @@ import Link from "next/link";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import {
+
   Users,
   UserPlus,
+  User2,
   Coins,
   Target,
   ArrowRight,
@@ -12,6 +14,12 @@ import {
   Trophy,
   FileQuestion,
 } from "lucide-react";
+
+export const metadata = {
+  title: "Manage Data",
+};
+
+
 
 export default async function UserDataHub() {
   const session = await getServerSession(authOptions);
@@ -40,6 +48,17 @@ export default async function UserDataHub() {
       border: "border-accent-sky/20",
       hoverBorder: "group-hover:border-accent-sky/50",
       glow: "group-hover:bg-accent-sky/20",
+    },
+    {
+      name: "Manage Intern",
+      desc: "Tinjau semua sopir intern.",
+      icon: User2,
+      href: "/dashboard/manage/data/interns",
+      color: "text-accent-indigo",
+      bg: "bg-accent-indigo/10",
+      border: "border-accent-indigo/20",
+      hoverBorder: "group-hover:border-accent-indigo/50",
+      glow: "group-hover:bg-accent-indigo/20",
     },
     {
       name: "Manage NC",
@@ -120,11 +139,11 @@ export default async function UserDataHub() {
           <ShieldCheck className="w-4 h-4" /> Management Portal
         </div>
         <h1 className="text-3xl md:text-4xl font-black text-foreground tracking-tight">
-          User Data <span className="text-gradient">Hub</span>
+          Manage Data <span className="text-gradient">Hub</span>
         </h1>
         <p className="text-foreground/60 font-medium max-w-xl">
-          Pusat kendali administrator untuk mengelola seluruh data pengemudi,
-          pendaftaran, finansial, dan kedisiplinan.
+          Pusat kendali administrator untuk mengelola seluruh data anggota,
+          pendaftaran, finansial, dan lain-lain.
         </p>
       </div>
 

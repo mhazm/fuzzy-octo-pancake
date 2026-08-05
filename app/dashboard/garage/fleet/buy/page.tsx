@@ -11,6 +11,12 @@ import "@/lib/models/FleetBrand";
 import Garage from "@/lib/models/Garage";
 
 import dbConnect from "@/lib/mongoose";
+
+export const metadata = {
+  title: "Buy",
+};
+
+
 export const dynamic = "force-dynamic";
 
 export default async function BuyFleetPage() {

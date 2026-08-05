@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
 import DriverAccessBlocker from "@/components/DriverAccessBlocker";
 
 export const metadata = {
-  title: "Dompet Nismara | Nismara Logistics",
+  title: "Dompet Nismara",
 };
 
 export default async function CurrencyPage() {

@@ -17,6 +17,12 @@ import {
 } from "@/components/ui/card";
 import clientPromise from "@/lib/mongodb"; // Pastikan path ini sesuai dengan file mongodb.ts kamu
 
+export const metadata = {
+  title: "Manage Surveys",
+};
+
+
+
 // Memaksa Next.js agar selalu mengambil data terbaru (tidak di-cache secara statis)
 export const dynamic = "force-dynamic";
 

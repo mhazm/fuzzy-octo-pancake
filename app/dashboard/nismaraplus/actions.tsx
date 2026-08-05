@@ -119,7 +119,7 @@ export async function createPurchaseTicket(months: number) {
                 {
                   name: "🏦 Metode Pembayaran Manual",
                   value:
-                    "• **Bank BCA:** 123456789 a/n Nismara Logistics\n• **E-Wallet Dana/Gopay:** 08123456789",
+                    "• **Bank BCA:** 123456789 a/n Nismara Transport\n• **E-Wallet Dana/Gopay:** 08123456789",
                   inline: false,
                 },
                 {

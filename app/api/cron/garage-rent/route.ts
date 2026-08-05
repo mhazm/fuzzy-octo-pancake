@@ -76,17 +76,15 @@ export async function GET(request: Request) {
         // Gagal bayar karena saldo kurang
         failedCount++;
         
+        // Ubah status jadi suspended (disita)
+        garage.status = "suspended";
+        await garage.save();
+        
         // Kirim notifikasi peringatan
         await sendDiscordDM(
           garage.discordId,
-          `⚠️ **PERINGATAN GARASI!** ⚠️\nSaldo NC Anda tidak mencukupi untuk membayar biaya operasional garasi bulanan sebesar **${garage.operational_cost.toLocaleString('id-ID')} NC**. Harap segera isi saldo Anda agar kendaraan dan garasi Anda tetap dapat beroperasi normal!`
+          `🚨 **GARASI DISITA!** 🚨\nSaldo NC Anda tidak mencukupi untuk membayar biaya operasional garasi bulanan sebesar **${garage.operational_cost.toLocaleString('id-ID')} NC**. Seluruh akses ke garasi Anda dan Fuel Tank telah **DIKUNCI**. Silakan buat tiket (Ticket) di Discord Nismara untuk berdiskusi dengan Manajer agar tunggakan Anda dapat diselesaikan (misalnya: dengan menjual aset truk Anda).`
         );
-        
-        // Kita bisa extend 1 hari ke depan agar tidak terus-terusan spam notifikasi setiap cron jalan
-        const nextDate = new Date();
-        nextDate.setDate(nextDate.getDate() + 1);
-        garage.next_payment_date = nextDate;
-        await garage.save();
         
       } else {
         // Berhasil bayar

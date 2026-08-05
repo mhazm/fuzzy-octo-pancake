@@ -11,6 +11,12 @@ import GarageClient from "./GarageClient";
 import "@/lib/models/User";
 
 import dbConnect from "@/lib/mongoose";
+
+export const metadata = {
+  title: "Garage",
+};
+
+
 export const dynamic = "force-dynamic";
 
 export default async function GarageDashboardPage() {
@@ -54,8 +60,8 @@ export default async function GarageDashboardPage() {
     });
   }
 
-  // Calculate fleetSlotUsed
-  const userFleetsCount = await Fleet.countDocuments({ driver: user._id.toString() });
+  // Calculate fleetSlotUsed based on owner (not driver, since driver can self-assign/unassign)
+  const userFleetsCount = await Fleet.countDocuments({ owner: user._id.toString() });
   
   if (garage.fleetSlotUsed !== userFleetsCount) {
     garage.fleetSlotUsed = userFleetsCount;

@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import clientPromise from "@/lib/mongodb";
 import Link from "next/link";
+import { NismaraIcon } from "@/components/icons/SocialMedia";
 import {
   CheckCircle2,
   ShieldCheck,
@@ -16,11 +17,12 @@ import {
   Truck,
   Quote,
   Star,
+  HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 // SEO Metadata for indexing
 export const metadata: Metadata = {
-  title: "Cara Bergabung & Persyaratan - Nismara Transport",
+  title: "Cara Bergabung & Persyaratan",
   description:
     "Tertarik bergabung dengan Nismara Transport? Pelajari persyaratan, baca Terms of Service, dan ikuti langkah-langkah mudah untuk mendaftar sebagai driver di VTC kami.",
   keywords: [
@@ -36,7 +38,7 @@ export const metadata: Metadata = {
     description:
       "Pelajari persyaratan dan cara mudah bergabung menjadi driver di ekosistem Nismara Transport.",
     type: "website",
-    url: "https://nismara.web.id/onboarding",
+    url: "https://transport.nismara.web.id/onboarding",
     images: ["https://images.nismara.my.id/227300_188.jpg"], // Menggunakan gambar default project
   },
 };
@@ -130,9 +132,12 @@ export default async function OnboardingPage() {
     {
       number: "03",
       icon: Ticket,
-      title: "Buka Tiket Pendaftaran",
-      desc: "Masuk ke channel pendaftaran dan buat tiket baru. Tim HRD kami akan segera merespons tiket Anda.",
-      action: null,
+      title: "Login dan Daftar",
+      desc: "Masuk ke website ini dan kamu langsung bisa melakukan pendaftaran. Channel khusus pendaftaranmu akan dibuat secara otomatis.",
+      action: {
+        text: "Daftar Sekarang",
+        url: "/register",
+      },
     },
     {
       number: "04",
@@ -394,6 +399,101 @@ export default async function OnboardingPage() {
             </div>
           </section>
         )}
+
+        {/* FAQ SECTION */}
+        <section>
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-foreground mb-4">
+              Pertanyaan yang Sering Diajukan
+            </h2>
+            <p className="text-foreground/60 max-w-2xl mx-auto">
+              Masih ragu atau punya pertanyaan teknis terkait pendaftaran?
+              Berikut adalah beberapa jawaban atas pertanyaan umum dari para
+              calon pendaftar.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {[
+              {
+                q: "Apakah harus punya DLC map untuk bergabung?",
+                a: "Tidak wajib. Anda cukup memiliki game base/original Euro Truck Simulator 2 atau American Truck Simulator di Steam. DLC apa pun bersifat opsional.",
+              },
+              {
+                q: "Apakah saya harus selalu online di Discord?",
+                a: "Tidak harus 24/7. Namun saat mengikuti jadwal Convoy, Anda diwajibkan untuk bergabung ke Voice Channel untuk kemudahan koordinasi.",
+              },
+              {
+                q: "Apakah ada syarat sudah pernah bergabung ke vtc lain sebelumnya?",
+                a: "Tidak ada syarat harus sudah pernah bergabung ke vtc lain. Baik pemain baru (pemula) maupun veteran sangat dipersilakan untuk bergabung.",
+              },
+              {
+                q: "Saya baru bermain ETS2/ATS, apakah bisa bergabung?",
+                a: "Tentu saja bisa. Teman-teman di Nismara akan sangat menyambut anda untuk bermain bersama. Kami siap membimbing anda menjadi driver profesional.",
+              },
+            ].map((faq, idx) => (
+              <div
+                key={idx}
+                className="bg-card/30 backdrop-blur-sm border border-border p-8 rounded-3xl hover:border-primary/40 hover:bg-card/50 transition-colors shadow-lg group"
+              >
+                <div className="flex gap-5 items-start">
+                  <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:scale-110 group-hover:bg-primary group-hover:text-white transition-all shadow-sm">
+                    <HelpCircle className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-foreground text-lg mb-2 group-hover:text-primary transition-colors">
+                      {faq.q}
+                    </h3>
+                    <p className="text-foreground/60 text-sm leading-relaxed">
+                      {faq.a}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-12 text-center">
+            <Link href="/faq">
+              <Button
+                variant="outline"
+                className="rounded-xl border-border bg-card/30 backdrop-blur-sm hover:bg-primary hover:text-white hover:border-primary font-bold h-12 px-8 transition-all"
+              >
+                Lihat FAQ Selengkapnya <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </Link>
+          </div>
+        </section>
+
+        {/* FINAL CALL TO ACTION */}
+        <section className="pt-8">
+          <div className="bg-card/40 backdrop-blur-xl border border-primary/20 p-10 md:p-16 rounded-[3rem] text-center relative overflow-hidden shadow-2xl shadow-primary/10 group">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[300px] bg-primary/20 rounded-full blur-[100px] pointer-events-none -z-10 group-hover:bg-primary/30 transition-colors duration-700" />
+            
+            <div className="max-w-2xl mx-auto space-y-8 relative z-10">
+              <NismaraIcon className="w-24 h-24 text-primary mx-auto mb-4 animate-pulse group-hover:scale-110 transition-transform duration-500" />
+              
+              <h2 className="text-4xl md:text-5xl font-black text-foreground tracking-tight">
+                Siap Memulai Perjalanan Anda?
+              </h2>
+              
+              <p className="text-lg text-foreground/60 leading-relaxed">
+                Tunggu apa lagi? Proses pendaftaran kami cepat dan mudah. Segera daftarkan diri Anda, terhubung dengan Discord kami, dan rasakan pengalaman simulasi logistik terbaik di Indonesia.
+              </p>
+              
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+                <Link href="/register" className="w-full sm:w-auto">
+                  <Button className="w-full sm:w-auto h-14 px-10 text-lg font-bold rounded-2xl bg-primary text-primary-foreground shadow-xl shadow-primary/20 hover:scale-105 transition-all">
+                    Daftar Sekarang <ArrowRight className="w-6 h-6 ml-2" />
+                  </Button>
+                </Link>
+                <Link href="/faq" className="w-full sm:w-auto">
+                  <Button variant="outline" className="w-full sm:w-auto h-14 px-8 text-lg font-bold rounded-2xl border-border bg-background/50 backdrop-blur-md hover:bg-muted transition-all">
+                    Pelajari Lebih Lanjut
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
     </main>
   );

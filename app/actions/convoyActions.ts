@@ -101,7 +101,7 @@ export async function createConvoy(formData: FormData) {
                         inline: true,
                       },
                     ],
-                    footer: { text: "Nismara Logistics Control System" },
+                    footer: { text: "Nismara Transport Control System" },
                   },
                 ],
                 components: [

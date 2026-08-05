@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import React from "react";
 
 export const metadata: Metadata = {
-  title: "Terms & Conditions - Nismara Transport",
+  title: "Terms & Conditions",
   description:
     "Pelajari syarat dan ketentuan Nismara Transport. Ketahui aturan penggunaan, kebijakan, serta hak dan kewajiban pengguna platform",
   openGraph: {
-    title: "Terms & Conditions - Nismara Transport",
+    title: "Terms & Conditions",
     description:
       "Pelajari syarat dan ketentuan Nismara Transport. Ketahui aturan penggunaan, kebijakan, serta hak dan kewajiban pengguna platform",
     images: ["https://images.nismara.my.id/227300_188.jpg"],

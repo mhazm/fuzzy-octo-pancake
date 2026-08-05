@@ -9,27 +9,28 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const db = client.db();
 
   // 1. Ambil Data Dinamis dari MongoDB
-  const [jobs, teams, contracts, convoylobby] = await Promise.all([
-    db
-      .collection("jobs")
-      .find({}, { projection: { jobId: 1, updatedAt: 1 } })
-      .toArray(),
-    db
-      .collection("teams")
-      .find({}, { projection: { uri: 1, updatedAt: 1 } })
-      .toArray(),
-    db
-      .collection("contracts")
-      .find({}, { projection: { contractName: 1, updatedAt: 1 } })
-      .toArray(),
-    db
-      .collection("convoylobby")
-      .find({}, { projection: { convoyUri: 1, updatedAt: 1 } })
-      .toArray(),
+  const [
+    jobs,
+    teams,
+    contracts,
+    convoylobby,
+    galleryPosts,
+    users,
+    surveys,
+    marketItems,
+  ] = await Promise.all([
+    db.collection("jobs").find({}, { projection: { jobId: 1, updatedAt: 1 } }).toArray(),
+    db.collection("teams").find({}, { projection: { uri: 1, updatedAt: 1 } }).toArray(),
+    db.collection("contracts").find({}, { projection: { contractName: 1, updatedAt: 1 } }).toArray(),
+    db.collection("convoylobby").find({}, { projection: { convoyUri: 1, updatedAt: 1 } }).toArray(),
+    db.collection("gallery").find({}, { projection: { _id: 1, updatedAt: 1 } }).toArray(),
+    db.collection("users").find({}, { projection: { truckyId: 1, updatedAt: 1 } }).toArray(),
+    db.collection("surveys").find({}, { projection: { uri: 1, updatedAt: 1 } }).toArray(),
+    // Data MarketItem dari Mongoose secara native menggunakan nama koleksi 'marketitems'
+    db.collection("marketitems").find({ isPublished: true }, { projection: { _id: 1, slug: 1, updatedAt: 1 } }).toArray(),
   ]);
 
   // 2. Map Jobs (/jobs/[jobId])
-  // Tambahkan filter untuk memastikan jobId ada
   const jobEntries = jobs
     .filter((job) => job.jobId)
     .map((job) => ({
@@ -40,7 +41,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }));
 
   // 3. Map Teams (/teams/[uri])
-  // Tambahkan filter untuk memastikan uri ada
   const teamEntries = teams
     .filter((team) => team.uri)
     .map((team) => ({
@@ -51,7 +51,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }));
 
   // 4. Map Special Contracts (/contracts/[slug])
-  // Ini letak perbaikan utamanya: pastikan contractName ada sebelum di-lowercase
   const contractEntries = contracts
     .filter((contract) => contract.contractName)
     .map((contract) => {
@@ -64,6 +63,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       };
     });
 
+  // 5. Map Convoy (/convoy/[uri])
   const convoyEntries = convoylobby
     .filter((convoy) => convoy.convoyUri)
     .map((convoy) => ({
@@ -73,75 +73,80 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     }));
 
-  // 5. Rute Statis
-  const staticRoutes = [
-    {
-      url: baseUrl,
-      lastModified: new Date(),
-      changeFrequency: "daily" as const,
-      priority: 1,
-    },
-    {
-      url: `${baseUrl}/jobs`,
-      lastModified: new Date(),
-      changeFrequency: "daily" as const,
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/teams`,
-      lastModified: new Date(),
-      changeFrequency: "daily" as const,
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/events`,
-      lastModified: new Date(),
-      changeFrequency: "daily" as const,
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/convoy`,
-      lastModified: new Date(),
-      changeFrequency: "daily" as const,
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/special-contracts`,
-      lastModified: new Date(),
-      changeFrequency: "daily" as const,
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/leaderboard`,
-      lastModified: new Date(),
-      changeFrequency: "daily" as const,
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/terms`,
-      lastModified: new Date(),
+  // 6. Map Gallery Posts (/p/[postId])
+  const postEntries = galleryPosts
+    .filter((post) => post._id)
+    .map((post) => ({
+      url: `${baseUrl}/p/${post._id}`,
+      lastModified: post.updatedAt || new Date(),
       changeFrequency: "weekly" as const,
+      priority: 0.7,
+    }));
+
+  // 7. Map Driver Profiles (/profile/[truckyId])
+  const profileEntries = users
+    .filter((user) => user.truckyId)
+    .map((user) => ({
+      url: `${baseUrl}/profile/${user.truckyId}`,
+      lastModified: user.updatedAt || new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
+    }));
+
+  // 8. Map Surveys (/surveys/[uri])
+  const surveyEntries = surveys
+    .filter((survey) => survey.uri)
+    .map((survey) => ({
+      url: `${baseUrl}/surveys/${survey.uri}`,
+      lastModified: survey.updatedAt || new Date(),
+      changeFrequency: "monthly" as const,
       priority: 0.6,
-    },
-    {
-      url: `${baseUrl}/privacy`,
-      lastModified: new Date(),
+    }));
+
+  // 9. Map Market Items (/market/[id] atau slug)
+  const marketEntries = marketItems
+    .filter((item) => item.slug || item._id)
+    .map((item) => ({
+      url: `${baseUrl}/market/${item.slug || item._id}`,
+      lastModified: item.updatedAt || new Date(),
       changeFrequency: "weekly" as const,
-      priority: 0.6,
-    },
-    {
-      url: `${baseUrl}/cookies`,
-      lastModified: new Date(),
-      changeFrequency: "weekly" as const,
-      priority: 0.6,
-    },
-    {
-      url: `${baseUrl}/faq`,
-      lastModified: new Date(),
-      changeFrequency: "weekly" as const,
-      priority: 0.6,
-    },
+      priority: 0.7,
+    }));
+
+  // 10. Rute Statis Lengkap
+  const routePaths = [
+    "",
+    "/jobs",
+    "/teams",
+    "/events",
+    "/convoy",
+    "/special-contracts",
+    "/leaderboard",
+    "/terms",
+    "/privacy",
+    "/cookies",
+    "/faq",
+    "/onboarding",
+    "/register",
+    "/gallery",
+    "/drivers",
+    "/racing",
+    "/lotto",
+    "/scratchers",
+    "/timezone",
+    "/support-us",
+    "/coupons",
+    "/currency-boost",
+    "/market",
+    "/surveys",
   ];
+
+  const staticRoutes = routePaths.map((path) => ({
+    url: `${baseUrl}${path}`,
+    lastModified: new Date(),
+    changeFrequency: "daily" as const,
+    priority: path === "" ? 1 : 0.8,
+  }));
 
   return [
     ...staticRoutes,
@@ -149,5 +154,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...teamEntries,
     ...contractEntries,
     ...convoyEntries,
+    ...postEntries,
+    ...profileEntries,
+    ...surveyEntries,
+    ...marketEntries,
   ];
 }

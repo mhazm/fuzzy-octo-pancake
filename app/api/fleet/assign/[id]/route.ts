@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import Fleet from "@/lib/models/Fleet";
-import "@/lib/models/FleetStore"; 
+import "@/lib/models/FleetStore";
 import "@/lib/models/User";
-import "@/lib/models/FleetBrand"; 
+import "@/lib/models/FleetBrand";
 
 import dbConnect from "@/lib/mongoose";
 export async function PATCH(
@@ -23,13 +23,13 @@ export async function PATCH(
     const updatedFleet = await Fleet.findOneAndUpdate(
       { _id: id }, // ID dari Mongo
       { $set: body },
-      { returnDocument: "after", new: true }
+      { returnDocument: "after", new: true },
     )
-    .populate({
-      path: "model",
-      populate: { path: "brand" }
-    })
-    .populate("driver");
+      .populate({
+        path: "model",
+        populate: { path: "brand" },
+      })
+      .populate("owner");
 
     if (!updatedFleet) {
       return NextResponse.json(

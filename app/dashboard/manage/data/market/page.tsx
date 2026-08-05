@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import MarketManagerClient from "./MarketManagerClient";
 
 export const metadata = {
-  title: "Kelola Market Mod | Nismara Logistics",
+  title: "Kelola Market Mod",
 };
 
 export default async function ManageMarketPage() {

@@ -39,7 +39,7 @@ export const authOptions: NextAuthOptions = {
       let driverData = null;
       let userRole: "user" | "manager" | "admin" = "user";
       let isBooster = false;
-      let nismaraplus = false;
+      let nismaraplus: any = null;
       const guildId = "863959415702028318";
       const managerRoleId = "1406574228794507354";
 
@@ -100,8 +100,10 @@ export const authOptions: NextAuthOptions = {
           // 3. JIKA BELUM 10 MENIT, GUNAKAN DATA DARI DATABASE (TIDAK SPAM API)
           userRole = dbUser?.discordRole || "user";
           isBooster = dbUser?.isBooster || false;
-          nismaraplus = dbUser?.nismaraplus?.status || false;
         }
+
+        // --- FETCH NISMARA+ DARI DB (SELALU) ---
+        nismaraplus = dbUser?.nismaraplus || { status: false };
 
         // --- UPDATE DISCORD ID & XP JIKA KOSONG ---
         await db.collection("users").updateOne(

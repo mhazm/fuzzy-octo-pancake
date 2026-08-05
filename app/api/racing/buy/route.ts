@@ -7,10 +7,10 @@ import { getCurrencyData } from "@/app/dashboard/currency/actions";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { logExtremeActivity } from "@/lib/securityLogger";
 
-const GUILD_ID = "863959415702028318";
+const GUILD_ID = process.env.DISCORD_GUILD_ID;
 const BASE_BET = 500;
 const VALID_MULTIPLIERS = [1, 2, 5, 10];
-const TRUCK_COUNT = 4;
+const TRUCK_COUNT = 8;
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,18 +22,32 @@ export async function POST(req: NextRequest) {
     const discordId = session.user.discordId;
 
     if (!checkRateLimit(discordId, "racing-buy", 1000)) {
-      return NextResponse.json({ error: "Terlalu banyak permintaan. Mohon tunggu sesaat." }, { status: 429 });
+      return NextResponse.json(
+        { error: "Terlalu banyak permintaan. Mohon tunggu sesaat." },
+        { status: 429 },
+      );
     }
 
     const body = await req.json();
     const { truckId, multiplier } = body;
 
-    if (!truckId || typeof truckId !== "number" || truckId < 1 || truckId > TRUCK_COUNT) {
-      return NextResponse.json({ error: "Invalid truck selection" }, { status: 400 });
+    if (
+      !truckId ||
+      typeof truckId !== "number" ||
+      truckId < 1 ||
+      truckId > TRUCK_COUNT
+    ) {
+      return NextResponse.json(
+        { error: "Invalid truck selection" },
+        { status: 400 },
+      );
     }
-    
+
     if (!multiplier || !VALID_MULTIPLIERS.includes(multiplier)) {
-      return NextResponse.json({ error: "Invalid multiplier" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid multiplier" },
+        { status: 400 },
+      );
     }
 
     const totalBet = BASE_BET * multiplier;
@@ -45,14 +59,14 @@ export async function POST(req: NextRequest) {
     } catch (err) {
       return NextResponse.json(
         { error: "Failed to fetch currency" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
     if (currencyData.balance < totalBet) {
       return NextResponse.json(
         { error: "Saldo Nismara Coin tidak mencukupi" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -65,13 +79,13 @@ export async function POST(req: NextRequest) {
       .collection("currencies")
       .updateOne(
         { userId: discordId, guildId: GUILD_ID, totalNC: { $gte: totalBet } },
-        { $inc: { totalNC: -totalBet } }
+        { $inc: { totalNC: -totalBet } },
       );
 
     if (updateRes.modifiedCount === 0) {
       return NextResponse.json(
         { error: "Gagal memotong saldo NC" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -85,10 +99,10 @@ export async function POST(req: NextRequest) {
       createdAt: new Date(),
     });
 
-    // RNG to determine winning truck (1 to 4)
-    // 25% chance for any truck
+    // RNG to determine winning truck (1 to 8)
+    // 12.5% chance for any truck
     const winningTruckId = Math.floor(Math.random() * TRUCK_COUNT) + 1;
-    
+
     const isWinning = winningTruckId === truckId;
     const prizeWon = isWinning ? totalBet * 3 : 0;
 
@@ -98,7 +112,7 @@ export async function POST(req: NextRequest) {
         .collection("currencies")
         .updateOne(
           { userId: discordId, guildId: GUILD_ID },
-          { $inc: { totalNC: prizeWon } }
+          { $inc: { totalNC: prizeWon } },
         );
 
       await db.collection("currencyhistories").insertOne({
@@ -111,7 +125,12 @@ export async function POST(req: NextRequest) {
       });
 
       // Log extreme winnings
-      await logExtremeActivity(discordId, "RACING_WIN", prizeWon, `Menang balap truk dengan taruhan x${multiplier}`);
+      await logExtremeActivity(
+        discordId,
+        "RACING_WIN",
+        prizeWon,
+        `Menang balap truk dengan taruhan x${multiplier}`,
+      );
     }
 
     // Create ticket in DB
@@ -124,7 +143,7 @@ export async function POST(req: NextRequest) {
       prizeWon,
       isWinning,
     });
-    
+
     await newTicket.save();
 
     return NextResponse.json({
@@ -137,7 +156,7 @@ export async function POST(req: NextRequest) {
     console.error("Racing Buy Error:", error);
     return NextResponse.json(
       { error: "Failed to process racing bet" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

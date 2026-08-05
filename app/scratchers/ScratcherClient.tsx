@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import ScratchCard from "@/components/scratch/ScratchCard";
 import {
   Coins,
@@ -40,6 +40,13 @@ export default function ScratcherClient({
   const [history, setHistory] = useState<TicketHistory[]>([]);
 
   const [activeTicketId, setActiveTicketId] = useState<string | null>(null);
+  const activeTicketIdRef = useRef<string | null>(null);
+  
+  // Sync state to ref so fetchDashboardData can access the latest without closure staleness
+  useEffect(() => {
+    activeTicketIdRef.current = activeTicketId;
+  }, [activeTicketId]);
+
   const [prizeToReveal, setPrizeToReveal] = useState<number>(0);
   const [isRevealed, setIsRevealed] = useState(false);
 
@@ -82,9 +89,13 @@ export default function ScratcherClient({
           (t: TicketHistory) => !t.isScratched,
         );
         if (unscratched) {
-          setActiveTicketId(unscratched._id);
-          setPrizeToReveal(unscratched.prizeWon);
-          setIsRevealed(false);
+          // Hanya reset UI jika ini adalah tiket yang BERBEDA.
+          // Jika ini tiket yang sedang dimainkan, abaikan (mungkin delay dari database).
+          if (activeTicketIdRef.current !== unscratched._id) {
+            setActiveTicketId(unscratched._id);
+            setPrizeToReveal(unscratched.prizeWon);
+            setIsRevealed(false);
+          }
         }
       }
     } catch (err) {
