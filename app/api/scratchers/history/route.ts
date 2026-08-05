@@ -3,6 +3,7 @@ import clientPromise from "@/lib/mongodb";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import ScratchTicket from "@/lib/models/ScratchTicket";
+import { redis } from "@/lib/redis";
 
 export async function GET(req: NextRequest) {
   try {
@@ -20,7 +21,7 @@ export async function GET(req: NextRequest) {
       .limit(10)
       .lean();
 
-    // Calculate stats
+    // Calculate stats dari MongoDB
     const statsResult = await ScratchTicket.aggregate([
       { $match: { discordId } },
       {
@@ -37,14 +38,47 @@ export async function GET(req: NextRequest) {
       },
     ]);
 
-    const stats = statsResult[0] || {
+    let stats = statsResult[0] || {
       totalTickets: 0,
       totalSpent: 0,
       totalWon: 0,
     };
 
+    // Sisipkan tiket dari Redis (Write-Behind)
+    const redisTicketIds = await redis.lrange(`session_tickets:${discordId}`, 0, -1);
+    const redisTickets = [];
+    
+    for (const tid of redisTicketIds) {
+      const t = await redis.hgetall(`ticket:${tid}`);
+      if (t && Object.keys(t).length > 0) {
+        const isScratched = t.isScratched === true || t.isScratched === "true";
+        const price = Number(t.price || 400);
+        const prizeWon = Number(t.prizeWon || 0);
+        
+        redisTickets.push({
+          _id: t._id,
+          discordId: t.discordId,
+          price,
+          prizeWon,
+          isWinning: t.isWinning === true || t.isWinning === "true",
+          isScratched,
+          scratchedAt: t.scratchedAt || null,
+          createdAt: t.createdAt,
+        });
+
+        stats.totalTickets += 1;
+        stats.totalSpent += price;
+        if (isScratched) {
+          stats.totalWon += prizeWon;
+        }
+      }
+    }
+
+    // Gabungkan (Redis di depan karena lebih baru)
+    const combinedTickets = [...redisTickets.reverse(), ...recentTickets].slice(0, 10);
+
     return NextResponse.json({
-      recentTickets,
+      recentTickets: combinedTickets,
       stats,
     });
   } catch (error: any) {

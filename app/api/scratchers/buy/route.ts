@@ -6,6 +6,7 @@ import ScratchTicket from "@/lib/models/ScratchTicket";
 import { getCurrencyData } from "@/app/dashboard/currency/actions";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { logExtremeActivity } from "@/lib/securityLogger";
+import { redis } from "@/lib/redis";
 
 const GUILD_ID = "863959415702028318";
 const TICKET_PRICE = 400;
@@ -36,53 +37,39 @@ export async function POST(req: NextRequest) {
     }
 
     if (currencyData.balance < TICKET_PRICE) {
-      return NextResponse.json(
-        { error: "Saldo Nismara Coin tidak mencukupi" },
-        { status: 400 }
-      );
+      // Tunggu, karena ada net_profit di Redis, kita harus hitung real balance
+      const netProfitStr = await redis.get(`net_profit:${discordId}`);
+      const netProfit = Number(netProfitStr || 0);
+      const estimatedBalance = currencyData.balance + netProfit;
+
+      if (estimatedBalance < TICKET_PRICE) {
+        return NextResponse.json(
+          { error: "Saldo Nismara Coin tidak mencukupi" },
+          { status: 400 }
+        );
+      }
+    } else {
+      const netProfitStr = await redis.get(`net_profit:${discordId}`);
+      const netProfit = Number(netProfitStr || 0);
+      const estimatedBalance = currencyData.balance + netProfit;
+      if (estimatedBalance < TICKET_PRICE) {
+        return NextResponse.json(
+          { error: "Saldo Nismara Coin tidak mencukupi (termasuk potongan sebelumnya)" },
+          { status: 400 }
+        );
+      }
     }
 
-    await clientPromise;
-    const client = await clientPromise;
-    const db = client.db();
-
-    // Deduct balance atomically (Prevents Race Condition exploits)
-    const updateRes = await db
-      .collection("currencies")
-      .updateOne(
-        { userId: discordId, guildId: GUILD_ID, totalNC: { $gte: TICKET_PRICE } },
-        { $inc: { totalNC: -TICKET_PRICE } }
-      );
-
-    if (updateRes.modifiedCount === 0) {
-      return NextResponse.json(
-        { error: "Gagal memotong saldo NC" },
-        { status: 500 }
-      );
-    }
-
-    // Log the spend
-    await db.collection("currencyhistories").insertOne({
-      userId: discordId,
-      guildId: GUILD_ID,
-      amount: TICKET_PRICE,
-      type: "spend",
-      reason: `Membeli 1 Tiket Scratch & Win`,
-      createdAt: new Date(),
-    });
+    // 1. Kurangi net_profit di Redis (Super Cepat)
+    await redis.incrby(`net_profit:${discordId}`, -TICKET_PRICE);
+    // Beri batas waktu jika user lupa sync (misal 1 jam)
+    await redis.expire(`net_profit:${discordId}`, 3600);
 
     // Determine prize based on RNG and probability table
     const rand = Math.random();
     let prizeWon = 0;
     
     // Distribution:
-    // Jackpot (0.5%): < 0.005
-    // Menang Besar (1.5%): 0.005 - 0.02
-    // Menang Sedang (5%): 0.02 - 0.07
-    // Menang Kecil (8%): 0.07 - 0.15
-    // Balik Modal (10%): 0.15 - 0.25
-    // Kalah (75%): >= 0.25
-    
     if (rand < 0.005) {
       prizeWon = 20000;
     } else if (rand < 0.02) {
@@ -97,30 +84,33 @@ export async function POST(req: NextRequest) {
       prizeWon = 0;
     }
 
-    // Count tickets bought today for warning
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
-    const todayCount = await ScratchTicket.countDocuments({
-      discordId,
-      createdAt: { $gte: startOfDay }
-    });
-    const isWarningLimit = todayCount === 49; // 50th ticket
-
-    // Create ticket in DB
-    const newTicket = new ScratchTicket({
+    // 2. Buat tiket di Redis (Super Cepat)
+    const ticketId = `redis_ticket_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const ticketData = {
+      _id: ticketId,
       discordId,
       price: TICKET_PRICE,
       prizeWon,
       isWinning: prizeWon > 0,
       isScratched: false,
-    });
-    
-    await newTicket.save();
+      createdAt: new Date().toISOString()
+    };
+
+    await redis.hset(`ticket:${ticketId}`, ticketData);
+    await redis.expire(`ticket:${ticketId}`, 3600);
+
+    await redis.rpush(`session_tickets:${discordId}`, ticketId);
+    await redis.expire(`session_tickets:${discordId}`, 3600);
+
+    // Untuk fitur limit, kita lewati peringatan batas 50 dari MongoDB karena state terdistribusi.
+    // Atau bisa kita count dari list session_tickets
+    const listLen = await redis.llen(`session_tickets:${discordId}`);
+    const isWarningLimit = listLen >= 49;
 
     return NextResponse.json({
       message: "Ticket purchased successfully",
-      ticketId: newTicket._id,
-      prizeWon: newTicket.prizeWon,
+      ticketId: ticketId,
+      prizeWon: prizeWon,
       warningLimitReached: isWarningLimit
     });
   } catch (error: any) {

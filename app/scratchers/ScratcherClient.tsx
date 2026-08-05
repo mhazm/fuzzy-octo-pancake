@@ -41,6 +41,29 @@ export default function ScratcherClient({
 
   const [activeTicketId, setActiveTicketId] = useState<string | null>(null);
   const activeTicketIdRef = useRef<string | null>(null);
+
+  // Auto-Sync saat player keluar dari halaman (Write-Behind Flush)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        navigator.sendBeacon("/api/scratchers/sync");
+      }
+    };
+    
+    const handlePageHide = () => {
+      navigator.sendBeacon("/api/scratchers/sync");
+    };
+
+    window.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("pagehide", handlePageHide);
+    
+    return () => {
+      window.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("pagehide", handlePageHide);
+      // Saat komponen React di unmount (pindah page via Next.js router)
+      fetch("/api/scratchers/sync", { method: "POST", keepalive: true }).catch(() => {});
+    };
+  }, []);
   
   // Sync state to ref so fetchDashboardData can access the latest without closure staleness
   useEffect(() => {
