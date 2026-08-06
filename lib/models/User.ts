@@ -11,6 +11,8 @@ const userSchema = new mongoose.Schema(
     xp: { type: Number, default: 0 },
     level: { type: Number, default: 1 },
     isBooster: { type: Boolean, default: false },
+    isBestEmployeeETS2: { type: Boolean, default: false },
+    isBestEmployeeATS: { type: Boolean, default: false },
 
     insurance: {
       status: { type: Boolean, default: false },

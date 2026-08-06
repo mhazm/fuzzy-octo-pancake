@@ -5,9 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Download, ShoppingCart, ArrowLeft, Box, CheckCircle2, ShieldAlert, User, Star, Flag } from "lucide-react";
 import Link from "next/link";
 import { useSession, signIn } from "next-auth/react";
-import NismaraPlusBadge from "@/components/icons/NismaraPlusBadge";
-import ServerBoosterBadge from "@/components/icons/ServerBoosterBadge";
-import ManagerBadge from "@/components/icons/ManagerBadge";
+import UserBadges from "@/components/icons/UserBadges";
 import { Modal } from "@/components/ui/Modal";
 
 export default function MarketItemDetail() {
@@ -505,9 +503,13 @@ export default function MarketItemDetail() {
                         <Link href={review.user?.truckyId ? `/profile/${review.user.truckyId}` : "#"} className="font-bold text-white hover:text-primary transition-colors">
                           {review.user?.name}
                         </Link>
-                        {review.user?.isManager && <ManagerBadge className="w-4 h-4" />}
-                        {review.user?.isNismaraPlus && <NismaraPlusBadge className="w-4 h-4" />}
-                        {review.user?.isBooster && <ServerBoosterBadge className="w-4 h-4" />}
+                        <UserBadges 
+                          isManager={review.user?.isManager} 
+                          isBooster={review.user?.isBooster} 
+                          isNismaraPlus={review.user?.isNismaraPlus} 
+                          truckyRank={review.user?.truckyRank}
+                          className="w-4 h-4" 
+                        />
                       </div>
                       <div className="text-xs text-gray-500">
                         {new Date(review.updatedAt).toLocaleDateString("id-ID")}

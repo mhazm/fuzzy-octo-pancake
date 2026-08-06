@@ -78,7 +78,8 @@ export async function GET(request: Request) {
               truckyId: "$uploader.truckyId",
               isNismaraPlus: "$uploader.nismaraplus.status",
               isBooster: "$uploader.isBooster",
-              role: "$uploader.discordRole"
+              role: "$uploader.discordRole",
+              truckyRank: "$uploader.truckyRank"
             }
           }
         },

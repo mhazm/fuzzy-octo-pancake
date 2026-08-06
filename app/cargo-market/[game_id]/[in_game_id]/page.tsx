@@ -23,9 +23,7 @@ import type { Metadata } from "next";
 import CargoMarketChart from "./CargoMarketChart";
 import User from "@/lib/models/User";
 import CargoMarketHistory from "@/lib/models/CargoMarketHistory.js";
-import NismaraPlusBadge from "@/components/icons/NismaraPlusBadge";
-import ServerBoosterBadge from "@/components/icons/ServerBoosterBadge";
-import ManagerBadge from "@/components/icons/ManagerBadge";
+import UserBadges from "@/components/icons/UserBadges";
 
 export async function generateMetadata({
   params,
@@ -386,16 +384,13 @@ export default async function CargoDetailPage({
                             <div className="flex flex-col">
                               <div className="flex items-center font-bold">
                                 {driverUser?.name || job.driverId}
-                                {(driverUser?.discordRole === "manager" ||
-                                  driverUser?.discordRole === "admin") && (
-                                  <ManagerBadge className="w-3.5 h-3.5" />
-                                )}
-                                {driverUser?.isBooster && (
-                                  <ServerBoosterBadge className="w-3.5 h-3.5" />
-                                )}
-                                {driverUser?.nismaraplus?.status && (
-                                  <NismaraPlusBadge className="w-3.5 h-3.5" />
-                                )}
+                                <UserBadges 
+                                  role={driverUser?.discordRole} 
+                                  isBooster={driverUser?.isBooster} 
+                                  isNismaraPlus={driverUser?.nismaraplus?.status} 
+                                  truckyRank={driverUser?.truckyRank}
+                                  className="w-3.5 h-3.5" 
+                                />
                               </div>
                             </div>
                           </div>

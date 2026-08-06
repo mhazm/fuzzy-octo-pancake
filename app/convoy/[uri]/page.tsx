@@ -18,9 +18,7 @@ import {
 import JoinConvoyButton from "./JoinConvoyButton";
 import ClaimRewardButton from "./ClaimRewardButton";
 import EndConvoyButton from "./EndConvoyButton";
-import NismaraPlusBadge from "@/components/icons/NismaraPlusBadge";
-import ServerBoosterBadge from "@/components/icons/ServerBoosterBadge";
-import ManagerBadge from "@/components/icons/ManagerBadge";
+import UserBadges from "@/components/icons/UserBadges";
 
 
 
@@ -229,9 +227,13 @@ export default async function ConvoyDetailPage({
                       <Link href={`/profile/${usersMap.get(convoy.roadCaptain)?.truckyId || '#'}`} className="text-base font-bold text-foreground hover:text-primary transition-colors">
                         {usersMap.get(convoy.roadCaptain)?.name}
                       </Link>
-                      {(usersMap.get(convoy.roadCaptain)?.discordRole === "manager" || usersMap.get(convoy.roadCaptain)?.discordRole === "admin") && <ManagerBadge className="w-4 h-4" />}
-                      {usersMap.get(convoy.roadCaptain)?.nismaraplus?.status === true && <NismaraPlusBadge className="w-4 h-4" />}
-                      {usersMap.get(convoy.roadCaptain)?.isBooster === true && <ServerBoosterBadge className="w-4 h-4" />}
+                      <UserBadges 
+                        role={usersMap.get(convoy.roadCaptain)?.discordRole} 
+                        isBooster={usersMap.get(convoy.roadCaptain)?.isBooster === true} 
+                        isNismaraPlus={usersMap.get(convoy.roadCaptain)?.nismaraplus?.status === true} 
+                        truckyRank={usersMap.get(convoy.roadCaptain)?.truckyRank}
+                        className="w-4 h-4" 
+                      />
                     </div>
                   </div>
                 </>
@@ -273,9 +275,13 @@ export default async function ConvoyDetailPage({
                       <Link href={`/profile/${usersMap.get(convoy.setBy)?.truckyId || '#'}`} className="text-base font-bold text-foreground hover:text-primary transition-colors">
                         {usersMap.get(convoy.setBy)?.name}
                       </Link>
-                      {(usersMap.get(convoy.setBy)?.discordRole === "manager" || usersMap.get(convoy.setBy)?.discordRole === "admin") && <ManagerBadge className="w-4 h-4" />}
-                      {usersMap.get(convoy.setBy)?.nismaraplus?.status === true && <NismaraPlusBadge className="w-4 h-4" />}
-                      {usersMap.get(convoy.setBy)?.isBooster === true && <ServerBoosterBadge className="w-4 h-4" />}
+                      <UserBadges 
+                        role={usersMap.get(convoy.setBy)?.discordRole} 
+                        isBooster={usersMap.get(convoy.setBy)?.isBooster === true} 
+                        isNismaraPlus={usersMap.get(convoy.setBy)?.nismaraplus?.status === true} 
+                        truckyRank={usersMap.get(convoy.setBy)?.truckyRank}
+                        className="w-4 h-4" 
+                      />
                     </div>
                   </div>
                 </>
@@ -495,9 +501,13 @@ export default async function ConvoyDetailPage({
                   >
                     {userDetail?.name || "Unknown"}
                   </span>
-                  {(userDetail?.discordRole === "manager" || userDetail?.discordRole === "admin") && <ManagerBadge className="w-3 h-3 ml-0.5" />}
-                  {userDetail?.nismaraplus?.status === true && <NismaraPlusBadge className="w-3 h-3 ml-0.5" />}
-                  {userDetail?.isBooster === true && <ServerBoosterBadge className="w-3 h-3 ml-0.5" />}
+                  <UserBadges 
+                    role={userDetail?.discordRole} 
+                    isBooster={userDetail?.isBooster === true} 
+                    isNismaraPlus={userDetail?.nismaraplus?.status === true} 
+                    truckyRank={userDetail?.truckyRank}
+                    className="w-3 h-3 ml-0.5" 
+                  />
                   {isRoadCaptain && (
                     <Crown size={12} className="text-emerald-400 ml-1" />
                   )}
@@ -551,9 +561,13 @@ export default async function ConvoyDetailPage({
                       >
                         {userDetail?.name || "Driver Nismara"}
                       </Link>
-                      {(userDetail?.discordRole === "manager" || userDetail?.discordRole === "admin") && <ManagerBadge className="w-3.5 h-3.5 shrink-0" />}
-                      {userDetail?.nismaraplus?.status === true && <NismaraPlusBadge className="w-3.5 h-3.5 shrink-0" />}
-                      {userDetail?.isBooster === true && <ServerBoosterBadge className="w-3.5 h-3.5 shrink-0" />}
+                      <UserBadges 
+                        role={userDetail?.discordRole} 
+                        isBooster={userDetail?.isBooster === true} 
+                        isNismaraPlus={userDetail?.nismaraplus?.status === true} 
+                        truckyRank={userDetail?.truckyRank}
+                        className="w-3.5 h-3.5 shrink-0" 
+                      />
                     </div>
 
                     {/* Job ID sebagai Link */}

@@ -5,9 +5,7 @@ import { Heart, MessageCircle, MonitorPlay, Loader2, Plus } from "lucide-react";
 import GalleryModal from "@/components/gallery/GalleryModal";
 import UploadPostDialog from "@/components/gallery/UploadPostDialog";
 import Link from "next/link";
-import NismaraPlusBadge from "@/components/icons/NismaraPlusBadge";
-import ServerBoosterBadge from "@/components/icons/ServerBoosterBadge";
-import ManagerBadge from "@/components/icons/ManagerBadge";
+import UserBadges from "@/components/icons/UserBadges";
 
 export default function GalleryIndexClient({
   initialPosts,
@@ -135,9 +133,12 @@ export default function GalleryIndexClient({
                       ) : (
                         <span className="font-bold text-xs truncate">{post.user.name}</span>
                       )}
-                      {(post.user.role === "manager" || post.user.role === "admin") && <ManagerBadge />}
-                      {post.user.isBooster && <ServerBoosterBadge />}
-                      {post.user.isNismaraPlus && <NismaraPlusBadge />}
+                      <UserBadges 
+                        role={post.user.role} 
+                        isBooster={post.user.isBooster} 
+                        isNismaraPlus={post.user.isNismaraPlus} 
+                        truckyRank={post.user.truckyRank}
+                      />
                     </div>
                   </div>
                 </div>

@@ -9,9 +9,7 @@ import User from "@/lib/models/User";
 import LottoClient from "./LottoClient";
 import Image from "next/image";
 import { Ticket, Coins, Trophy, Calendar, Users, History } from "lucide-react";
-import NismaraPlusBadge from "@/components/icons/NismaraPlusBadge";
-import ServerBoosterBadge from "@/components/icons/ServerBoosterBadge";
-import ManagerBadge from "@/components/icons/ManagerBadge";
+import UserBadges from "@/components/icons/UserBadges";
 import { getCurrencyData } from "@/app/dashboard/currency/actions";
 import DriverAccessBlocker from "@/components/DriverAccessBlocker";
 
@@ -216,15 +214,13 @@ export default async function LottoPage() {
                     <div>
                       <div className="flex items-center font-bold text-sm">
                         {p.name}
-                        {(p.discordRole === "manager" || p.discordRole === "admin") && (
-                          <ManagerBadge className="w-3 h-3" />
-                        )}
-                        {p.isBooster && (
-                          <ServerBoosterBadge className="w-3 h-3" />
-                        )}
-                        {p.nismaraplus?.status && (
-                          <NismaraPlusBadge className="w-3 h-3" />
-                        )}
+                        <UserBadges 
+                          role={p.discordRole} 
+                          isBooster={p.isBooster === true} 
+                          isNismaraPlus={p.nismaraplus?.status === true} 
+                          truckyRank={p.truckyRank}
+                          className="w-3 h-3" 
+                        />
                       </div>
                     </div>
                   </div>

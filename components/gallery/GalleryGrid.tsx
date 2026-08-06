@@ -10,6 +10,9 @@ export interface UserComment {
   userId: string;
   text: string;
   createdAt: string;
+  likes?: string[];
+  parentId?: string;
+  replyToUser?: string;
   user: {
     name: string;
     avatarUrl: string;
@@ -17,6 +20,7 @@ export interface UserComment {
     isNismaraPlus?: boolean;
     isBooster?: boolean;
     isManager?: boolean;
+    truckyRank?: string;
   };
 }
 

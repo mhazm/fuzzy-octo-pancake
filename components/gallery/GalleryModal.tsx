@@ -6,16 +6,17 @@ import { X, Heart, MessageCircle, Send, Share2, Trash2, Loader2 } from "lucide-r
 import { formatDistanceToNow } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import Link from "next/link";
-import NismaraPlusBadge from "@/components/icons/NismaraPlusBadge";
-import ServerBoosterBadge from "@/components/icons/ServerBoosterBadge";
-import ManagerBadge from "@/components/icons/ManagerBadge";
+import UserBadges from "@/components/icons/UserBadges";
 import { Modal } from "@/components/ui/Modal";
 
 interface Comment {
   _id: string;
   text: string;
   createdAt: string;
-  user: { name: string; avatarUrl: string; discordId: string; truckyId?: string; isNismaraPlus?: boolean; isBooster?: boolean; isManager?: boolean };
+  user: { name: string; avatarUrl: string; discordId: string; truckyId?: string; truckyRank?: string; isNismaraPlus?: boolean; isBooster?: boolean; isManager?: boolean };
+  likes?: string[];
+  parentId?: string;
+  replyToUser?: string;
 }
 
 export default function GalleryModal({
@@ -49,6 +50,7 @@ export default function GalleryModal({
   const [newComment, setNewComment] = useState("");
   const [isLiking, setIsLiking] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<{commentId: string, userName: string} | null>(null);
   const [likes, setLikes] = useState<string[]>(post.likes);
   const [showToast, setShowToast] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -108,6 +110,32 @@ export default function GalleryModal({
     }
   };
 
+  const handleLikeComment = async (commentId: string) => {
+    if (!loggedInUserId) return;
+    
+    // Optimistic UI update
+    setComments(prev => prev.map(c => {
+      if (c._id === commentId) {
+        const currentLikes = c.likes || [];
+        const userHasLiked = currentLikes.includes(loggedInUserId);
+        return {
+          ...c,
+          likes: userHasLiked 
+            ? currentLikes.filter(id => id !== loggedInUserId)
+            : [...currentLikes, loggedInUserId]
+        };
+      }
+      return c;
+    }));
+
+    try {
+      await fetch(`/api/gallery/${post._id}/comment/${commentId}/like`, { method: "POST" });
+    } catch (error) {
+      console.error("Failed to toggle comment like:", error);
+      // Optional: Revert state if failed
+    }
+  };
+
   const submitComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newComment.trim() || !loggedInUserId || isSubmitting) return;
@@ -117,7 +145,11 @@ export default function GalleryModal({
       const res = await fetch(`/api/gallery/${post._id}/comment`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: newComment }),
+        body: JSON.stringify({ 
+          text: newComment,
+          parentId: replyingTo?.commentId,
+          replyToUser: replyingTo?.userName
+        }),
       });
       if (res.ok) {
         const commentData = await res.json();
@@ -129,6 +161,7 @@ export default function GalleryModal({
           });
         }
         setNewComment("");
+        setReplyingTo(null);
       }
     } finally {
       setIsSubmitting(false);
@@ -153,6 +186,9 @@ export default function GalleryModal({
       setShowDeleteModal(false);
     }
   };
+
+  const rootComments = comments.filter(c => !c.parentId);
+  const getReplies = (parentId: string) => comments.filter(c => c.parentId === parentId);
 
   if (!mounted) return null;
 
@@ -232,10 +268,13 @@ export default function GalleryModal({
                 />
                 <div className="flex flex-col">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="font-bold text-sm hover:underline">{profileName}</span>
-                    {(profileRole === "manager" || profileRole === "admin") && <ManagerBadge />}
-                    {profileIsBooster && <ServerBoosterBadge />}
-                    {profileIsNismaraPlus && <NismaraPlusBadge />}
+                      <span className="font-bold text-sm hover:underline">{profileName}</span>
+                      <UserBadges 
+                        role={profileRole} 
+                        isBooster={profileIsBooster} 
+                        isNismaraPlus={profileIsNismaraPlus} 
+                        truckyRank={undefined /* pass profileRank if available in props */}
+                      />
                   </div>
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">{getRoleLabel()}</p>
                 </div>
@@ -249,10 +288,13 @@ export default function GalleryModal({
                 />
                 <div className="flex flex-col">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="font-bold text-sm">{profileName}</span>
-                    {(profileRole === "manager" || profileRole === "admin") && <ManagerBadge />}
-                    {profileIsBooster && <ServerBoosterBadge />}
-                    {profileIsNismaraPlus && <NismaraPlusBadge />}
+                      <span className="font-bold text-sm">{profileName}</span>
+                      <UserBadges 
+                        role={profileRole} 
+                        isBooster={profileIsBooster} 
+                        isNismaraPlus={profileIsNismaraPlus} 
+                        truckyRank={undefined}
+                      />
                   </div>
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">{getRoleLabel()}</p>
                 </div>
@@ -300,9 +342,12 @@ export default function GalleryModal({
                     ) : (
                       <span className="font-bold text-sm">{profileName}</span>
                     )}
-                    {(profileRole === "manager" || profileRole === "admin") && <ManagerBadge />}
-                    {profileIsBooster && <ServerBoosterBadge />}
-                    {profileIsNismaraPlus && <NismaraPlusBadge />}
+                    <UserBadges 
+                      role={profileRole} 
+                      isBooster={profileIsBooster} 
+                      isNismaraPlus={profileIsNismaraPlus} 
+                      truckyRank={undefined}
+                    />
                   </div>
                   <span className="text-sm mt-0.5 inline-block">{post.caption}</span>
                   <div className="text-[10px] text-muted-foreground mt-1">
@@ -312,31 +357,33 @@ export default function GalleryModal({
               </div>
             )}
 
-            {comments.map((comment) => (
-                  <div key={comment._id} className="flex gap-3 group">
-                    {comment.user.truckyId ? (
-                      <Link href={`/profile/${comment.user.truckyId}`} className="shrink-0 group/avatar">
-                        <div className="w-8 h-8 rounded-full overflow-hidden border border-border/50 group-hover/avatar:border-primary transition-colors">
-                          <img
-                            src={comment.user.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.user.name)}&background=random`}
-                            alt={comment.user.name}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      </Link>
-                    ) : (
-                      <div className="shrink-0">
-                        <div className="w-8 h-8 rounded-full overflow-hidden border border-border/50">
-                          <img
-                            src={comment.user.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.user.name)}&background=random`}
-                            alt={comment.user.name}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
+            {rootComments.map((comment) => (
+              <div key={comment._id} className="flex flex-col gap-2 group">
+                <div className="flex gap-3">
+                  {comment.user.truckyId ? (
+                    <Link href={`/profile/${comment.user.truckyId}`} className="shrink-0 group/avatar">
+                      <div className="w-8 h-8 rounded-full overflow-hidden border border-border/50 group-hover/avatar:border-primary transition-colors">
+                        <img
+                          src={comment.user.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.user.name)}&background=random`}
+                          alt={comment.user.name}
+                          className="w-full h-full object-cover"
+                        />
                       </div>
-                    )}
-                    
-                    <div className="flex-1 bg-muted/30 rounded-2xl px-4 py-2 border border-border/30">
+                    </Link>
+                  ) : (
+                    <div className="shrink-0">
+                      <div className="w-8 h-8 rounded-full overflow-hidden border border-border/50">
+                        <img
+                          src={comment.user.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.user.name)}&background=random`}
+                          alt={comment.user.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="flex-1">
+                    <div className="bg-muted/30 rounded-2xl px-4 py-2 border border-border/30 inline-block w-full">
                       <div className="flex items-center flex-wrap">
                         {comment.user.truckyId ? (
                           <Link href={`/profile/${comment.user.truckyId}`} className="font-bold mr-1 text-sm hover:text-primary transition-colors hover:underline">
@@ -345,17 +392,112 @@ export default function GalleryModal({
                         ) : (
                           <span className="font-bold mr-1 text-sm">{comment.user.name}</span>
                         )}
-                        {comment.user.isManager && <ManagerBadge className="w-3.5 h-3.5" />}
-                        {comment.user.isBooster && <ServerBoosterBadge />}
-                        {comment.user.isNismaraPlus && <NismaraPlusBadge className="w-3.5 h-3.5" />}
+                        <UserBadges 
+                          isManager={comment.user.isManager} 
+                          isBooster={comment.user.isBooster} 
+                          isNismaraPlus={comment.user.isNismaraPlus} 
+                          truckyRank={comment.user.truckyRank}
+                          className="w-3.5 h-3.5"
+                        />
                         <span className="text-[10px] text-muted-foreground ml-2">
                           {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true, locale: localeId })}
                         </span>
                       </div>
                       <p className="text-sm mt-0.5 break-words text-foreground/90 leading-relaxed">{comment.text}</p>
                     </div>
+                    
+                    {/* Comment Actions */}
+                    <div className="flex items-center gap-4 mt-1.5 ml-4 text-[11px] font-semibold text-muted-foreground">
+                      <button 
+                        onClick={() => handleLikeComment(comment._id)}
+                        className={`hover:text-foreground transition-colors ${(comment.likes || []).includes(loggedInUserId || '') ? 'text-red-500' : ''}`}
+                      >
+                        {(comment.likes || []).length > 0 && <span className="mr-1.5">{(comment.likes || []).length}</span>}
+                        Suka
+                      </button>
+                      <button 
+                        onClick={() => setReplyingTo({ commentId: comment._id, userName: comment.user.name })}
+                        className="hover:text-foreground transition-colors"
+                      >
+                        Balas
+                      </button>
+                    </div>
                   </div>
-                ))}
+                </div>
+
+                {/* Replies */}
+                {getReplies(comment._id).length > 0 && (
+                  <div className="ml-11 mt-1 flex flex-col gap-3">
+                    {getReplies(comment._id).map((reply) => (
+                      <div key={reply._id} className="flex gap-3 group/reply">
+                        {reply.user.truckyId ? (
+                          <Link href={`/profile/${reply.user.truckyId}`} className="shrink-0 group-hover/reply:opacity-80 transition-opacity">
+                            <img
+                              src={reply.user.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(reply.user.name)}&background=random`}
+                              alt={reply.user.name}
+                              className="w-6 h-6 rounded-full object-cover border border-border/50"
+                            />
+                          </Link>
+                        ) : (
+                          <div className="shrink-0">
+                            <img
+                              src={reply.user.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(reply.user.name)}&background=random`}
+                              alt={reply.user.name}
+                              className="w-6 h-6 rounded-full object-cover border border-border/50"
+                            />
+                          </div>
+                        )}
+                        
+                        <div className="flex-1">
+                          <div className="bg-muted/20 rounded-2xl px-3 py-1.5 border border-border/20 inline-block w-full">
+                            <div className="flex items-center flex-wrap">
+                              {reply.user.truckyId ? (
+                                <Link href={`/profile/${reply.user.truckyId}`} className="font-bold mr-1 text-xs hover:text-primary transition-colors hover:underline">
+                                  {reply.user.name}
+                                </Link>
+                              ) : (
+                                <span className="font-bold mr-1 text-xs">{reply.user.name}</span>
+                              )}
+                              <UserBadges 
+                                isManager={reply.user.isManager} 
+                                isBooster={reply.user.isBooster} 
+                                isNismaraPlus={reply.user.isNismaraPlus} 
+                                truckyRank={reply.user.truckyRank}
+                                className="w-3 h-3"
+                              />
+                              <span className="text-[9px] text-muted-foreground ml-2">
+                                {formatDistanceToNow(new Date(reply.createdAt), { addSuffix: true, locale: localeId })}
+                              </span>
+                            </div>
+                            <p className="text-xs mt-0.5 break-words text-foreground/90 leading-relaxed">
+                              {reply.replyToUser && <span className="text-primary font-medium mr-1">@{reply.replyToUser}</span>}
+                              {reply.text}
+                            </p>
+                          </div>
+
+                          {/* Reply Actions */}
+                          <div className="flex items-center gap-4 mt-1 ml-3 text-[10px] font-semibold text-muted-foreground">
+                            <button 
+                              onClick={() => handleLikeComment(reply._id)}
+                              className={`hover:text-foreground transition-colors ${(reply.likes || []).includes(loggedInUserId || '') ? 'text-red-500' : ''}`}
+                            >
+                              {(reply.likes || []).length > 0 && <span className="mr-1">{(reply.likes || []).length}</span>}
+                              Suka
+                            </button>
+                            <button 
+                              onClick={() => setReplyingTo({ commentId: comment._id, userName: reply.user.name })}
+                              className="hover:text-foreground transition-colors"
+                            >
+                              Balas
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
             
             {comments.length === 0 && !post.caption && (
               <div className="text-center text-sm text-muted-foreground mt-10 italic">
@@ -393,28 +535,44 @@ export default function GalleryModal({
           </div>
 
           {/* Add Comment */}
-            <form onSubmit={submitComment} className="p-4 border-t border-border/50 flex items-center gap-3 bg-card/50 backdrop-blur-sm shrink-0">
-              <input
-                type="text"
-                placeholder={
-                  !loggedInUserId 
-                    ? "Login untuk berkomentar..." 
-                    : !loggedInUserTruckyId 
-                      ? "Hanya driver Nismara yang dapat berkomentar" 
-                      : "Tambahkan komentar..."
-                }
-                className="flex-1 bg-transparent text-sm focus:outline-none disabled:opacity-50"
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                disabled={!loggedInUserTruckyId || isSubmitting}
-              />
-              <button
-                type="submit"
-                disabled={!newComment.trim() || !loggedInUserTruckyId || isSubmitting}
-                className="text-primary font-bold text-sm disabled:opacity-50 hover:opacity-80 transition"
-              >
-                Kirim
-              </button>
+            <form onSubmit={submitComment} className="p-4 border-t border-border/50 bg-card/50 backdrop-blur-sm shrink-0">
+              {replyingTo && (
+                <div className="flex items-center justify-between bg-muted/30 px-3 py-1.5 rounded-lg mb-3 text-xs border border-border/50">
+                  <span className="text-muted-foreground">
+                    Membalas <span className="font-bold text-foreground">{replyingTo.userName}</span>
+                  </span>
+                  <button 
+                    type="button" 
+                    onClick={() => setReplyingTo(null)}
+                    className="p-1 hover:bg-black/10 dark:hover:bg-white/10 rounded-full transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+              <div className="flex items-center gap-3">
+                <input
+                  type="text"
+                  placeholder={
+                    !loggedInUserId 
+                      ? "Login untuk berkomentar..." 
+                      : !loggedInUserTruckyId 
+                        ? "Hanya driver Nismara yang dapat berkomentar" 
+                        : "Tambahkan komentar..."
+                  }
+                  className="flex-1 bg-transparent text-sm focus:outline-none disabled:opacity-50"
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  disabled={!loggedInUserTruckyId || isSubmitting}
+                />
+                <button
+                  type="submit"
+                  disabled={!newComment.trim() || !loggedInUserTruckyId || isSubmitting}
+                  className="text-primary font-bold text-sm disabled:opacity-50 hover:opacity-80 transition"
+                >
+                  Kirim
+                </button>
+              </div>
             </form>
         </div>
         </div>

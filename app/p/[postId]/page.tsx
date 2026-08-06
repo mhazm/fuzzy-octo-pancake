@@ -81,7 +81,7 @@ export default async function PostPage(props: { params: Promise<{ postId: string
       const userIds = [...new Set(comments.map(c => c.userId))];
         const users = await db.collection("users")
         .find({ discordId: { $in: userIds } })
-        .project({ discordId: 1, name: 1, image: 1, avatarUrl: 1, truckyId: 1, nismaraplus: 1, isBooster: 1, discordRole: 1, role: 1 })
+        .project({ discordId: 1, name: 1, image: 1, avatarUrl: 1, truckyId: 1, truckyRank: 1, nismaraplus: 1, isBooster: 1, discordRole: 1, role: 1 })
         .toArray();
 
       const userMap = users.reduce((acc, user) => {
@@ -105,7 +105,8 @@ export default async function PostPage(props: { params: Promise<{ postId: string
             truckyId: u.truckyId,
             isNismaraPlus: u.isNismaraPlus,
             isBooster: u.isBooster,
-            isManager: u.isManager
+            isManager: u.isManager,
+            truckyRank: u.truckyRank
           }  
         };
         // Serialize ObjectId to string for client component
