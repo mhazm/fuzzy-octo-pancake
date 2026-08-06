@@ -50,10 +50,10 @@ export async function POST(req: NextRequest) {
           ticketType: ticketData.ticketType || "basic",
           price: Number(ticketData.price || 400),
           prizeWon: Number(ticketData.prizeWon || 0),
-          isWinning: ticketData.isWinning === true || ticketData.isWinning === "true",
-          isScratched: ticketData.isScratched === true || ticketData.isScratched === "true",
+          isWinning: String(ticketData.isWinning) === "true",
+          isScratched: String(ticketData.isScratched) === "true",
           scratchedAt: ticketData.scratchedAt ? new Date(ticketData.scratchedAt as string) : null,
-          gameData: typeof ticketData.gameData === "string" ? JSON.parse(ticketData.gameData) : ticketData.gameData,
+          gameData: typeof ticketData.gameData === "string" && ticketData.gameData.trim() !== "" ? JSON.parse(ticketData.gameData) : (ticketData.gameData || null),
           createdAt: new Date(ticketData.createdAt as string),
         });
       }

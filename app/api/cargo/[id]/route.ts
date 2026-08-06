@@ -10,15 +10,23 @@ export async function PATCH(
     const client = await clientPromise;
     const db = client.db();
     const body = await request.json();
-    const { price_per_km } = body;
 
-    if (price_per_km === undefined) {
-      return NextResponse.json({ error: "Harga tidak valid" }, { status: 400 });
+    const updateFields: any = {};
+    if (body.price_per_km !== undefined) updateFields.price_per_km = Number(body.price_per_km);
+    if (body.in_game_id !== undefined) updateFields.in_game_id = String(body.in_game_id);
+    if (body.name !== undefined) updateFields.name = String(body.name);
+    if (body.adr_class !== undefined) updateFields.adr_class = Number(body.adr_class);
+    if (body.fragility !== undefined) updateFields.fragility = Number(body.fragility);
+    if (body.overweight !== undefined) updateFields.overweight = Boolean(body.overweight);
+    if (body.market_demand !== undefined) updateFields.market_demand = Number(body.market_demand);
+
+    if (Object.keys(updateFields).length === 0) {
+      return NextResponse.json({ error: "Tidak ada data yang diupdate" }, { status: 400 });
     }
 
     const updatedCargo = await db.collection("cargos").findOneAndUpdate(
-      { id: id }, // Cari berdasarkan custom ID dari JSON
-      { $set: { price_per_km: Number(price_per_km) } },
+      { id: id },
+      { $set: updateFields },
       { returnDocument: "after" },
     );
 
@@ -33,7 +41,7 @@ export async function PATCH(
   } catch (error) {
     console.error("Update Error:", error);
     return NextResponse.json(
-      { error: "Gagal memperbarui harga" },
+      { error: "Gagal memperbarui cargo" },
       { status: 500 },
     );
   }

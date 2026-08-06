@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (isFromRedis && ticketData) {
-      if (ticketData.isScratched === true || ticketData.isScratched === "true") {
+      if (String(ticketData.isScratched) === "true") {
         return NextResponse.json({ error: "Ticket has already been scratched" }, { status: 400 });
       }
 

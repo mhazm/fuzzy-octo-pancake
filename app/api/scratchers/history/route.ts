@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
     for (const tid of redisTicketIds) {
       const t = await redis.hgetall(`ticket:${tid}`);
       if (t && Object.keys(t).length > 0) {
-        const isScratched = t.isScratched === true || t.isScratched === "true";
+        const isScratched = String(t.isScratched) === "true";
         const price = Number(t.price || 400);
         const prizeWon = Number(t.prizeWon || 0);
         
@@ -61,10 +61,10 @@ export async function GET(req: NextRequest) {
           ticketType: t.ticketType || "basic",
           price,
           prizeWon,
-          isWinning: t.isWinning === true || t.isWinning === "true",
+          isWinning: String(t.isWinning) === "true",
           isScratched,
           scratchedAt: t.scratchedAt || null,
-          gameData: typeof t.gameData === "string" ? JSON.parse(t.gameData) : t.gameData,
+          gameData: typeof t.gameData === "string" && t.gameData.trim() !== "" ? JSON.parse(t.gameData) : (t.gameData || null),
           createdAt: t.createdAt,
         });
 

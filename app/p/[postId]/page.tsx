@@ -79,9 +79,9 @@ export default async function PostPage(props: { params: Promise<{ postId: string
         .toArray();
         
       const userIds = [...new Set(comments.map(c => c.userId))];
-      const users = await db.collection("users")
+        const users = await db.collection("users")
         .find({ discordId: { $in: userIds } })
-        .project({ discordId: 1, name: 1, image: 1, avatarUrl: 1, truckyId: 1, nismaraplus: 1, isBooster: 1 })
+        .project({ discordId: 1, name: 1, image: 1, avatarUrl: 1, truckyId: 1, nismaraplus: 1, isBooster: 1, discordRole: 1, role: 1 })
         .toArray();
 
       const userMap = users.reduce((acc, user) => {
@@ -89,7 +89,8 @@ export default async function PostPage(props: { params: Promise<{ postId: string
           ...user,
           avatarUrl: user.image || user.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || "User")}&background=random`,
           isNismaraPlus: user.nismaraplus?.status === true,
-          isBooster: user.isBooster === true
+          isBooster: user.isBooster === true,
+          isManager: user.discordRole === "manager" || user.discordRole === "admin" || user.role === "manager" || user.role === "admin"
         };
         return acc;
       }, {} as Record<string, any>);
@@ -103,7 +104,8 @@ export default async function PostPage(props: { params: Promise<{ postId: string
             avatarUrl: u.avatarUrl,
             truckyId: u.truckyId,
             isNismaraPlus: u.isNismaraPlus,
-            isBooster: u.isBooster
+            isBooster: u.isBooster,
+            isManager: u.isManager
           }  
         };
         // Serialize ObjectId to string for client component
@@ -156,7 +158,7 @@ export default async function PostPage(props: { params: Promise<{ postId: string
           profileTruckyId={profileUser?.truckyId || ""}
           profileIsNismaraPlus={profileUser?.nismaraplus?.status === true}
           profileIsBooster={profileUser?.isBooster === true}
-          profileRole={profileUser?.role || "user"}
+          profileRole={profileUser?.discordRole || profileUser?.role || "user"}
           isManager={isManager}
         />
     </>

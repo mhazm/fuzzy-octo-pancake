@@ -183,8 +183,8 @@ export default function NavbarClient({ session }: { session: any }) {
                                 Jobs Details
                               </div>
                               <p className="text-xs text-muted-foreground line-clamp-2">
-                                Jelajahi lowongan pekerjaan yang tersedia di
-                                Nismara Transport.
+                                Jelajahi semua pekerjaan yang telah dilakukan
+                                oleh driver Nismara Transport.
                               </p>
                             </NavigationMenuLink>
                           </li>
@@ -466,7 +466,8 @@ export default function NavbarClient({ session }: { session: any }) {
                       <span className="font-medium">Tickets</span>
                     </DropdownMenuItem>
 
-                    {(session.user?.role === "manager" || session.user?.role === "admin") && (
+                    {(session.user?.role === "manager" ||
+                      session.user?.role === "admin") && (
                       <DropdownMenuItem
                         className="cursor-pointer rounded-lg hover:bg-red-500/10 focus:bg-red-500/10"
                         render={
@@ -477,7 +478,9 @@ export default function NavbarClient({ session }: { session: any }) {
                         }
                       >
                         <Shield className="mr-3 h-4 w-4 text-red-400" />
-                        <span className="font-medium text-red-400">Manager Hub</span>
+                        <span className="font-medium text-red-400">
+                          Manager Hub
+                        </span>
                       </DropdownMenuItem>
                     )}
                   </div>

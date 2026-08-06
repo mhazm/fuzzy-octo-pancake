@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Heart, MessageCircle, MonitorPlay, Loader2 } from "lucide-react";
+import { Heart, MessageCircle, MonitorPlay, Loader2, Plus } from "lucide-react";
 import GalleryModal from "@/components/gallery/GalleryModal";
+import UploadPostDialog from "@/components/gallery/UploadPostDialog";
 import Link from "next/link";
 import NismaraPlusBadge from "@/components/icons/NismaraPlusBadge";
 import ServerBoosterBadge from "@/components/icons/ServerBoosterBadge";
@@ -24,6 +25,7 @@ export default function GalleryIndexClient({
   const [page, setPage] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(initialPosts.length === 12);
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
 
   const loadMore = async () => {
     if (loadingMore || !hasMore) return;
@@ -48,6 +50,18 @@ export default function GalleryIndexClient({
 
   return (
     <div>
+      {/* Action Bar */}
+      {loggedInUserTruckyId && (
+        <div className="flex justify-end mb-6">
+          <button
+            onClick={() => setIsUploadOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground font-bold rounded-xl shadow-lg hover:bg-primary/90 transition"
+          >
+            <Plus className="w-4 h-4" /> Postingan Baru
+          </button>
+        </div>
+      )}
+
       {/* Grid */}
       {posts.length === 0 ? (
         <div className="py-24 text-center bg-card/30 rounded-3xl border-2 border-dashed border-border/50">
@@ -174,6 +188,30 @@ export default function GalleryIndexClient({
               prev.map((p) => (p._id === fullUpdated._id ? fullUpdated : p))
             );
             setSelectedPost(fullUpdated);
+          }}
+        />
+      )}
+
+      {isUploadOpen && (
+        <UploadPostDialog
+          onClose={() => setIsUploadOpen(false)}
+          onSuccess={(newPost: any) => {
+            // Karena ini halaman global, kita perlu fetch data user uploader juga
+            // Tapi karena yang upload adalah diri sendiri, kita bisa inject data sementara
+            const tempPost = {
+              ...newPost,
+              user: {
+                name: "Anda (Baru saja)", // Akan direfresh saat reload
+                truckyId: loggedInUserTruckyId,
+                avatarUrl: "/placeholder-avatar.png", 
+                role: isManager ? "manager" : "user"
+              }
+            };
+            setPosts([tempPost, ...posts]);
+            setIsUploadOpen(false);
+            
+            // Opsional: reload halaman untuk mendapatkan data real dari database
+            window.location.reload();
           }}
         />
       )}
