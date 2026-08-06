@@ -16,6 +16,15 @@ export async function POST(req: NextRequest) {
 
     const discordId = session.user.discordId;
 
+    // 0. Cegah eksekusi ganda (Race Condition) dengan Redis Lock
+    const lockKey = `sync_lock:${discordId}`;
+    const locked = await redis.setnx(lockKey, "1");
+    if (!locked) {
+      return NextResponse.json({ message: "Sync already in progress" });
+    }
+    // Set batas waktu lock maksimal 10 detik
+    await redis.expire(lockKey, 10);
+
     // 1. Ambil data dari Redis
     const spentStr = await redis.get(`scratch_spent:${discordId}`);
     const earnedStr = await redis.get(`scratch_earned:${discordId}`);
@@ -38,11 +47,13 @@ export async function POST(req: NextRequest) {
       if (ticketData && Object.keys(ticketData).length > 0) {
         ticketsToInsert.push({
           discordId: discordId,
+          ticketType: ticketData.ticketType || "basic",
           price: Number(ticketData.price || 400),
           prizeWon: Number(ticketData.prizeWon || 0),
           isWinning: ticketData.isWinning === true || ticketData.isWinning === "true",
           isScratched: ticketData.isScratched === true || ticketData.isScratched === "true",
           scratchedAt: ticketData.scratchedAt ? new Date(ticketData.scratchedAt as string) : null,
+          gameData: typeof ticketData.gameData === "string" ? JSON.parse(ticketData.gameData) : ticketData.gameData,
           createdAt: new Date(ticketData.createdAt as string),
         });
       }

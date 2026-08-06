@@ -9,6 +9,7 @@ interface ScratchCardProps {
   onScratchComplete?: () => void;
   brushSize?: number;
   coverImage?: string;
+  completionThreshold?: number;
 }
 
 export default function ScratchCard({
@@ -18,62 +19,106 @@ export default function ScratchCard({
   onScratchComplete,
   brushSize = 30,
   coverImage,
+  completionThreshold = 0.6,
 }: ScratchCardProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const completedRef = useRef(false);
   const [isReady, setIsReady] = useState(false);
+  const [targets, setTargets] = useState<{x: number, y: number, w: number, h: number, r: number}[] | null>(null);
+
+  useEffect(() => {
+    // Wait for DOM to render layout completely
+    const timer = setTimeout(() => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const container = canvas.parentElement;
+      if (!container) return;
+      
+      const canvasRect = canvas.getBoundingClientRect();
+      const elements = container.querySelectorAll('[data-scratch-target="true"]');
+      const newTargets: any[] = [];
+      
+      elements.forEach(el => {
+        const rect = el.getBoundingClientRect();
+        const computedStyle = window.getComputedStyle(el);
+        const radius = parseInt(computedStyle.borderRadius) || 0;
+        newTargets.push({
+          x: rect.left - canvasRect.left,
+          y: rect.top - canvasRect.top,
+          w: rect.width,
+          h: rect.height,
+          r: radius
+        });
+      });
+      
+      if (newTargets.length > 0) {
+        setTargets(newTargets);
+      } else {
+        // Full screen fallback
+        setTargets([{ x: 0, y: 0, w: width, h: height, r: 0 }]);
+      }
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [width, height]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
     if (!ctx) return;
+    if (!targets) return;
+
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = "#cbd5e1";
+
+    targets.forEach(t => {
+      ctx.beginPath();
+      if (t.r > 0 && ctx.roundRect) {
+        ctx.roundRect(t.x, t.y, t.w, t.h, t.r);
+      } else {
+        ctx.rect(t.x, t.y, t.w, t.h);
+      }
+      ctx.fill();
+    });
 
     if (coverImage) {
+      ctx.globalCompositeOperation = "source-atop";
       const img = new Image();
-      img.crossOrigin = "anonymous";
+      img.src = coverImage;
       img.onload = () => {
         ctx.drawImage(img, 0, 0, width, height);
+        ctx.globalCompositeOperation = "source-over";
         setIsReady(true);
       };
-      img.onerror = () => {
-        // Fallback if image fails to load
-        drawFallback(ctx);
-        setIsReady(true);
-      };
-      img.src = coverImage;
     } else {
-      drawFallback(ctx);
-      setIsReady(true);
-    }
-
-    function drawFallback(context: CanvasRenderingContext2D) {
-      // Fill the canvas with a silver "scratch" color
-      context.fillStyle = "#c0c0c0";
-      context.fillRect(0, 0, width, height);
-
-      // Add some noise/texture to look like a real scratch card
-      for (let i = 0; i < width; i += 5) {
-        for (let j = 0; j < height; j += 5) {
-          if (Math.random() > 0.5) {
-            context.fillStyle = "#a0a0a0";
-            context.fillRect(i, j, 5, 5);
-          }
+      const imgData = ctx.getImageData(0, 0, width, height);
+      for (let i = 0; i < imgData.data.length; i += 4) {
+        if (imgData.data[i + 3] > 0) {
+          const noise = Math.random() * 50 - 25;
+          imgData.data[i] = Math.max(0, Math.min(255, 192 + noise));
+          imgData.data[i + 1] = Math.max(0, Math.min(255, 192 + noise));
+          imgData.data[i + 2] = Math.max(0, Math.min(255, 192 + noise));
         }
       }
-      
-      // Add text overlay
-      context.font = "bold 24px Inter, sans-serif";
-      context.fillStyle = "#666";
-      context.textAlign = "center";
-      context.fillText("GOSOK DI SINI", width / 2, height / 2 + 8);
+      ctx.putImageData(imgData, 0, 0);
+
+      ctx.globalCompositeOperation = "source-atop";
+      ctx.fillStyle = "rgba(0,0,0,0.1)";
+      ctx.font = "bold 14px sans-serif";
+      for (let i = 0; i < width; i += 80) {
+        for (let j = 0; j < height; j += 40) {
+          ctx.fillText("NISMARA", i, j);
+        }
+      }
+      ctx.globalCompositeOperation = "source-over";
+      setIsReady(true);
     }
-  }, [width, height, coverImage]);
+  }, [width, height, coverImage, targets]);
 
   const scratch = (x: number, y: number) => {
-    if (isCompleted) return;
+    if (completedRef.current) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -88,28 +133,43 @@ export default function ScratchCard({
   };
 
   const checkCompletion = () => {
-    if (isCompleted) return;
+    if (completedRef.current) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
     if (!ctx) return;
 
-    // Simple heuristic: randomly check a few points to see if they are transparent
-    // Full pixel scan can be expensive on high-res, but checking 50 random points is fast
+    const imgData = ctx.getImageData(0, 0, width, height);
     let transparentCount = 0;
     const checkPoints = 50;
-    
-    for (let i = 0; i < checkPoints; i++) {
-      const rx = Math.random() * width;
-      const ry = Math.random() * height;
-      const p = ctx.getImageData(rx, ry, 1, 1).data;
-      if (p[3] === 0) { // alpha channel is 0 (transparent)
-        transparentCount++;
+    let checkedValidPoints = 0;
+
+    if (targets && targets.length > 0 && targets[0].w !== width) {
+      for (let i = 0; i < checkPoints; i++) {
+        const t = targets[Math.floor(Math.random() * targets.length)];
+        const x = Math.floor(t.x + Math.random() * t.w);
+        const y = Math.floor(t.y + Math.random() * t.h);
+        
+        if (x >= 0 && x < width && y >= 0 && y < height) {
+          const alpha = imgData.data[(y * width + x) * 4 + 3];
+          if (alpha < 50) transparentCount++;
+          checkedValidPoints++;
+        }
+      }
+    } else {
+      for (let i = 0; i < checkPoints; i++) {
+        const x = Math.floor(Math.random() * width);
+        const y = Math.floor(Math.random() * height);
+        const alpha = imgData.data[(y * width + x) * 4 + 3];
+        if (alpha < 50) transparentCount++;
+        checkedValidPoints++;
       }
     }
 
-    // If more than ~60% of checked points are transparent, consider it done
-    if (transparentCount / checkPoints > 0.6) {
+    const completionRate = checkedValidPoints > 0 ? transparentCount / checkedValidPoints : 0;
+
+    if (completionRate > completionThreshold) {
+      completedRef.current = true;
       setIsCompleted(true);
       if (onScratchComplete) {
         onScratchComplete();

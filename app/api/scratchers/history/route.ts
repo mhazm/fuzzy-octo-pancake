@@ -58,11 +58,13 @@ export async function GET(req: NextRequest) {
         redisTickets.push({
           _id: t._id,
           discordId: t.discordId,
+          ticketType: t.ticketType || "basic",
           price,
           prizeWon,
           isWinning: t.isWinning === true || t.isWinning === "true",
           isScratched,
           scratchedAt: t.scratchedAt || null,
+          gameData: typeof t.gameData === "string" ? JSON.parse(t.gameData) : t.gameData,
           createdAt: t.createdAt,
         });
 

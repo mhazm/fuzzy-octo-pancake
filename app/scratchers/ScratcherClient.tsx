@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import ScratchCard from "@/components/scratch/ScratchCard";
+import Ticket100xLayout from "@/components/scratch/Ticket100xLayout";
 import {
   Coins,
   PartyPopper,
@@ -12,6 +13,8 @@ import {
   SearchX,
   CheckCircle2,
   XCircle,
+  Info,
+  Star,
 } from "lucide-react";
 import { getCurrencyData } from "@/app/dashboard/currency/actions";
 
@@ -27,6 +30,9 @@ type TicketHistory = {
   prizeWon: number;
   isWinning: boolean;
   isScratched: boolean;
+  scratchedAt: string | null;
+  ticketType?: string;
+  gameData?: any;
   createdAt: string;
 };
 
@@ -40,6 +46,9 @@ export default function ScratcherClient({
   const [history, setHistory] = useState<TicketHistory[]>([]);
 
   const [activeTicketId, setActiveTicketId] = useState<string | null>(null);
+  const [activeTicketType, setActiveTicketType] = useState<string>("basic");
+  const [activeGameData, setActiveGameData] = useState<any>(null);
+  const [selectedType, setSelectedType] = useState<"basic" | "100x">("basic");
   const activeTicketIdRef = useRef<string | null>(null);
 
   // Auto-Sync saat player keluar dari halaman (Write-Behind Flush)
@@ -107,18 +116,16 @@ export default function ScratcherClient({
         setStats(histData.stats);
         setHistory(histData.recentTickets);
 
-        // Check if there's an unscratched ticket
+        // Resume active ticket if not scratched
         const unscratched = histData.recentTickets.find(
           (t: TicketHistory) => !t.isScratched,
         );
         if (unscratched) {
-          // Hanya reset UI jika ini adalah tiket yang BERBEDA.
-          // Jika ini tiket yang sedang dimainkan, abaikan (mungkin delay dari database).
-          if (activeTicketIdRef.current !== unscratched._id) {
-            setActiveTicketId(unscratched._id);
-            setPrizeToReveal(unscratched.prizeWon);
-            setIsRevealed(false);
-          }
+          setActiveTicketId(unscratched._id);
+          setActiveTicketType(unscratched.ticketType || "basic");
+          setActiveGameData(unscratched.gameData || null);
+          setPrizeToReveal(unscratched.prizeWon);
+          setIsRevealed(false);
         }
       }
     } catch (err) {
@@ -140,8 +147,9 @@ export default function ScratcherClient({
       );
       return;
     }
-    if (!balance || balance < 400) {
-      showToast("Saldo N-Coin tidak cukup (Butuh 400 NC)", "error");
+    const cost = selectedType === "100x" ? 1000 : 400;
+    if (!balance || balance < cost) {
+      showToast(`Saldo N-Coin tidak cukup (Butuh ${cost} NC)`, "error");
       return;
     }
 
@@ -149,6 +157,8 @@ export default function ScratcherClient({
     try {
       const res = await fetch("/api/scratchers/buy", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ticketType: selectedType }),
       });
       const data = await res.json();
 
@@ -167,6 +177,8 @@ export default function ScratcherClient({
       }
 
       setActiveTicketId(data.ticketId);
+      setActiveTicketType(data.ticketType || "basic");
+      setActiveGameData(data.gameData ? (typeof data.gameData === 'string' ? JSON.parse(data.gameData) : data.gameData) : null);
       setPrizeToReveal(data.prizeWon);
       setIsRevealed(false);
 
@@ -225,6 +237,12 @@ export default function ScratcherClient({
           <p className="text-muted-foreground font-medium">
             Gosok tiket dan menangkan hingga 20.000 NC!
           </p>
+          <div className="flex items-start gap-2 mt-3 bg-amber-500/10 border border-amber-500/20 p-3 rounded-xl max-w-lg">
+            <Info className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+            <p className="text-xs text-amber-500/90 leading-relaxed">
+              <strong>Info:</strong> Agar permainan berjalan instan tanpa jeda, perubahan saldo selama sesi bermain sengaja ditangguhkan. Saldo Nismara Coin Anda yang sebenarnya akan disinkronisasi ketika Anda meninggalkan atau memuat ulang halaman ini.
+            </p>
+          </div>
         </div>
 
         <div className="glass-panel px-6 py-3 rounded-2xl flex items-center gap-3">
@@ -250,17 +268,35 @@ export default function ScratcherClient({
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-32 bg-primary/10 blur-[100px] pointer-events-none" />
 
             {!activeTicketId ? (
-              <div className="text-center max-w-sm z-10">
+              <div className="text-center max-w-sm z-10 w-full">
                 <div className="w-20 h-20 bg-primary/20 border border-primary/30 rounded-full flex items-center justify-center mx-auto mb-6">
                   <Trophy className="w-10 h-10 text-primary" />
                 </div>
                 <h2 className="text-2xl font-black text-foreground uppercase tracking-tight mb-2">
                   Beli Tiket Gosok
                 </h2>
+                
+                {/* Ticket Selector */}
+                <div className="flex bg-black/10 rounded-xl p-1 mb-6 border border-white/5">
+                  <button 
+                    onClick={() => setSelectedType("basic")}
+                    className={`flex-1 py-3 px-2 rounded-lg text-sm font-bold uppercase transition-all ${selectedType === "basic" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    Basic
+                  </button>
+                  <button 
+                    onClick={() => setSelectedType("100x")}
+                    className={`flex-1 py-3 px-2 rounded-lg text-sm font-bold uppercase transition-all flex items-center justify-center gap-1 ${selectedType === "100x" ? "bg-gradient-to-r from-amber-500 to-amber-700 text-white shadow-[0_0_15px_rgba(245,158,11,0.5)]" : "text-muted-foreground hover:text-amber-500"}`}
+                  >
+                    <Star className="w-4 h-4" /> 100X
+                  </button>
+                </div>
+
                 <p className="text-muted-foreground mb-8">
                   Harga 1 tiket adalah{" "}
-                  <strong className="text-primary">400 NC</strong>. Anda
-                  berkesempatan memenangkan hingga 50x lipat dari harga tiket!
+                  <strong className={selectedType === "100x" ? "text-amber-500" : "text-primary"}>
+                    {selectedType === "100x" ? "1.000 NC" : "400 NC"}
+                  </strong>. Anda berkesempatan memenangkan hingga {selectedType === "100x" ? "100.000 NC" : "50x lipat"}!
                   {!isDriver && (
                     <span className="block mt-2 text-destructive font-semibold text-sm">
                       (Khusus Supir Nismara)
@@ -270,16 +306,16 @@ export default function ScratcherClient({
                 <button
                   onClick={handleBuyTicket}
                   disabled={
-                    isBuying || (balance !== null && balance < 400) || !isDriver
+                    isBuying || (balance !== null && balance < (selectedType === "100x" ? 1000 : 400)) || !isDriver
                   }
-                  className="w-full bg-gradient-to-r from-primary to-accent-sky hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black uppercase tracking-widest py-4 px-8 rounded-xl transition-all transform hover:scale-[1.02] active:scale-95 shadow-lg shadow-primary/25 flex items-center justify-center gap-2 border border-white/10"
+                  className={`w-full ${selectedType === "100x" ? "bg-gradient-to-r from-amber-500 to-orange-600 shadow-amber-500/25" : "bg-gradient-to-r from-primary to-accent-sky shadow-primary/25"} hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black uppercase tracking-widest py-4 px-8 rounded-xl transition-all transform hover:scale-[1.02] active:scale-95 shadow-lg flex items-center justify-center gap-2 border border-white/10`}
                 >
                   {isBuying ? (
                     <RefreshCw className="w-5 h-5 animate-spin" />
                   ) : (
                     <Coins className="w-5 h-5" />
                   )}
-                  Beli Tiket (400 NC)
+                  Beli Tiket ({selectedType === "100x" ? "1.000 NC" : "400 NC"})
                 </button>
               </div>
             ) : (
@@ -293,72 +329,96 @@ export default function ScratcherClient({
                   </p>
                 </div>
 
-                <div className="relative w-full max-w-[550px] md:h-[260px] bg-[#8bc34a] rounded-2xl shadow-2xl border-[6px] border-[#ffeb3b] overflow-hidden flex flex-col md:flex-row items-center justify-between p-4 md:p-6 gap-6 md:gap-2 mx-auto">
-                  {/* Sunburst rays */}
-                  <div 
-                    className="absolute inset-0 opacity-20 pointer-events-none" 
-                    style={{ background: 'repeating-conic-gradient(from 0deg, transparent 0deg 15deg, #ffffff 15deg 30deg)' }} 
-                  />
+                <div className={`relative w-full mx-auto ${activeTicketType === "100x" ? "max-w-[450px] min-h-[800px] bg-emerald-950 border-emerald-500 gap-6" : "max-w-[550px] md:h-[260px] bg-[#8bc34a] border-[#ffeb3b] gap-6 md:gap-2"} rounded-2xl shadow-2xl border-[6px] overflow-hidden flex flex-col md:flex-row items-center justify-between p-4 md:p-6`}>
+                  {/* Sunburst rays (hanya untuk tiket basic) */}
+                  {activeTicketType === "basic" && (
+                    <div 
+                      className="absolute inset-0 opacity-20 pointer-events-none" 
+                      style={{ background: 'repeating-conic-gradient(from 0deg, transparent 0deg 15deg, #ffffff 15deg 30deg)' }} 
+                    />
+                  )}
                   
-                  {/* Left branding */}
-                  <div className="relative z-10 flex-1 flex flex-col justify-center items-center text-center w-full">
-                    <h2 
-                      className="text-4xl md:text-5xl font-black text-[#f44336] leading-none transform -rotate-3" 
-                      style={{ WebkitTextStroke: '1px white', textShadow: '3px 3px 0 #000' }}
-                    >
-                      LUCKY<br/>SCRATCH
-                    </h2>
-                    <div className="mt-4 flex flex-col items-center justify-center transform rotate-6 bg-[#ffeb3b] border-2 border-white rounded-lg px-4 py-2 shadow-lg shadow-black/20">
-                      <span className="text-[#f44336] font-black text-[10px] md:text-xs leading-tight text-center uppercase tracking-widest">
-                        Win Up To
-                      </span>
-                      <span className="text-[#f44336] font-black text-xl md:text-2xl leading-none tracking-tighter" style={{ WebkitTextStroke: '0.5px white', textShadow: '1px 1px 0px #fff' }}>
-                        50X!
-                      </span>
+                  {/* Left branding (hanya untuk tiket basic) */}
+                  {activeTicketType === "basic" && (
+                    <div className="relative z-10 flex-1 flex flex-col justify-center items-center text-center w-full">
+                      <h2 
+                        className="text-4xl md:text-5xl font-black text-[#f44336] leading-none transform -rotate-3" 
+                        style={{ WebkitTextStroke: '1px white', textShadow: '3px 3px 0 #000' }}
+                      >
+                        LUCKY<br/>SCRATCH
+                      </h2>
+                      <div className="mt-4 flex flex-col items-center justify-center transform rotate-6 bg-[#ffeb3b] border-2 border-white rounded-lg px-4 py-2 shadow-lg shadow-black/20">
+                        <span className="text-[#f44336] font-black text-[10px] md:text-xs leading-tight text-center uppercase tracking-widest">
+                          Win Up To
+                        </span>
+                        <span className="text-[#f44336] font-black text-xl md:text-2xl leading-none tracking-tighter" style={{ WebkitTextStroke: '0.5px white', textShadow: '1px 1px 0px #fff' }}>
+                          50X!
+                        </span>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Right Scratch Area */}
-                  <div className="relative z-10 flex flex-col items-center bg-black/10 p-3 rounded-2xl border border-black/10 backdrop-blur-sm shrink-0">
-                    <div className="text-red-600 font-black text-sm uppercase mb-2 tracking-widest drop-shadow-sm" style={{ WebkitTextStroke: '0.5px white' }}>
-                      Scratch Here
+                  <div className={`relative z-10 flex flex-col items-center p-3 rounded-2xl backdrop-blur-sm ${activeTicketType === "100x" ? "w-full" : "w-full md:w-auto bg-black/10 border border-black/10 shrink-0"}`}>
+                    <div className={`${activeTicketType === "100x" ? "text-emerald-400" : "text-red-600"} font-black text-center uppercase mb-2 tracking-widest drop-shadow-sm transition-all duration-500`} style={activeTicketType === "100x" ? {} : { WebkitTextStroke: '0.5px white' }}>
+                      {isRevealed ? (
+                        prizeToReveal > 0 ? (
+                          <span className="text-xl md:text-2xl text-amber-400 animate-pulse drop-shadow-[0_0_10px_rgba(251,191,36,0.8)]">
+                            🎉 MENANG {prizeToReveal.toLocaleString("id-ID")} NC! 🎉
+                          </span>
+                        ) : (
+                          <span className="text-xl md:text-2xl text-slate-400">
+                            😢 YAH, ZONK!
+                          </span>
+                        )
+                      ) : (
+                        <span className="text-sm">SCRATCH HERE</span>
+                      )}
                     </div>
-                    <div className="shadow-[0_0_15px_rgba(0,0,0,0.4)] rounded-xl overflow-hidden border-2 border-[#ffeb3b] bg-white">
+                    <div 
+                      className={`shadow-[0_0_15px_rgba(0,0,0,0.4)] rounded-xl overflow-hidden border-2 flex-shrink-0 ${activeTicketType === "100x" ? "border-amber-400" : "border-[#ffeb3b] bg-white"}`}
+                      style={{ width: activeTicketType === "100x" ? 384 : 284 }}
+                    >
                       <ScratchCard
                         key={activeTicketId} // force re-mount for new ticket
-                        width={280}
-                        height={140}
-                        coverImage="/scratch-cover.webp"
-                        brushSize={20}
+                        width={activeTicketType === "100x" ? 380 : 280}
+                        height={activeTicketType === "100x" ? 780 : 140}
+                        coverImage={activeTicketType === "100x" ? undefined : "/scratch-cover.webp"}
+                        brushSize={activeTicketType === "100x" ? 45 : 20}
+                        completionThreshold={activeTicketType === "100x" ? 0.90 : 0.6}
                         onScratchComplete={handleScratchComplete}
                         revealContent={
-                          <div
-                            className={`flex flex-col items-center justify-center w-full h-full bg-white text-slate-900 border-4 ${prizeToReveal > 0 ? "border-[#ffeb3b]" : "border-slate-300"} rounded-xl overflow-hidden relative`}
-                          >
+                          activeTicketType === "100x" ? (
+                            <Ticket100xLayout gameData={activeGameData} isRevealed={isRevealed} prizeWon={prizeToReveal} />
+                          ) : (
                             <div
-                              className={`absolute inset-0 ${prizeToReveal > 0 ? "bg-amber-100" : "bg-slate-100"} opacity-50`}
-                            />
-                            <div className="relative z-10 flex flex-col items-center">
-                              {prizeToReveal > 0 ? (
-                                <>
-                                  <PartyPopper className="text-orange-500 w-8 h-8 mb-1 drop-shadow-md" />
-                                  <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-br from-amber-500 to-orange-600 drop-shadow-sm">
-                                    {prizeToReveal.toLocaleString("id-ID")}
-                                  </span>
-                                  <span className="text-[10px] font-bold text-orange-600 uppercase tracking-widest mt-1">
-                                    N-Coin Menang!
-                                  </span>
-                                </>
-                              ) : (
-                                <>
-                                  <SearchX className="text-slate-400 w-8 h-8 mb-1" />
-                                  <span className="text-xl font-black text-slate-500 uppercase">
-                                    ZONK
-                                  </span>
-                                </>
-                              )}
+                              className={`flex flex-col items-center justify-center w-full h-full bg-white text-slate-900 border-4 ${prizeToReveal > 0 ? "border-[#ffeb3b]" : "border-slate-300"} rounded-xl overflow-hidden relative`}
+                            >
+                              <div
+                                className={`absolute inset-0 ${prizeToReveal > 0 ? "bg-amber-100" : "bg-slate-100"} opacity-50`}
+                              />
+                              <div className="relative z-10 flex flex-col items-center">
+                                {prizeToReveal > 0 ? (
+                                  <>
+                                    <PartyPopper className="text-orange-500 w-8 h-8 mb-1 drop-shadow-md" />
+                                    <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-br from-amber-500 to-orange-600 drop-shadow-sm">
+                                      {prizeToReveal.toLocaleString("id-ID")}
+                                    </span>
+                                    <span className="text-[10px] font-bold text-orange-600 uppercase tracking-widest mt-1">
+                                      N-Coin Menang!
+                                    </span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <SearchX className="text-slate-400 w-8 h-8 mb-1" />
+                                    <span className="text-xl font-black text-slate-500 uppercase">
+                                      ZONK
+                                    </span>
+                                  </>
+                                )}
+                              </div>
                             </div>
-                          </div>
+                          )
                         }
                       />
                     </div>
@@ -366,12 +426,20 @@ export default function ScratcherClient({
                 </div>
 
                 {isRevealed && (
-                  <div className="mt-8 animate-in fade-in slide-in-from-bottom-4 flex flex-col items-center">
+                  <div className="mt-8 flex justify-center gap-4">
                     <button
-                      onClick={() => setActiveTicketId(null)} // Reset to show buy screen
-                      className="px-8 py-3 bg-card border border-border hover:bg-muted text-foreground font-black uppercase tracking-widest text-xs rounded-xl transition-colors shadow-sm"
+                      onClick={() => setActiveTicketId(null)}
+                      disabled={isBuying}
+                      className="px-6 py-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 hover:text-white font-bold text-sm tracking-wider transition-colors border border-slate-700 hover:border-slate-500 shadow-md disabled:opacity-50"
                     >
-                      Kembali / Beli Lagi
+                      KEMBALI
+                    </button>
+                    <button
+                      onClick={() => handleBuyTicket(activeTicketType)}
+                      disabled={isBuying}
+                      className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 font-bold text-sm tracking-wider transition-colors shadow-md disabled:opacity-50 flex items-center gap-2"
+                    >
+                      {isBuying ? "MEMBELI..." : "BELI LAGI"}
                     </button>
                   </div>
                 )}

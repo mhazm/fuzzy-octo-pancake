@@ -8,6 +8,8 @@ const scratchTicketSchema = new mongoose.Schema(
     isWinning: { type: Boolean, default: false },
     isScratched: { type: Boolean, default: false },
     scratchedAt: { type: Date, default: null },
+    ticketType: { type: String, default: "basic" }, // "basic" | "100x"
+    gameData: { type: mongoose.Schema.Types.Mixed }, // Data grid/nomor untuk 100x
   },
   { timestamps: true }
 );

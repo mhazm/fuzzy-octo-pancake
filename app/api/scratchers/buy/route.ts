@@ -7,9 +7,9 @@ import { getCurrencyData } from "@/app/dashboard/currency/actions";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { logExtremeActivity } from "@/lib/securityLogger";
 import { redis } from "@/lib/redis";
+import { generate100xTicket } from "@/lib/scratch100xGenerator";
 
 const GUILD_ID = "863959415702028318";
-const TICKET_PRICE = 400;
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,6 +19,10 @@ export async function POST(req: NextRequest) {
     }
 
     const discordId = session.user.discordId;
+    const body = await req.json().catch(() => ({}));
+    const ticketType = body.ticketType || "basic";
+    
+    const TICKET_PRICE = ticketType === "100x" ? 1000 : 400;
 
     if (!checkRateLimit(discordId, "scratchers-buy", 1000)) {
       return NextResponse.json({ error: "Terlalu banyak permintaan. Mohon tunggu sesaat." }, { status: 429 });
@@ -70,19 +74,41 @@ export async function POST(req: NextRequest) {
     const rand = Math.random();
     let prizeWon = 0;
     
-    // Distribution:
-    if (rand < 0.005) {
-      prizeWon = 20000;
-    } else if (rand < 0.02) {
-      prizeWon = 4000;
-    } else if (rand < 0.07) {
-      prizeWon = 2000;
-    } else if (rand < 0.15) {
-      prizeWon = 800;
-    } else if (rand < 0.25) {
-      prizeWon = 400;
+    if (ticketType === "100x") {
+      // Distribusi 100x Ticket (Harga 1000)
+      if (rand < 0.001) {
+        prizeWon = 100000; // 0.1% Jackpot
+      } else if (rand < 0.01) {
+        prizeWon = 20000; // 0.9%
+      } else if (rand < 0.05) {
+        prizeWon = 5000; // 4%
+      } else if (rand < 0.15) {
+        prizeWon = 2000; // 10%
+      } else if (rand < 0.35) {
+        prizeWon = 1000; // 20% Balik Modal
+      } else {
+        prizeWon = 0; // 65% Kalah
+      }
     } else {
-      prizeWon = 0;
+      // Distribusi Basic Ticket (Harga 400)
+      if (rand < 0.005) {
+        prizeWon = 20000;
+      } else if (rand < 0.02) {
+        prizeWon = 4000;
+      } else if (rand < 0.07) {
+        prizeWon = 2000;
+      } else if (rand < 0.15) {
+        prizeWon = 800; // 8% chance
+      } else if (rand < 0.45) {
+        prizeWon = 400; // 30% chance (Balik modal yang lebih sering!)
+      } else {
+        prizeWon = 0; // 55% chance kalah
+      }
+    }
+
+    let gameData = null;
+    if (ticketType === "100x") {
+      gameData = generate100xTicket(prizeWon);
     }
 
     // 2. Buat tiket di Redis (Super Cepat)
@@ -90,10 +116,12 @@ export async function POST(req: NextRequest) {
     const ticketData = {
       _id: ticketId,
       discordId,
+      ticketType,
       price: TICKET_PRICE,
       prizeWon,
       isWinning: prizeWon > 0,
       isScratched: false,
+      gameData: gameData ? JSON.stringify(gameData) : null,
       createdAt: new Date().toISOString()
     };
 
@@ -111,7 +139,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       message: "Ticket purchased successfully",
       ticketId: ticketId,
+      ticketType: ticketType,
       prizeWon: prizeWon,
+      gameData: gameData,
       warningLimitReached: isWarningLimit
     });
   } catch (error: any) {
