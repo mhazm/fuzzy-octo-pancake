@@ -139,7 +139,7 @@ export default function ScratcherClient({
     fetchDashboardData();
   }, []);
 
-  const handleBuyTicket = async () => {
+  const handleBuyTicket = async (overrideType?: "basic" | "100x") => {
     if (!isDriver) {
       showToast(
         "Hanya pengemudi resmi Nismara yang dapat membeli tiket!",
@@ -147,7 +147,8 @@ export default function ScratcherClient({
       );
       return;
     }
-    const cost = selectedType === "100x" ? 1000 : 400;
+    const typeToBuy = overrideType || selectedType;
+    const cost = typeToBuy === "100x" ? 1000 : 400;
     if (!balance || balance < cost) {
       showToast(`Saldo N-Coin tidak cukup (Butuh ${cost} NC)`, "error");
       return;
@@ -158,7 +159,7 @@ export default function ScratcherClient({
       const res = await fetch("/api/scratchers/buy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ticketType: selectedType }),
+        body: JSON.stringify({ ticketType: typeToBuy }),
       });
       const data = await res.json();
 
@@ -304,7 +305,7 @@ export default function ScratcherClient({
                   )}
                 </p>
                 <button
-                  onClick={handleBuyTicket}
+                  onClick={() => handleBuyTicket()}
                   disabled={
                     isBuying || (balance !== null && balance < (selectedType === "100x" ? 1000 : 400)) || !isDriver
                   }
@@ -435,7 +436,7 @@ export default function ScratcherClient({
                       KEMBALI
                     </button>
                     <button
-                      onClick={() => handleBuyTicket(activeTicketType)}
+                      onClick={() => handleBuyTicket(activeTicketType as "basic" | "100x")}
                       disabled={isBuying}
                       className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 font-bold text-sm tracking-wider transition-colors shadow-md disabled:opacity-50 flex items-center gap-2"
                     >
