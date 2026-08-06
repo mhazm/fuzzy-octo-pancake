@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useSession, signIn } from "next-auth/react";
 import NismaraPlusBadge from "@/components/icons/NismaraPlusBadge";
 import ServerBoosterBadge from "@/components/icons/ServerBoosterBadge";
+import ManagerBadge from "@/components/icons/ManagerBadge";
 import { Modal } from "@/components/ui/Modal";
 
 export default function MarketItemDetail() {
@@ -504,6 +505,7 @@ export default function MarketItemDetail() {
                         <Link href={review.user?.truckyId ? `/profile/${review.user.truckyId}` : "#"} className="font-bold text-white hover:text-primary transition-colors">
                           {review.user?.name}
                         </Link>
+                        {review.user?.isManager && <ManagerBadge className="w-4 h-4" />}
                         {review.user?.isNismaraPlus && <NismaraPlusBadge className="w-4 h-4" />}
                         {review.user?.isBooster && <ServerBoosterBadge className="w-4 h-4" />}
                       </div>

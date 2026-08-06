@@ -11,6 +11,7 @@ import Image from "next/image";
 import { Ticket, Coins, Trophy, Calendar, Users, History } from "lucide-react";
 import NismaraPlusBadge from "@/components/icons/NismaraPlusBadge";
 import ServerBoosterBadge from "@/components/icons/ServerBoosterBadge";
+import ManagerBadge from "@/components/icons/ManagerBadge";
 import { getCurrencyData } from "@/app/dashboard/currency/actions";
 import DriverAccessBlocker from "@/components/DriverAccessBlocker";
 
@@ -75,7 +76,7 @@ export default async function LottoPage() {
   const participantsData = await User.find({
     discordId: { $in: participantIds },
   })
-    .select("name image discordId isBooster nismaraplus.status")
+    .select("name image discordId isBooster nismaraplus.status discordRole")
     .lean();
 
   const totalPrizePool =
@@ -215,6 +216,9 @@ export default async function LottoPage() {
                     <div>
                       <div className="flex items-center font-bold text-sm">
                         {p.name}
+                        {(p.discordRole === "manager" || p.discordRole === "admin") && (
+                          <ManagerBadge className="w-3 h-3" />
+                        )}
                         {p.isBooster && (
                           <ServerBoosterBadge className="w-3 h-3" />
                         )}

@@ -6,6 +6,7 @@ import AchievementSection from "@/components/profile/AchievementSection";
 import CollectibleSection from "@/components/profile/CollectibleSection";
 import ServerBoosterBadge from "@/components/icons/ServerBoosterBadge";
 import NismaraPlusBadge from "@/components/icons/NismaraPlusBadge";
+import ManagerBadge from "@/components/icons/ManagerBadge";
 import { notFound } from "next/navigation";
 import { getCompanyMembersMap } from "@/lib/trucky";
 import {
@@ -248,6 +249,7 @@ export default async function PublicProfilePage(props: {
                     <h1 className="text-3xl md:text-5xl font-black text-foreground tracking-tight drop-shadow-md">
                       {user.name || member?.name || "Driver"}
                     </h1>
+                    {(user.discordRole === "manager" || user.discordRole === "admin") && <ManagerBadge className="w-7 h-7 md:w-9 md:h-9" />}
                     {user.isBooster === true && <ServerBoosterBadge className="w-8 h-8 md:w-10 md:h-10" />}
                     {user.nismaraplus?.status === true && <NismaraPlusBadge className="w-7 h-7 md:w-9 md:h-9" />}
                   </div>

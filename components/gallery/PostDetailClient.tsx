@@ -8,6 +8,7 @@ import Link from "next/link";
 import { GalleryPost, UserComment } from "./GalleryGrid";
 import NismaraPlusBadge from "@/components/icons/NismaraPlusBadge";
 import ServerBoosterBadge from "@/components/icons/ServerBoosterBadge";
+import ManagerBadge from "@/components/icons/ManagerBadge";
 import { Modal } from "@/components/ui/Modal";
 
 export default function PostDetailClient({
@@ -191,6 +192,7 @@ export default function PostDetailClient({
             <div>
               <div className="flex items-center gap-1.5 flex-wrap">
                 <h2 className="font-bold text-sm leading-tight hover:underline">{profileName}</h2>
+                {(profileRole === "manager" || profileRole === "admin") && <ManagerBadge />}
                 {profileIsBooster && <ServerBoosterBadge />}
                 {profileIsNismaraPlus && <NismaraPlusBadge />}
               </div>
@@ -226,6 +228,7 @@ export default function PostDetailClient({
                   <Link href={`/profile/${profileTruckyId}`} className="font-bold text-sm hover:underline hover:text-primary transition-colors">
                     {profileName}
                   </Link>
+                  {(profileRole === "manager" || profileRole === "admin") && <ManagerBadge />}
                   {profileIsBooster && <ServerBoosterBadge />}
                   {profileIsNismaraPlus && <NismaraPlusBadge />}
                 </div>
@@ -270,6 +273,7 @@ export default function PostDetailClient({
                   ) : (
                     <span className="font-bold mr-1 text-sm">{comment.user.name}</span>
                   )}
+                  {comment.user.isManager && <ManagerBadge />}
                   {comment.user.isBooster && <ServerBoosterBadge />}
                   {comment.user.isNismaraPlus && <NismaraPlusBadge />}
                 </div>

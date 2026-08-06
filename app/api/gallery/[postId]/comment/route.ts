@@ -23,7 +23,7 @@ export async function GET(
     const userIds = [...new Set(comments.map(c => c.userId))];
     const users = await db.collection("users")
       .find({ discordId: { $in: userIds } })
-      .project({ discordId: 1, name: 1, image: 1, avatarUrl: 1, truckyId: 1, nismaraplus: 1, isBooster: 1 })
+      .project({ discordId: 1, name: 1, image: 1, avatarUrl: 1, truckyId: 1, nismaraplus: 1, isBooster: 1, discordRole: 1 })
       .toArray();
 
     const userMap = users.reduce((acc, user) => {
@@ -31,7 +31,8 @@ export async function GET(
         ...user,
         avatarUrl: user.image || user.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || "User")}&background=random`,
         isNismaraPlus: user.nismaraplus?.status === true,
-        isBooster: user.isBooster === true
+        isBooster: user.isBooster === true,
+        isManager: user.discordRole === "manager" || user.discordRole === "admin"
       };
       return acc;
     }, {} as Record<string, any>);
@@ -45,7 +46,8 @@ export async function GET(
           avatarUrl: u.avatarUrl,
           truckyId: u.truckyId,
           isNismaraPlus: u.isNismaraPlus,
-          isBooster: u.isBooster
+          isBooster: u.isBooster,
+          isManager: u.isManager
         }
       };
     });
@@ -102,7 +104,8 @@ export async function POST(
         avatarUrl: user.image || user.avatarUrl || session.user.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(session.user.name || "You")}&background=random`,
         truckyId: user.truckyId,
         isNismaraPlus: user.nismaraplus?.status === true,
-        isBooster: user.isBooster === true
+        isBooster: user.isBooster === true,
+        isManager: user.role === "manager" || user.role === "admin"
       }
     };
 

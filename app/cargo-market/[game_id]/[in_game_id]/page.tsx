@@ -8,6 +8,7 @@ import User from "@/lib/models/User";
 import CargoMarketHistory from "@/lib/models/CargoMarketHistory.js";
 import NismaraPlusBadge from "@/components/icons/NismaraPlusBadge";
 import ServerBoosterBadge from "@/components/icons/ServerBoosterBadge";
+import ManagerBadge from "@/components/icons/ManagerBadge";
 
 export const metadata = {
   title: "Game_id Detail",
@@ -253,6 +254,9 @@ export default async function CargoDetailPage({
                             <div className="flex flex-col">
                               <div className="flex items-center font-bold">
                                 {driverUser?.name || job.driverId}
+                                {(driverUser?.discordRole === "manager" || driverUser?.discordRole === "admin") && (
+                                  <ManagerBadge className="w-3.5 h-3.5" />
+                                )}
                                 {driverUser?.isBooster && (
                                   <ServerBoosterBadge className="w-3.5 h-3.5" />
                                 )}

@@ -7,6 +7,11 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
 } from "recharts";
 import { Fuel, RefreshCw, ShoppingCart, User, ArrowUpCircle, ArrowDownCircle, Banknote, ShieldAlert, CheckCircle2, History, ChevronLeft, ChevronRight, Edit2, Trash2, Store, Clock, Info } from "lucide-react";
+
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import NismaraPlusBadge from "@/components/icons/NismaraPlusBadge";
+import ServerBoosterBadge from "@/components/icons/ServerBoosterBadge";
+import ManagerBadge from "@/components/icons/ManagerBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Swal from "sweetalert2";
@@ -495,7 +500,18 @@ export default function FuelMarketPage() {
                             <div className="flex justify-between items-start mb-2">
                               <div>
                                 <p className="text-xs text-muted-foreground">Penjual</p>
-                                <p className="font-bold text-sm">{item.sellerId?.name || "Anonim"}</p>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <Avatar className="w-5 h-5">
+                                    <AvatarImage src={item.sellerId?.image || ""} />
+                                    <AvatarFallback className="text-[10px]">{item.sellerId?.name?.substring(0, 2).toUpperCase() || "??"}</AvatarFallback>
+                                  </Avatar>
+                                  <div className="flex items-center gap-1">
+                                    <p className="font-bold text-sm">{item.sellerId?.name || "Anonim"}</p>
+                                    {(item.sellerId?.discordRole === "manager" || item.sellerId?.discordRole === "admin") && <ManagerBadge className="w-3.5 h-3.5" />}
+                                    {item.sellerId?.nismaraplus?.status && <NismaraPlusBadge className="w-3.5 h-3.5" />}
+                                    {item.sellerId?.isBooster && <ServerBoosterBadge />}
+                                  </div>
+                                </div>
                                 <div className="mt-1 flex flex-col gap-0.5">
                                   <p className="text-[10px] text-muted-foreground">Dipasang: {dateCreated}</p>
                                   {isEdited && <p className="text-[10px] text-blue-400">Diedit: {dateUpdated}</p>}

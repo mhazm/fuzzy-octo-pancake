@@ -8,13 +8,14 @@ import { id as localeId } from "date-fns/locale";
 import Link from "next/link";
 import NismaraPlusBadge from "@/components/icons/NismaraPlusBadge";
 import ServerBoosterBadge from "@/components/icons/ServerBoosterBadge";
+import ManagerBadge from "@/components/icons/ManagerBadge";
 import { Modal } from "@/components/ui/Modal";
 
 interface Comment {
   _id: string;
   text: string;
   createdAt: string;
-  user: { name: string; avatarUrl: string; discordId: string; truckyId?: string; isNismaraPlus?: boolean; isBooster?: boolean };
+  user: { name: string; avatarUrl: string; discordId: string; truckyId?: string; isNismaraPlus?: boolean; isBooster?: boolean; isManager?: boolean };
 }
 
 export default function GalleryModal({
@@ -232,6 +233,7 @@ export default function GalleryModal({
                 <div className="flex flex-col">
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <span className="font-bold text-sm hover:underline">{profileName}</span>
+                    {(profileRole === "manager" || profileRole === "admin") && <ManagerBadge />}
                     {profileIsBooster && <ServerBoosterBadge />}
                     {profileIsNismaraPlus && <NismaraPlusBadge />}
                   </div>
@@ -248,6 +250,7 @@ export default function GalleryModal({
                 <div className="flex flex-col">
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <span className="font-bold text-sm">{profileName}</span>
+                    {(profileRole === "manager" || profileRole === "admin") && <ManagerBadge />}
                     {profileIsBooster && <ServerBoosterBadge />}
                     {profileIsNismaraPlus && <NismaraPlusBadge />}
                   </div>
@@ -297,6 +300,7 @@ export default function GalleryModal({
                     ) : (
                       <span className="font-bold text-sm">{profileName}</span>
                     )}
+                    {(profileRole === "manager" || profileRole === "admin") && <ManagerBadge />}
                     {profileIsBooster && <ServerBoosterBadge />}
                     {profileIsNismaraPlus && <NismaraPlusBadge />}
                   </div>
@@ -341,6 +345,7 @@ export default function GalleryModal({
                         ) : (
                           <span className="font-bold mr-1 text-sm">{comment.user.name}</span>
                         )}
+                        {comment.user.isManager && <ManagerBadge className="w-3.5 h-3.5" />}
                         {comment.user.isBooster && <ServerBoosterBadge />}
                         {comment.user.isNismaraPlus && <NismaraPlusBadge className="w-3.5 h-3.5" />}
                         <span className="text-[10px] text-muted-foreground ml-2">

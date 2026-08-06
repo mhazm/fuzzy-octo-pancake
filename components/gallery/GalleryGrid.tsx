@@ -16,6 +16,7 @@ export interface UserComment {
     truckyId?: string;
     isNismaraPlus?: boolean;
     isBooster?: boolean;
+    isManager?: boolean;
   };
 }
 

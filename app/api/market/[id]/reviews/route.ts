@@ -49,7 +49,8 @@ export async function GET(
           image: user ? user.image : null,
           truckyId: user ? user.truckyId : null,
           isNismaraPlus: user && user.nismaraplus ? user.nismaraplus.status : false,
-          isBooster: user ? user.isServerBooster : false,
+          isBooster: user ? user.isBooster : false,
+          isManager: user ? (user.discordRole === "manager" || user.discordRole === "admin") : false,
         }
       });
     }

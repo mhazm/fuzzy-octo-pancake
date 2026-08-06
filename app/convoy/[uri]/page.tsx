@@ -20,6 +20,7 @@ import ClaimRewardButton from "./ClaimRewardButton";
 import EndConvoyButton from "./EndConvoyButton";
 import NismaraPlusBadge from "@/components/icons/NismaraPlusBadge";
 import ServerBoosterBadge from "@/components/icons/ServerBoosterBadge";
+import ManagerBadge from "@/components/icons/ManagerBadge";
 
 
 
@@ -228,6 +229,7 @@ export default async function ConvoyDetailPage({
                       <Link href={`/profile/${usersMap.get(convoy.roadCaptain)?.truckyId || '#'}`} className="text-base font-bold text-foreground hover:text-primary transition-colors">
                         {usersMap.get(convoy.roadCaptain)?.name}
                       </Link>
+                      {(usersMap.get(convoy.roadCaptain)?.discordRole === "manager" || usersMap.get(convoy.roadCaptain)?.discordRole === "admin") && <ManagerBadge className="w-4 h-4" />}
                       {usersMap.get(convoy.roadCaptain)?.nismaraplus?.status === true && <NismaraPlusBadge className="w-4 h-4" />}
                       {usersMap.get(convoy.roadCaptain)?.isBooster === true && <ServerBoosterBadge className="w-4 h-4" />}
                     </div>
@@ -271,6 +273,7 @@ export default async function ConvoyDetailPage({
                       <Link href={`/profile/${usersMap.get(convoy.setBy)?.truckyId || '#'}`} className="text-base font-bold text-foreground hover:text-primary transition-colors">
                         {usersMap.get(convoy.setBy)?.name}
                       </Link>
+                      {(usersMap.get(convoy.setBy)?.discordRole === "manager" || usersMap.get(convoy.setBy)?.discordRole === "admin") && <ManagerBadge className="w-4 h-4" />}
                       {usersMap.get(convoy.setBy)?.nismaraplus?.status === true && <NismaraPlusBadge className="w-4 h-4" />}
                       {usersMap.get(convoy.setBy)?.isBooster === true && <ServerBoosterBadge className="w-4 h-4" />}
                     </div>
@@ -492,6 +495,7 @@ export default async function ConvoyDetailPage({
                   >
                     {userDetail?.name || "Unknown"}
                   </span>
+                  {(userDetail?.discordRole === "manager" || userDetail?.discordRole === "admin") && <ManagerBadge className="w-3 h-3 ml-0.5" />}
                   {userDetail?.nismaraplus?.status === true && <NismaraPlusBadge className="w-3 h-3 ml-0.5" />}
                   {userDetail?.isBooster === true && <ServerBoosterBadge className="w-3 h-3 ml-0.5" />}
                   {isRoadCaptain && (
@@ -547,6 +551,7 @@ export default async function ConvoyDetailPage({
                       >
                         {userDetail?.name || "Driver Nismara"}
                       </Link>
+                      {(userDetail?.discordRole === "manager" || userDetail?.discordRole === "admin") && <ManagerBadge className="w-3.5 h-3.5 shrink-0" />}
                       {userDetail?.nismaraplus?.status === true && <NismaraPlusBadge className="w-3.5 h-3.5 shrink-0" />}
                       {userDetail?.isBooster === true && <ServerBoosterBadge className="w-3.5 h-3.5 shrink-0" />}
                     </div>

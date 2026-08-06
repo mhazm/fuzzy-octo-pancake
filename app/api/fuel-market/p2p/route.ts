@@ -21,7 +21,7 @@ export async function GET(request: Request) {
       query.sellerId = sellerId;
     }
     
-    const listings = await FuelMarketListing.find(query).sort({ pricePerLiter: 1, createdAt: -1 }).populate("sellerId", "name discordId").lean();
+    const listings = await FuelMarketListing.find(query).sort({ pricePerLiter: 1, createdAt: -1 }).populate("sellerId", "name discordId image nismaraplus isBooster discordRole").lean();
 
     return NextResponse.json({ success: true, listings });
   } catch (error: any) {

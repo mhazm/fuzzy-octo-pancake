@@ -6,6 +6,7 @@ import GalleryModal from "@/components/gallery/GalleryModal";
 import Link from "next/link";
 import NismaraPlusBadge from "@/components/icons/NismaraPlusBadge";
 import ServerBoosterBadge from "@/components/icons/ServerBoosterBadge";
+import ManagerBadge from "@/components/icons/ManagerBadge";
 
 export default function GalleryIndexClient({
   initialPosts,
@@ -120,6 +121,7 @@ export default function GalleryIndexClient({
                       ) : (
                         <span className="font-bold text-xs truncate">{post.user.name}</span>
                       )}
+                      {(post.user.role === "manager" || post.user.role === "admin") && <ManagerBadge />}
                       {post.user.isBooster && <ServerBoosterBadge />}
                       {post.user.isNismaraPlus && <NismaraPlusBadge />}
                     </div>
