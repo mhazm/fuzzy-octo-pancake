@@ -17,13 +17,17 @@ export async function POST(req: NextRequest) {
     const discordId = session.user.discordId;
 
     // 1. Ambil data dari Redis
-    const netProfitStr = await redis.get(`net_profit:${discordId}`);
-    const netProfit = Number(netProfitStr || 0);
+    const spentStr = await redis.get(`scratch_spent:${discordId}`);
+    const earnedStr = await redis.get(`scratch_earned:${discordId}`);
+    
+    const spent = Number(spentStr || 0);
+    const earned = Number(earnedStr || 0);
+    const netProfit = earned - spent;
 
     const ticketIds = await redis.lrange(`session_tickets:${discordId}`, 0, -1);
     
     // Jika tidak ada apa-apa untuk disinkron
-    if (netProfit === 0 && ticketIds.length === 0) {
+    if (spent === 0 && earned === 0 && ticketIds.length === 0) {
       return NextResponse.json({ message: "Nothing to sync" });
     }
 
@@ -48,26 +52,36 @@ export async function POST(req: NextRequest) {
     const client = await clientPromise;
     const db = client.db();
 
-    // 3. Simpan Net Profit ke MongoDB
+    // 3. Simpan Perubahan Saldo ke MongoDB
     if (netProfit !== 0) {
-      const updateRes = await db
-        .collection("currencies")
-        .updateOne(
-          { userId: discordId, guildId: GUILD_ID },
-          { $inc: { totalNC: netProfit } }
-        );
+      await db.collection("currencies").updateOne(
+        { userId: discordId, guildId: GUILD_ID },
+        { $inc: { totalNC: netProfit } }
+      );
+    }
 
-      if (updateRes.modifiedCount > 0) {
-        // Catat sebagai 1 histori ringkasan agar tidak spam
-        await db.collection("currencyhistories").insertOne({
-          userId: discordId,
-          guildId: GUILD_ID,
-          amount: Math.abs(netProfit),
-          type: netProfit > 0 ? "earn" : "spend",
-          reason: `Hasil sesi main Scratchers (${ticketIds.length} tiket)`,
-          createdAt: new Date(),
-        });
-      }
+    // Catat histori pengeluaran terpisah
+    if (spent > 0) {
+      await db.collection("currencyhistories").insertOne({
+        userId: discordId,
+        guildId: GUILD_ID,
+        amount: spent,
+        type: "spend",
+        reason: `Membeli tiket Scratch & Win (${ticketIds.length} tiket)`,
+        createdAt: new Date(),
+      });
+    }
+
+    // Catat histori pendapatan terpisah
+    if (earned > 0) {
+      await db.collection("currencyhistories").insertOne({
+        userId: discordId,
+        guildId: GUILD_ID,
+        amount: earned,
+        type: "earn",
+        reason: `Memenangkan hadiah Scratch & Win`,
+        createdAt: new Date(),
+      });
     }
 
     // 4. Simpan Tiket ke MongoDB untuk histori jangka panjang
@@ -76,7 +90,8 @@ export async function POST(req: NextRequest) {
     }
 
     // 5. Bersihkan Sesi Redis
-    await redis.del(`net_profit:${discordId}`);
+    await redis.del(`scratch_spent:${discordId}`);
+    await redis.del(`scratch_earned:${discordId}`);
     await redis.del(`session_tickets:${discordId}`);
     // Hapus detail tiket
     const pipeline = redis.pipeline();

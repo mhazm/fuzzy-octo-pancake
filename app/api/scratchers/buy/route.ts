@@ -37,9 +37,10 @@ export async function POST(req: NextRequest) {
     }
 
     if (currencyData.balance < TICKET_PRICE) {
-      // Tunggu, karena ada net_profit di Redis, kita harus hitung real balance
-      const netProfitStr = await redis.get(`net_profit:${discordId}`);
-      const netProfit = Number(netProfitStr || 0);
+      // Tunggu, karena ada state di Redis, kita harus hitung real balance
+      const spentStr = await redis.get(`scratch_spent:${discordId}`);
+      const earnedStr = await redis.get(`scratch_earned:${discordId}`);
+      const netProfit = Number(earnedStr || 0) - Number(spentStr || 0);
       const estimatedBalance = currencyData.balance + netProfit;
 
       if (estimatedBalance < TICKET_PRICE) {
@@ -49,8 +50,9 @@ export async function POST(req: NextRequest) {
         );
       }
     } else {
-      const netProfitStr = await redis.get(`net_profit:${discordId}`);
-      const netProfit = Number(netProfitStr || 0);
+      const spentStr = await redis.get(`scratch_spent:${discordId}`);
+      const earnedStr = await redis.get(`scratch_earned:${discordId}`);
+      const netProfit = Number(earnedStr || 0) - Number(spentStr || 0);
       const estimatedBalance = currencyData.balance + netProfit;
       if (estimatedBalance < TICKET_PRICE) {
         return NextResponse.json(
@@ -60,10 +62,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 1. Kurangi net_profit di Redis (Super Cepat)
-    await redis.incrby(`net_profit:${discordId}`, -TICKET_PRICE);
-    // Beri batas waktu jika user lupa sync (misal 1 jam)
-    await redis.expire(`net_profit:${discordId}`, 3600);
+    // 1. Tambah scratch_spent di Redis (Super Cepat)
+    await redis.incrby(`scratch_spent:${discordId}`, TICKET_PRICE);
+    await redis.expire(`scratch_spent:${discordId}`, 3600);
 
     // Determine prize based on RNG and probability table
     const rand = Math.random();

@@ -24,13 +24,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (ticketId.startsWith("redis_ticket_")) {
-      // 1. Tangani Tiket dari Redis
-      const ticketData = await redis.hgetall(`ticket:${ticketId}`);
-      if (!ticketData || Object.keys(ticketData).length === 0) {
-        return NextResponse.json({ error: "Ticket not found or expired in session" }, { status: 404 });
-      }
+    let isFromRedis = false;
+    let ticketData: any = null;
 
+    if (ticketId.startsWith("redis_ticket_")) {
+      // Coba cari di Redis dulu
+      const redisData = await redis.hgetall(`ticket:${ticketId}`);
+      if (redisData && Object.keys(redisData).length > 0) {
+        isFromRedis = true;
+        ticketData = redisData;
+      }
+    }
+
+    if (isFromRedis && ticketData) {
       if (ticketData.isScratched === true || ticketData.isScratched === "true") {
         return NextResponse.json({ error: "Ticket has already been scratched" }, { status: 400 });
       }
@@ -40,9 +46,10 @@ export async function POST(req: NextRequest) {
 
       const prizeWon = Number(ticketData.prizeWon || 0);
 
-      // Tambah net_profit jika menang
+      // Tambah scratch_earned jika menang
       if (prizeWon > 0) {
-        await redis.incrby(`net_profit:${discordId}`, prizeWon);
+        await redis.incrby(`scratch_earned:${discordId}`, prizeWon);
+        await redis.expire(`scratch_earned:${discordId}`, 3600);
       }
 
       return NextResponse.json({
@@ -51,10 +58,9 @@ export async function POST(req: NextRequest) {
       });
 
     } else {
-      // 2. Tangani Tiket dari MongoDB (Legacy / Fallback)
+      // 2. Tangani Tiket dari MongoDB (Fallback untuk sinkronisasi / tiket lama)
       await clientPromise;
 
-      // Find the ticket
       const ticket = await ScratchTicket.findOne({
         _id: ticketId,
         discordId: discordId,
