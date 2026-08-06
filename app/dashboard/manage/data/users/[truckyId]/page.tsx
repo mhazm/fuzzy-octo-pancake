@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import ManageUserUI from "./ManageUserUI";
 import { getDriverStats, getCompanyMemberStats } from "@/lib/trucky";
+import { getUserAggregatedStats } from "@/lib/userStats";
 
 export const metadata = {
   title: "Manage Users Detail",
@@ -89,11 +90,14 @@ export default async function AdminUserDetailPage({
     Number(truckyId),
   );
 
+  const userStats = await getUserAggregatedStats(user.discordId, user._id);
+
   const serialize = (data: any) => JSON.parse(JSON.stringify(data));
 
   return (
     <ManageUserUI
       user={serialize(user)}
+      userStats={serialize(userStats)}
       ncHistory={serialize(ncHistory)}
       pointHistory={serialize(pointHistory)}
       jobs={serialize(recentJobs)}

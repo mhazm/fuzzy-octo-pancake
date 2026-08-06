@@ -46,3 +46,6 @@ next-env.d.ts
 #nodejs
 package-lock.json
 ecosystem.config.js
+
+AGENTS.md
+CLAUDE.md
