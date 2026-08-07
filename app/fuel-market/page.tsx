@@ -270,7 +270,7 @@ export default function FuelMarketPage() {
         <div className="flex items-center gap-4 bg-card border rounded-2xl p-4 shadow-sm">
           <div className="text-right">
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Saldo NC Anda</p>
-            <p className="text-xl font-bold text-emerald-500">{balance.toFixed(2)} NC</p>
+            <p className="text-xl font-bold text-emerald-500">{balance.toLocaleString("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} NC</p>
           </div>
           <Button variant="outline" size="icon" onClick={fetchData} disabled={loading}>
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
@@ -432,7 +432,7 @@ export default function FuelMarketPage() {
                     {buyAmount && Number(buyAmount) > 0 && (
                       <div className="bg-accent-sky/10 p-3 rounded-lg text-sm flex justify-between">
                         <span>Total Pembayaran (Termasuk 5% Fee):</span>
-                        <span className="font-bold text-accent-sky">{Math.ceil(Number(buyAmount) * systemPrice * 1.05)} NC</span>
+                        <span className="font-bold text-accent-sky">{Math.ceil(Number(buyAmount) * systemPrice * 1.05).toLocaleString("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} NC</span>
                       </div>
                     )}
                     <Button 
@@ -488,8 +488,8 @@ export default function FuelMarketPage() {
                       const totalCost = Math.ceil(item.amount * item.pricePerLiter * 1.05);
                       const isOwn = item.sellerDiscordId === session.user.discordId;
 
-                      const dateCreated = new Date(item.createdAt).toLocaleString("id-ID", { dateStyle: 'short', timeStyle: 'short' });
-                      const dateUpdated = new Date(item.updatedAt).toLocaleString("id-ID", { dateStyle: 'short', timeStyle: 'short' });
+                      const dateCreated = new Date(item.createdAt).toLocaleString("id-ID", { dateStyle: 'short', timeStyle: 'short', timeZone: 'Asia/Jakarta' }) + " WIB";
+                      const dateUpdated = new Date(item.updatedAt).toLocaleString("id-ID", { dateStyle: 'short', timeStyle: 'short', timeZone: 'Asia/Jakarta' }) + " WIB";
                       const isEdited = item.createdAt !== item.updatedAt;
 
                       return (
@@ -528,10 +528,10 @@ export default function FuelMarketPage() {
                             <div className="bg-card rounded-lg p-3 mb-4 mt-3 flex items-center justify-between border">
                               <div className="flex items-center gap-2">
                                 <Fuel className="w-5 h-5 text-destructive" />
-                                <span className="font-bold text-lg">{item.amount.toLocaleString("id-ID")} L</span>
+                                <span className="font-bold text-lg">{Math.floor(item.amount).toLocaleString("id-ID")} L</span>
                               </div>
                               <div className="text-right">
-                                <p className="text-xs text-muted-foreground">Total: {totalCost} NC (inc. fee)</p>
+                                <p className="text-xs text-muted-foreground">Total: {totalCost.toLocaleString("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} NC (inc. fee)</p>
                               </div>
                             </div>
                           </div>
@@ -572,8 +572,8 @@ export default function FuelMarketPage() {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {listings.filter((l: any) => l.sellerDiscordId === session.user.discordId).map((item: any) => {
-                      const dateCreated = new Date(item.createdAt).toLocaleString("id-ID", { dateStyle: 'short', timeStyle: 'short' });
-                      const dateUpdated = new Date(item.updatedAt).toLocaleString("id-ID", { dateStyle: 'short', timeStyle: 'short' });
+                      const dateCreated = new Date(item.createdAt).toLocaleString("id-ID", { dateStyle: 'short', timeStyle: 'short', timeZone: 'Asia/Jakarta' }) + " WIB";
+                      const dateUpdated = new Date(item.updatedAt).toLocaleString("id-ID", { dateStyle: 'short', timeStyle: 'short', timeZone: 'Asia/Jakarta' }) + " WIB";
                       const isEdited = item.createdAt !== item.updatedAt;
 
                       return (
@@ -597,11 +597,11 @@ export default function FuelMarketPage() {
                             <div className="bg-card rounded-lg p-3 mb-4 mt-3 flex items-center justify-between border">
                               <div className="flex items-center gap-2">
                                 <Fuel className="w-5 h-5 text-destructive" />
-                                <span className="font-bold text-lg">{item.amount.toLocaleString("id-ID")} L</span>
+                                <span className="font-bold text-lg">{Math.floor(item.amount).toLocaleString("id-ID")} L</span>
                               </div>
                               <div className="text-right">
                                 <p className="text-[10px] text-muted-foreground">Estimasi Pendapatan Bersih</p>
-                                <p className="font-bold text-sm text-emerald-500">{item.amount * item.pricePerLiter} NC</p>
+                                <p className="font-bold text-sm text-emerald-500">{(item.amount * item.pricePerLiter).toLocaleString("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} NC</p>
                               </div>
                             </div>
                           </div>
@@ -649,7 +649,7 @@ export default function FuelMarketPage() {
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Kapasitas Terisi</span>
-                          <span className="font-bold">{garage.fuelStock || 0} / {garage.fuelCapacity || 2000} Liter</span>
+                          <span className="font-bold">{Math.floor(garage.fuelStock || 0).toLocaleString("id-ID")} / {(garage.fuelCapacity || 2000).toLocaleString("id-ID")} Liter</span>
                         </div>
                         <div className="h-4 w-full bg-muted rounded-full overflow-hidden">
                           <div 
@@ -732,10 +732,13 @@ export default function FuelMarketPage() {
                     </div>
                     
                     <div>
-                      <label className="text-xs text-muted-foreground block mb-1">Harga jual per Liter (NC)</label>
+                      <label className="text-xs text-muted-foreground block mb-1">
+                        Harga jual per Liter (NC) <span className="text-destructive font-medium ml-1">(Maks: 1.5 NC)</span>
+                      </label>
                       <Input 
                         type="number" 
                         step="0.01"
+                        max="1.5"
                         value={sellPrice} 
                         onChange={(e) => setSellPrice(e.target.value)} 
                         placeholder="Contoh: 0.5" 
@@ -746,12 +749,12 @@ export default function FuelMarketPage() {
                       <div className="bg-primary/10 p-4 rounded-xl text-sm space-y-2 border border-primary/20">
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Pemasukan Anda (Utuh):</span>
-                          <span className="font-bold">{Number(sellAmount) * Number(sellPrice)} NC</span>
+                          <span className="font-bold">{(Number(sellAmount) * Number(sellPrice)).toLocaleString("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} NC</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Harga tampil di Market (inc. Fee):</span>
                           <span className="font-bold text-accent-sky">
-                            {Math.ceil(Number(sellAmount) * Number(sellPrice) * 1.05)} NC
+                            {Math.ceil(Number(sellAmount) * Number(sellPrice) * 1.05).toLocaleString("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} NC
                           </span>
                         </div>
                       </div>
@@ -759,7 +762,7 @@ export default function FuelMarketPage() {
 
                     <Button 
                       className="w-full" 
-                      disabled={!sellAmount || !sellPrice || actionLoading || !garage}
+                      disabled={!sellAmount || !sellPrice || actionLoading || !garage || Number(sellPrice) > 1.5}
                       onClick={() => handleAction("/api/fuel-market/p2p", { amount: Number(sellAmount), pricePerLiter: Number(sellPrice) }, `Anda yakin ingin memasang iklan jualan ${sellAmount} Liter BBM seharga ${sellPrice} NC/Liter? BBM akan dipotong dari tangki Anda sekarang.`)}
                     >
                       {actionLoading ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : <Banknote className="w-4 h-4 mr-2" />}
@@ -799,7 +802,7 @@ export default function FuelMarketPage() {
                       const roleLabel = isBuyer ? "BELI" : "JUAL";
                       const colorClass = isBuyer ? "text-destructive bg-destructive/10 border-destructive/20" : "text-emerald-500 bg-emerald-500/10 border-emerald-500/20";
                       const partner = isBuyer ? tx.sellerName : tx.buyerName;
-                      const date = new Date(tx.createdAt).toLocaleString("id-ID", { dateStyle: 'medium', timeStyle: 'short' });
+                      const date = new Date(tx.createdAt).toLocaleString("id-ID", { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Jakarta' }) + " WIB";
 
                       return (
                         <div key={tx._id} className="flex flex-col md:flex-row items-center justify-between p-4 border rounded-xl hover:bg-muted/30 transition-colors">
@@ -809,7 +812,7 @@ export default function FuelMarketPage() {
                             </div>
                             <div>
                               <p className="font-medium text-sm md:text-base">
-                                {tx.amount.toLocaleString("id-ID")} Liter @ {tx.pricePerLiter} NC
+                                {Math.floor(tx.amount).toLocaleString("id-ID")} Liter @ {tx.pricePerLiter} NC
                               </p>
                               <p className="text-xs text-muted-foreground">
                                 {date} • {tx.type === "system" ? "Sistem Market" : "Driver Market"}
@@ -819,7 +822,7 @@ export default function FuelMarketPage() {
                           
                           <div className="flex flex-col md:items-end w-full md:w-auto">
                             <p className={`font-bold text-lg ${isBuyer ? 'text-destructive' : 'text-emerald-500'}`}>
-                              {isBuyer ? "-" : "+"}{tx.totalPrice} NC
+                              {isBuyer ? "-" : "+"}{tx.totalPrice.toLocaleString("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} NC
                             </p>
                             <p className="text-xs text-muted-foreground">
                               {isBuyer ? `Membeli dari: ${partner}` : `Terjual ke: ${partner}`}

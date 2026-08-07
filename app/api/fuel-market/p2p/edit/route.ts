@@ -16,6 +16,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Listing ID dan Harga Baru (lebih dari 0) diperlukan" }, { status: 400 });
     }
 
+    if (Number(newPrice) > 1.5) {
+      return NextResponse.json({ error: "Harga jual maksimal adalah 1.5 NC per liter" }, { status: 400 });
+    }
+
     const discordId = session.user.discordId;
 
     await dbConnect();

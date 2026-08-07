@@ -43,6 +43,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Amount dan price harus lebih besar dari 0" }, { status: 400 });
     }
 
+    if (pricePerLiter > 1.5) {
+      return NextResponse.json({ error: "Harga jual maksimal adalah 1.5 NC per liter" }, { status: 400 });
+    }
+
     const discordId = session.user.discordId;
 
     const client = await clientPromise;

@@ -30,14 +30,14 @@ export async function GET(request: Request) {
       
       let timeLabel = "";
       if (days === 1) {
-        timeLabel = d.toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit' }).replace('.', ':');
+        timeLabel = d.toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' }).replace('.', ':');
       } else {
-        timeLabel = d.toLocaleString("id-ID", { day: '2-digit', month: 'short' });
+        timeLabel = d.toLocaleString("id-ID", { day: '2-digit', month: 'short', timeZone: 'Asia/Jakarta' });
       }
 
       return {
         time: timeLabel,
-        fullDate: d.toLocaleString("id-ID", { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+        fullDate: d.toLocaleString("id-ID", { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' }) + " WIB",
         price: h.price
       };
     });
