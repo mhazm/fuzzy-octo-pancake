@@ -64,7 +64,12 @@ Nismara Logistics is a web platform for a virtual trucking community (VTC). It i
 - **Z-Index & Tooltips:** Use Tailwind's `group` and `group-hover` strategically to avoid stacking context issues when rendering lists of items with tooltips/badges.
 - **Destructive/Critical Actions & Alerts:** NEVER use the native browser `alert()` or `confirm()` dialogs. Instead, ALWAYS import and use `showAlert` and `showConfirm` from `@/lib/dialog`. These functions return Promises and trigger our custom global `<Modal />` component. Example usage: `await showAlert("Berhasil!")` or `if (await showConfirm("Yakin hapus?")) { ... }`. This prevents ugly browser pop-ups and avoids polluting components with manual modal state.
 
-## 7. Domain Configuration
+## 7. Data Formatting Standards
+- **Timezone (WIB/Jakarta):** Always format dates and times explicitly to `Asia/Jakarta` using `toLocaleString("id-ID", { timeZone: 'Asia/Jakarta', ... })` and append " WIB" where contextually appropriate, especially on charts, feeds, and market history.
+- **Currency (NC):** Always format Nismara Coin (NC) balances to standard Indonesian currency format (e.g. `2.000,00 NC`) using `.toLocaleString("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 })`. Do NOT use `.toFixed(2)` for frontend display of user balances.
+- **Fuel (Liter):** Fuel amounts should always be displayed as flat integers without decimals (e.g. `500 L`). Use `Math.floor()` before formatting with `.toLocaleString("id-ID")`.
+
+## 8. Domain Configuration
 
 - **Production URL:** `https://transport.nismara.web.id`.
 - **Beta URL/Preview:** `https://beta.nismara.web.id`.

@@ -19,6 +19,8 @@ const COLOR_THEMES = [
   { name: "Royal Blue", class: "theme-blue", color: "bg-blue-500" },
   { name: "Amber Yellow", class: "theme-amber", color: "bg-amber-500" },
   { name: "Rose Pink", class: "theme-rose", color: "bg-rose-500" },
+  { name: "WLDR Blue", class: "theme-wldr-blue", color: "bg-[#6797b6]" },
+  { name: "Orange WBR", class: "theme-orange-wbr", color: "bg-[#e86d2c]" },
 ];
 
 export default function ThemeToggle() {

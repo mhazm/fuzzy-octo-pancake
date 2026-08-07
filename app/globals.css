@@ -121,6 +121,17 @@
     --ring: 346 87% 60%;
   }
 
+  .theme-wldr-blue {
+    --primary: 204 35% 56%; 
+    --accent-sky: 199 89% 48%; 
+    --ring: 204 35% 56%;
+  }
+  .theme-orange-wbr {
+    --primary: 21 80% 54%; 
+    --accent-sky: 38 92% 50%; 
+    --ring: 21 80% 54%;
+  }
+
   * {
     @apply border-border outline-ring/50;
   }
