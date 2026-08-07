@@ -34,5 +34,5 @@ export default async function CreateTeamPage() {
     }
   }
 
-  return <CreateTeamForm />;
+  return <CreateTeamForm isNismaraPlus={currentUser?.nismaraplus?.status === true} />;
 }

@@ -8,6 +8,8 @@ import { id as localeId } from "date-fns/locale";
 import Link from "next/link";
 import UserBadges from "@/components/icons/UserBadges";
 import { Modal } from "@/components/ui/Modal";
+import { showAlert } from "@/lib/dialog";
+
 
 interface Comment {
   _id: string;
@@ -176,12 +178,12 @@ export default function GalleryModal({
         window.location.reload(); // Refresh the page to remove post
       } else {
         const err = await res.json();
-        alert(err.error || "Gagal menghapus postingan");
+        await showAlert(err.error || "Gagal menghapus postingan");
         setIsDeleting(false);
         setShowDeleteModal(false);
       }
     } catch (error) {
-      alert("Terjadi kesalahan sistem saat menghapus postingan");
+      await showAlert("Terjadi kesalahan sistem saat menghapus postingan");
       setIsDeleting(false);
       setShowDeleteModal(false);
     }
@@ -350,6 +352,15 @@ export default function GalleryModal({
                     />
                   </div>
                   <span className="text-sm mt-0.5 inline-block">{post.caption}</span>
+                  {post.tags && post.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {post.tags.map((tag: string) => (
+                        <Link href={`/feeds?tag=${tag}`} key={tag} className="text-primary hover:underline cursor-pointer font-medium text-xs">
+                          #{tag}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
                   <div className="text-[10px] text-muted-foreground mt-1">
                     {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true, locale: localeId })}
                   </div>

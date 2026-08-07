@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
+import { sendPersonalNotification } from "@/lib/services/NotificationService";
 
 export async function POST(
   request: Request,
@@ -48,6 +49,19 @@ export async function POST(
         { _id: new ObjectId(commentId) },
         { $addToSet: { likes: userDiscordId } as any }
       );
+      
+      // Notification
+      if (comment.userId && comment.userId !== userDiscordId) {
+        const userName = session.user.name || "Seseorang";
+        sendPersonalNotification(
+          comment.userId,
+          "Komentar Disukai",
+          `${userName} menyukai komentar Anda di galeri.`,
+          "info",
+          `/p/${postId}`
+        ).catch((err) => console.error("Failed to send notification:", err));
+      }
+
       return NextResponse.json({ success: true, liked: true });
     }
   } catch (error) {

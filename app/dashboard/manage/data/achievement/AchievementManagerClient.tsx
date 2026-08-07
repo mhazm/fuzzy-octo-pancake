@@ -3,6 +3,9 @@
 import { useState, useEffect } from "react";
 import { Plus, Edit2, Trash2, Trophy, Search, Upload, Code, Tag } from "lucide-react";
 import { compressImageToWebP } from "@/lib/imageUtils";
+import { useSession } from "next-auth/react";
+import { showAlert } from "@/lib/dialog";
+
 
 const CATEGORIES = [
   { id: "weekly", label: "Weekly", color: "text-blue-400", bg: "bg-blue-500/20 border-blue-500/30" },
@@ -12,6 +15,7 @@ const CATEGORIES = [
 ];
 
 export default function AchievementManagerClient() {
+  const { data: session } = useSession();
   const [achievements, setAchievements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
@@ -63,7 +67,8 @@ export default function AchievementManagerClient() {
 
       // Upload gambar ke R2 jika ada file baru
       if (imageFile) {
-        const compressedImage = await compressImageToWebP(imageFile, 0.8, 512);
+        const isNismaraPlus = (session?.user as any)?.nismaraplus?.status === true;
+        const compressedImage = await compressImageToWebP(imageFile, isNismaraPlus ? 5 : 3, 512);
 
         const presignRes = await fetch("/api/upload", {
           method: "POST",
@@ -87,12 +92,12 @@ export default function AchievementManagerClient() {
           if (uploadRes.ok) {
             imageUrl = publicUrl;
           } else {
-            alert("Gagal mengupload gambar ke server");
+            showAlert("Gagal mengupload gambar ke server");
             setIsSubmitting(false);
             return;
           }
         } else {
-          alert("Gagal mendapatkan presigned URL");
+          showAlert("Gagal mendapatkan presigned URL");
           setIsSubmitting(false);
           return;
         }
@@ -119,10 +124,10 @@ export default function AchievementManagerClient() {
         setImagePreview(null);
         fetchAchievements();
       } else {
-        alert(result.error || "Gagal menyimpan achievement");
+        showAlert(result.error || "Gagal menyimpan achievement");
       }
     } catch {
-      alert("Terjadi kesalahan sistem");
+      showAlert("Terjadi kesalahan sistem");
     } finally {
       setIsSubmitting(false);
     }
@@ -140,10 +145,10 @@ export default function AchievementManagerClient() {
         setDeleteModal({ open: false, id: null, name: "" });
         fetchAchievements();
       } else {
-        alert(result.error || "Gagal menghapus achievement");
+        showAlert(result.error || "Gagal menghapus achievement");
       }
     } catch {
-      alert("Terjadi kesalahan sistem");
+      showAlert("Terjadi kesalahan sistem");
     } finally {
       setIsSubmitting(false);
     }
@@ -429,8 +434,21 @@ export default function AchievementManagerClient() {
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (file) {
-                        if (file.size > 3 * 1024 * 1024) {
-                          alert("Ukuran gambar maksimal 3MB");
+                        if (!file.type.startsWith("image/")) {
+                          showAlert("Format tidak didukung! Harap unggah gambar.");
+                          return;
+                        }
+
+                        const isNismaraPlus = (session?.user as any)?.nismaraplus?.status === true;
+                        
+                        if (!isNismaraPlus && file.type === "image/gif") {
+                          showAlert("Hanya member Nismara+ yang diizinkan mengunggah GIF.");
+                          return;
+                        }
+
+                        const maxSizeMB = isNismaraPlus ? 5 : 3;
+                        if (file.size > maxSizeMB * 1024 * 1024) {
+                          showAlert(`Maksimal ukuran file adalah ${maxSizeMB}MB.`);
                           return;
                         }
                         setImageFile(file);
@@ -449,7 +467,7 @@ export default function AchievementManagerClient() {
                     <span className="text-accent-lilac font-bold text-sm">
                       {imagePreview ? "Ganti Gambar" : "Pilih Gambar"}
                     </span>
-                    <span className="text-gray-500 text-xs">PNG, JPG up to 3MB (auto WebP)</span>
+                    <span className="text-gray-500 text-xs">PNG, JPG up to 3MB (Nismara+ 5MB & GIF)</span>
                   </label>
                 </div>
                 {imageFile && (

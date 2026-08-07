@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { showAlert } from "@/lib/dialog";
 import {
   Search,
   Filter,
@@ -28,7 +29,7 @@ export default function ManageUsersTable({
   const [isPurging, setIsPurging] = useState(false);
 
   const handlePurge = async () => {
-    if (!purgeUserId || !purgePassword) return alert("Discord ID atau Password tidak boleh kosong!");
+    if (!purgeUserId || !purgePassword) return await showAlert("Discord ID atau Password tidak boleh kosong!");
     setIsPurging(true);
     try {
       const res = await fetch(`/api/manage/users/${purgeUserId}/purge`, {
@@ -40,14 +41,14 @@ export default function ManageUsersTable({
 
       const data = await res.json();
       if (res.ok) {
-        alert("Berhasil menghapus data user!");
+        await showAlert("Berhasil menghapus data user!");
         window.location.reload();
       } else {
-        alert(`Gagal: ${data.error || data.message || "Password salah"}`);
+        await showAlert(`Gagal: ${data.error || data.message || "Password salah"}`);
       }
     } catch (error) {
       console.error(error);
-      alert("Terjadi kesalahan jaringan.");
+      await showAlert("Terjadi kesalahan jaringan.");
     } finally {
       setIsPurging(false);
       setPurgeUserId(null);

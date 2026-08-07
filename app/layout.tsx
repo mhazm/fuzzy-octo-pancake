@@ -77,16 +77,16 @@ export default function RootLayout({
   return (
     <html
       lang="id"
-      className={cn("dark", "font-sans", geist.variable, "overflow-x-hidden")}
+      className={cn("dark", "font-sans", geist.variable, "overflow-x-clip")}
     >
       <body
-        className={`${roboto.className} flex flex-col min-h-screen overflow-x-hidden`}
+        className={`${roboto.className} flex flex-col min-h-screen overflow-x-clip`}
       >
         {/* Navbar akan selalu ada di paling atas */}
         <Providers>
           <Navbar />
 
-          <div className="flex-1 w-full max-w-full overflow-x-hidden">
+          <div className="flex-1 w-full max-w-full overflow-x-clip">
             {children}
           </div>
           <Footer />

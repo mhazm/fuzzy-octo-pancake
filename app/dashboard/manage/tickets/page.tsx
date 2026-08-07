@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { Ticket, Settings, CheckCircle, AlertCircle, Play, UserCheck, MessageSquare, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { showAlert, showConfirm } from "@/lib/dialog";
+
 
 export default function ManageTicketsPage() {
   const { data: session } = useSession();
@@ -87,15 +89,15 @@ export default function ManageTicketsPage() {
         setNewCategoryName("");
         fetchData(1, filterStatus, filterManager);
       } else {
-        alert(data.error);
+        await showAlert(data.error);
       }
     } catch (error) {
-      alert("Terjadi kesalahan");
+      await showAlert("Terjadi kesalahan");
     }
   };
 
   const handleClaim = async (ticketId: string) => {
-    if (!confirm("Apakah Anda yakin ingin mengurus tiket ini?")) return;
+    if (!await showConfirm("Apakah Anda yakin ingin mengurus tiket ini?")) return;
     try {
       const res = await fetch(`/api/manage/tickets/${ticketId}/claim`, {
         method: "POST"
@@ -104,16 +106,16 @@ export default function ManageTicketsPage() {
       if (data.success) {
         fetchData(currentPage, filterStatus, filterManager);
       } else {
-        alert(data.error);
+        await showAlert(data.error);
       }
     } catch (error) {
-      alert("Terjadi kesalahan");
+      await showAlert("Terjadi kesalahan");
     }
   };
 
   const handleCloseTicket = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!closeTicketId || !closeReason) return alert("Alasan penutupan harus diisi");
+    if (!closeTicketId || !closeReason) return await showAlert("Alasan penutupan harus diisi");
     setIsClosing(true);
     try {
       const res = await fetch(`/api/manage/tickets/${closeTicketId}/close`, {
@@ -127,12 +129,12 @@ export default function ManageTicketsPage() {
         setCloseReason("");
         setCloseStatus("resolved");
         fetchData(currentPage, filterStatus, filterManager);
-        alert("Tiket berhasil ditutup! Anda mendapatkan 500 NC.");
+        await showAlert("Tiket berhasil ditutup! Anda mendapatkan 500 NC.");
       } else {
-        alert(data.error);
+        await showAlert(data.error);
       }
     } catch (error) {
-      alert("Terjadi kesalahan");
+      await showAlert("Terjadi kesalahan");
     } finally {
       setIsClosing(false);
     }

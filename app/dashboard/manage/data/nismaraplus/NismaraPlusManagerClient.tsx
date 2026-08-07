@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { Search, UserPlus, Crown, MoreVertical, X, Calendar, ShieldOff, Loader2 } from "lucide-react";
 import { searchUsers, grantOrExtendNismaraPlus, revokeNismaraPlus } from "./actions";
+import { showAlert, showConfirm } from "@/lib/dialog";
+
 
 interface User {
   _id: string;
@@ -59,12 +61,12 @@ export default function NismaraPlusManagerClient({ initialUsers }: { initialUser
     setIsProcessing(true);
     const res = await grantOrExtendNismaraPlus(selectedUser.discordId, selectedDuration);
     if (res.success) {
-      alert(res.message);
+      await showAlert(res.message);
       setIsAddModalOpen(false);
       setSelectedUser(null);
       setSearchQuery("");
     } else {
-      alert(res.message);
+      await showAlert(res.message);
     }
     setIsProcessing(false);
   };
@@ -74,27 +76,27 @@ export default function NismaraPlusManagerClient({ initialUsers }: { initialUser
     setIsProcessing(true);
     const res = await grantOrExtendNismaraPlus(actionUser.discordId, selectedDuration);
     if (res.success) {
-      alert(res.message);
+      await showAlert(res.message);
       setActionModalOpen(false);
       setActionUser(null);
     } else {
-      alert(res.message);
+      await showAlert(res.message);
     }
     setIsProcessing(false);
   };
 
   const handleRevoke = async () => {
     if (!actionUser) return;
-    if (!confirm(`Yakin ingin mencabut akses Nismara+ untuk ${actionUser.name}?`)) return;
+    if (!await showConfirm(`Yakin ingin mencabut akses Nismara+ untuk ${actionUser.name}?`)) return;
     
     setIsProcessing(true);
     const res = await revokeNismaraPlus(actionUser.discordId);
     if (res.success) {
-      alert(res.message);
+      await showAlert(res.message);
       setActionModalOpen(false);
       setActionUser(null);
     } else {
-      alert(res.message);
+      await showAlert(res.message);
     }
     setIsProcessing(false);
   };

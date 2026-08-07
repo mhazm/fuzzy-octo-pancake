@@ -51,6 +51,7 @@ export default async function TeamHQPage({
       team={JSON.parse(JSON.stringify(team))}
       members={JSON.parse(JSON.stringify(members))}
       pending={JSON.parse(JSON.stringify(pending))}
+      isNismaraPlus={user?.nismaraplus?.status === true}
     />
   );
 }

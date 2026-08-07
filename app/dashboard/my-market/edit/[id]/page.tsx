@@ -89,8 +89,21 @@ export default function EditMarketItem() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 3 * 1024 * 1024) {
-        setError("Ukuran gambar maksimal 3MB");
+      if (!file.type.startsWith("image/")) {
+        setError("Format tidak didukung! Harap unggah gambar.");
+        return;
+      }
+
+      const isNismaraPlus = (session?.user as any)?.nismaraplus?.status === true;
+
+      if (!isNismaraPlus && file.type === "image/gif") {
+        setError("Hanya member Nismara+ yang diizinkan mengunggah GIF.");
+        return;
+      }
+
+      const maxSizeMB = isNismaraPlus ? 5 : 3;
+      if (file.size > maxSizeMB * 1024 * 1024) {
+        setError(`Ukuran gambar maksimal ${maxSizeMB}MB`);
         return;
       }
       setImageFile(file);
@@ -307,7 +320,7 @@ export default function EditMarketItem() {
             <label htmlFor="image-upload" className="cursor-pointer flex flex-col items-center">
               <Upload className="w-10 h-10 text-gray-500 mb-2" />
               <span className="text-accent-lilac font-bold mb-1">Ganti Gambar</span>
-              <span className="text-gray-500 text-xs mb-4">PNG, JPG up to 3MB</span>
+              <span className="text-gray-500 text-xs mb-4">PNG, JPG up to 3MB (Nismara+ 5MB & GIF)</span>
               
               {imageFile ? (
                 <span className="text-green-400 text-sm bg-green-400/10 px-3 py-1 rounded-full">

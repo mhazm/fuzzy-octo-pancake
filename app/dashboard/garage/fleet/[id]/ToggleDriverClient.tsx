@@ -3,6 +3,8 @@
 import React, { useState } from "react";
 import { UserCheck, UserMinus } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { showAlert } from "@/lib/dialog";
+
 
 interface ToggleDriverClientProps {
   fleetId: string;
@@ -31,7 +33,7 @@ export default function ToggleDriverClient({
       // Refresh the page to reflect the new state
       router.refresh();
     } catch (err: any) {
-      alert(err.message);
+      await showAlert(err.message);
     } finally {
       setIsLoading(false);
     }

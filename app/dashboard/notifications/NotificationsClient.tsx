@@ -29,14 +29,20 @@ export default function NotificationsClient() {
   const [notifications, setNotifications] = useState<NotificationData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
 
   const fetchNotifications = async () => {
     try {
-      const res = await fetch("/api/notifications");
+      setIsLoading(true);
+      const res = await fetch(`/api/notifications?page=${page}&limit=10`);
       if (res.ok) {
         const json = await res.json();
         if (json.success && json.data) {
           setNotifications(json.data);
+          setTotalPages(json.pagination.totalPages);
+          setTotalItems(json.pagination.total);
         }
       }
     } catch (error) {
@@ -48,7 +54,7 @@ export default function NotificationsClient() {
 
   useEffect(() => {
     fetchNotifications();
-  }, []);
+  }, [page]);
 
   const handleNotificationClick = async (notif: NotificationData) => {
     if (!notif.isRead) {
@@ -122,7 +128,7 @@ export default function NotificationsClient() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Semua Notifikasi</h1>
           <p className="text-muted-foreground mt-1">
-            Anda memiliki {unreadCount} pesan yang belum dibaca.
+            Anda memiliki {unreadCount} pesan yang belum dibaca dari total {totalItems} pesan.
           </p>
         </div>
         
@@ -193,6 +199,29 @@ export default function NotificationsClient() {
           </div>
         )}
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between bg-card p-4 rounded-2xl border border-border shadow-lg">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="px-4 py-2 bg-muted hover:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-medium transition-colors text-foreground"
+          >
+            Sebelumnya
+          </button>
+          <span className="text-sm font-medium text-muted-foreground">
+            Halaman {page} dari {totalPages}
+          </span>
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            className="px-4 py-2 bg-muted hover:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-medium transition-colors text-foreground"
+          >
+            Selanjutnya
+          </button>
+        </div>
+      )}
     </div>
   );
 }

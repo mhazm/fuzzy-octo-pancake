@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { buyInsurance } from "./actions";
 import { ShieldAlert, X } from "lucide-react";
+import { showAlert } from "@/lib/dialog";
+
 
 type BuyInsuranceButtonProps = {
   price: number;
@@ -24,7 +26,7 @@ export default function BuyInsuranceButton({ price, isExtend = false }: BuyInsur
     const res = await buyInsurance();
 
     if (!res.success) {
-      alert(res.message);
+      await showAlert(res.message);
     } else {
       setIsModalOpen(false);
     }

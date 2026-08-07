@@ -15,8 +15,10 @@ import {
   Image as ImageIcon
 } from "lucide-react";
 import { compressImageToWebP } from "@/lib/imageUtils";
+import { useSession } from "next-auth/react";
 
 export default function FleetBrandManager() {
+  const { data: session } = useSession();
   const [brands, setBrands] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -27,6 +29,7 @@ export default function FleetBrandManager() {
   const [formData, setFormData] = useState({ id: "", name: "", logo_url: "" });
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
 
   // Toast State
   const [toast, setToast] = useState({
@@ -60,6 +63,7 @@ export default function FleetBrandManager() {
 
   const handleAddClick = () => {
     setFormData({ id: "", name: "", logo_url: "" });
+    setLogoFile(null);
     setIsEditMode(false);
     setIsModalOpen(true);
   };
@@ -70,6 +74,7 @@ export default function FleetBrandManager() {
       name: brand.name, 
       logo_url: brand.logo_url || "" 
     });
+    setLogoFile(null);
     setIsEditMode(true);
     setIsModalOpen(true);
   };
@@ -77,13 +82,49 @@ export default function FleetBrandManager() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
+      let finalLogoUrl = formData.logo_url;
+      const isNismaraPlus = (session?.user as any)?.nismaraplus?.status === true;
+
+      if (logoFile) {
+        setIsUploading(true);
+        const compressed = await compressImageToWebP(logoFile, isNismaraPlus ? 5 : 3, 1024);
+        
+        const resUpload = await fetch("/api/upload", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fileName: compressed.name,
+            fileType: compressed.type,
+            fileSize: compressed.size,
+            folder: "fleet/brands",
+          }),
+        });
+        const uploadData = await resUpload.json();
+        if (!resUpload.ok) throw new Error(uploadData.error || "Gagal mendapatkan URL upload");
+
+        const s3Res = await fetch(uploadData.signedUrl, {
+          method: "PUT",
+          headers: { "Content-Type": compressed.type },
+          body: compressed,
+        });
+        if (!s3Res.ok) throw new Error("Gagal mengupload file ke server");
+        
+        finalLogoUrl = uploadData.publicUrl;
+        setIsUploading(false);
+      }
+
       const url = isEditMode ? `/api/fleet/brand/${formData.id}` : `/api/fleet/brand`;
       const method = isEditMode ? "PATCH" : "POST";
+
+      const payload = {
+        ...formData,
+        logo_url: finalLogoUrl,
+      };
 
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) throw new Error("Gagal menyimpan data");
@@ -98,45 +139,31 @@ export default function FleetBrandManager() {
     }
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setIsUploading(true);
-    try {
-      // 1. Kompresi gambar menjadi WebP (max 1MB, 1024px)
-      const optimizedFile = await compressImageToWebP(file, 1, 1024);
-
-      // 2. Minta Presigned URL dari backend dengan nama file yang sudah dikompresi
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fileName: optimizedFile.name,
-          fileType: optimizedFile.type,
-          fileSize: optimizedFile.size,
-          folder: "fleet/brands",
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Gagal mendapatkan URL upload");
-
-      // 3. Upload file yang sudah dikompresi ke R2
-      const uploadRes = await fetch(data.signedUrl, {
-        method: "PUT",
-        headers: { "Content-Type": optimizedFile.type },
-        body: optimizedFile,
-      });
-      if (!uploadRes.ok) throw new Error("Gagal mengupload file ke server");
-
-      setFormData({ ...formData, logo_url: data.publicUrl });
-      showToast("Logo berhasil diupload!", "success");
-    } catch (error: any) {
-      showToast(error.message || "Gagal mengupload logo", "error");
-    } finally {
-      setIsUploading(false);
+    if (!file.type.startsWith("image/")) {
+      showToast("Format tidak didukung! Harap unggah gambar.", "error");
+      return;
     }
+
+    const isNismaraPlus = (session?.user as any)?.nismaraplus?.status === true;
+    
+    if (!isNismaraPlus && file.type === "image/gif") {
+      showToast("Hanya member Nismara+ yang diizinkan mengunggah GIF.", "error");
+      return;
+    }
+
+    const maxSizeMB = isNismaraPlus ? 5 : 3;
+    if (file.size > maxSizeMB * 1024 * 1024) {
+      showToast(`Maksimal ukuran file adalah ${maxSizeMB}MB.`, "error");
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+    setFormData({ ...formData, logo_url: previewUrl });
+    setLogoFile(file);
   };
 
   const showToast = (message: string, type: "success" | "error") => {

@@ -17,12 +17,17 @@ import {
   Upload,
 } from "lucide-react";
 import { compressImageToWebP } from "@/lib/imageUtils";
+import { useSession } from "next-auth/react";
+import { showAlert } from "@/lib/dialog";
+
 
 export default function ContractManageUI({ ongoing, history, manager }: any) {
+  const { data: session } = useSession();
   const [mounted, setMounted] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   const [formData, setFormData] = useState({
     contractName: "",
@@ -55,15 +60,47 @@ export default function ContractManageUI({ ongoing, history, manager }: any) {
     e.preventDefault();
     setLoading(true);
     try {
+      let finalImageUrl = formData.imageUrl;
+      const isNismaraPlus = (session?.user as any)?.nismaraplus?.status === true;
+
+      if (imageFile) {
+        setIsUploading(true);
+        const compressed = await compressImageToWebP(imageFile, isNismaraPlus ? 5 : 3, 1920);
+        
+        const resUpload = await fetch("/api/upload", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fileName: compressed.name,
+            fileType: compressed.type,
+            fileSize: compressed.size,
+            folder: "events/contracts",
+          }),
+        });
+        const uploadData = await resUpload.json();
+        if (!resUpload.ok) throw new Error(uploadData.error || "Gagal mendapatkan URL upload");
+
+        const s3Res = await fetch(uploadData.signedUrl, {
+          method: "PUT",
+          headers: { "Content-Type": compressed.type },
+          body: compressed,
+        });
+        if (!s3Res.ok) throw new Error("Gagal mengupload file ke server");
+        
+        finalImageUrl = uploadData.publicUrl;
+        setIsUploading(false);
+      }
+
       await createContractAction({
         ...formData,
+        imageUrl: finalImageUrl,
         setBy: manager.discordId,
         guildId: process.env.DISCORD_GUILD_ID || "863959415702028318",
       });
       setIsModalOpen(false);
-      alert("Kontrak berhasil dideploy!");
+      showAlert("Kontrak berhasil dideploy!");
     } catch (err) {
-      alert("Gagal membuat kontrak.");
+      showAlert("Gagal membuat kontrak.");
     } finally {
       setLoading(false);
     }
@@ -71,42 +108,30 @@ export default function ContractManageUI({ ongoing, history, manager }: any) {
 
   const slugify = (text: string) => text.toLowerCase().replace(/\s+/g, "-");
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setIsUploading(true);
-    try {
-      const optimizedFile = await compressImageToWebP(file, 2, 1920);
-
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fileName: optimizedFile.name,
-          fileType: optimizedFile.type,
-          fileSize: optimizedFile.size,
-          folder: "events/contracts",
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Gagal mendapatkan URL upload");
-
-      const uploadRes = await fetch(data.signedUrl, {
-        method: "PUT",
-        headers: { "Content-Type": optimizedFile.type },
-        body: optimizedFile,
-      });
-
-      if (!uploadRes.ok) throw new Error("Gagal mengupload file ke server");
-      setFormData({ ...formData, imageUrl: data.publicUrl });
-      alert("Foto berhasil diupload!");
-    } catch (error: any) {
-      alert(error.message || "Gagal mengupload foto");
-    } finally {
-      setIsUploading(false);
+    if (!file.type.startsWith("image/")) {
+      showAlert("Format tidak didukung! Harap unggah gambar.");
+      return;
     }
+
+    const isNismaraPlus = (session?.user as any)?.nismaraplus?.status === true;
+    
+    if (!isNismaraPlus && file.type === "image/gif") {
+      showAlert("Hanya member Nismara+ yang diizinkan mengunggah GIF.");
+      return;
+    }
+
+    const maxSizeMB = isNismaraPlus ? 5 : 3;
+    if (file.size > maxSizeMB * 1024 * 1024) {
+      showAlert(`Maksimal ukuran file adalah ${maxSizeMB}MB.`);
+      return;
+    }
+
+    setFormData({ ...formData, imageUrl: URL.createObjectURL(file) });
+    setImageFile(file);
   };
 
   return (

@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { joinTeamAction } from "@/app/actions/teamHqActions";
 import ReactMarkdown from "react-markdown";
+import { showAlert } from "@/lib/dialog";
+
 
 interface TeamProfileUIProps {
   team: any;
@@ -26,13 +28,13 @@ export default function TeamProfileUI({
   const [loading, setLoading] = useState(false);
 
   const handleJoin = async () => {
-    if (!currentUserId) return alert("Silakan login terlebih dahulu.");
+    if (!currentUserId) return await showAlert("Silakan login terlebih dahulu.");
     setLoading(true);
     try {
       await joinTeamAction(team._id, currentUserId);
-      alert("Permintaan bergabung berhasil dikirim!");
+      await showAlert("Permintaan bergabung berhasil dikirim!");
     } catch (err) {
-      alert("Gagal mengirim permintaan.");
+      await showAlert("Gagal mengirim permintaan.");
     } finally {
       setLoading(false);
     }

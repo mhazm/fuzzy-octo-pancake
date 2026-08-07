@@ -16,10 +16,15 @@ import {
 } from "lucide-react";
 import { compressImageToWebP } from "@/lib/imageUtils";
 import CityCombobox from "@/components/ui/CityCombobox";
+import { useSession } from "next-auth/react";
+import { showAlert } from "@/lib/dialog";
+
 
 export default function EditConvoyForm({ convoy, participantUsers = [] }: { convoy: any, participantUsers?: any[] }) {
   const router = useRouter();
+  const { data: session } = useSession();
   const [imageUrl, setImageUrl] = useState(convoy.imageUrl || "");
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [gameId, setGameId] = useState(convoy.gameId || "1");
@@ -29,50 +34,77 @@ export default function EditConvoyForm({ convoy, participantUsers = [] }: { conv
   const toTime = (d: any) =>
     d ? new Date(d).toTimeString().substring(0, 5) : "";
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setIsUploading(true);
-    try {
-      const optimizedFile = await compressImageToWebP(file, 2, 1920);
-
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fileName: optimizedFile.name,
-          fileType: optimizedFile.type,
-          fileSize: optimizedFile.size,
-          folder: "events/convoys",
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Gagal mendapatkan URL upload");
-
-      const uploadRes = await fetch(data.signedUrl, {
-        method: "PUT",
-        headers: { "Content-Type": optimizedFile.type },
-        body: optimizedFile,
-      });
-
-      if (!uploadRes.ok) throw new Error("Gagal mengupload file ke server");
-      setImageUrl(data.publicUrl);
-    } catch (error: any) {
-      alert(error.message || "Gagal mengunggah gambar.");
-    } finally {
-      setIsUploading(false);
-      e.target.value = "";
+    if (!file.type.startsWith("image/")) {
+      showAlert("Format tidak didukung! Harap unggah gambar.");
+      return;
     }
+
+    const isNismaraPlus = (session?.user as any)?.nismaraplus?.status === true;
+    
+    if (!isNismaraPlus && file.type === "image/gif") {
+      showAlert("Hanya member Nismara+ yang diizinkan mengunggah GIF.");
+      return;
+    }
+
+    const maxSizeMB = isNismaraPlus ? 5 : 3;
+    if (file.size > maxSizeMB * 1024 * 1024) {
+      showAlert(`Maksimal ukuran file adalah ${maxSizeMB}MB.`);
+      return;
+    }
+
+    setImageUrl(URL.createObjectURL(file));
+    setBannerFile(file);
   };
 
   return (
     <form
       action={async (formData) => {
         setLoading(true);
-        await updateConvoy(convoy._id.toString(), formData);
-        router.push("/dashboard/manage/events/convoy");
+        try {
+          const isNismaraPlus = (session?.user as any)?.nismaraplus?.status === true;
+          let finalImageUrl = formData.get("imageUrl") as string;
+
+          if (bannerFile) {
+            setIsUploading(true);
+            const compressedFile = await compressImageToWebP(bannerFile, isNismaraPlus ? 5 : 3, 1920);
+
+            const res = await fetch("/api/upload", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                fileName: compressedFile.name,
+                fileType: compressedFile.type,
+                fileSize: compressedFile.size,
+                folder: "events/convoys",
+              }),
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || "Gagal mendapatkan URL upload");
+
+            const uploadRes = await fetch(data.signedUrl, {
+              method: "PUT",
+              headers: { "Content-Type": compressedFile.type },
+              body: compressedFile,
+            });
+
+            if (!uploadRes.ok) throw new Error("Gagal mengupload file ke server");
+            finalImageUrl = data.publicUrl;
+            formData.set("imageUrl", finalImageUrl);
+            setIsUploading(false);
+          }
+
+          await updateConvoy(convoy._id.toString(), formData);
+          router.push("/dashboard/manage/events/convoy");
+        } catch (err: any) {
+          showAlert(err.message || "Terjadi kesalahan sistem saat memperbarui convoy.");
+          setLoading(false);
+          setIsUploading(false);
+        }
       }}
       className="space-y-6"
     >
@@ -94,7 +126,7 @@ export default function EditConvoyForm({ convoy, participantUsers = [] }: { conv
               ) : (
                 <div className="text-gray-500 text-xs flex flex-col items-center gap-2">
                   <ImageIcon className="w-8 h-8 opacity-50" />
-                  <span>Update Banner</span>
+                  <span>Update Banner (Max 3MB, Nismara+ 5MB & GIF)</span>
                 </div>
               )}
               <input

@@ -30,6 +30,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { showAlert } from "@/lib/dialog";
+
 
 // 1. Zod Schema: Hapus .coerce pada rewardNC dan gunakan .number() murni
 const questionSchema = z.object({
@@ -91,14 +93,14 @@ export default function CreateSurveyPage() {
     try {
       const response = await createSurveyAction(data);
       if (response.success) {
-        alert("✅ Berhasil! Survey diterbitkan.");
+        await showAlert("✅ Berhasil! Survey diterbitkan.");
         form.reset();
         router.push("/dashboard/manage/surveys");
       } else {
-        alert(`❌ Gagal: ${response.error}`);
+        await showAlert(`❌ Gagal: ${response.error}`);
       }
     } catch (error) {
-      alert("❌ Terjadi kesalahan sistem saat menyimpan.");
+      await showAlert("❌ Terjadi kesalahan sistem saat menyimpan.");
     } finally {
       setIsSubmitting(false);
     }

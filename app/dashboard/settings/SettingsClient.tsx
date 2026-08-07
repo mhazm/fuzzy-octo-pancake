@@ -16,6 +16,8 @@ import {
   Link,
 } from "lucide-react";
 import { compressImageToWebP } from "@/lib/imageUtils";
+import { showAlert } from "@/lib/dialog";
+
 
 export default function SettingsClient() {
   const { data: session, update } = useSession();
@@ -31,6 +33,9 @@ export default function SettingsClient() {
   const [avatarUrl, setAvatarUrl] = useState("");
   const [bannerUrl, setBannerUrl] = useState("");
   const [bgUrl, setBgUrl] = useState("");
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [bgFile, setBgFile] = useState<File | null>(null);
 
   const [isUploading, setIsUploading] = useState({
     avatar: false,
@@ -77,16 +82,34 @@ export default function SettingsClient() {
     }
   }, [session]);
 
-  // Fungsi handleFileUpload tetap sama seperti sebelumnya...
-  const handleFileUpload = async (
+  const uploadToR2 = async (file: File, folder: string) => {
+    const res = await fetch("/api/upload", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fileName: file.name,
+        fileType: file.type,
+        folder,
+      }),
+    });
+    const { signedUrl, publicUrl } = await res.json();
+    await fetch(signedUrl, {
+      method: "PUT",
+      body: file,
+      headers: { "Content-Type": file.type },
+    });
+    return publicUrl;
+  };
+
+  const handleFileUpload = (
     e: React.ChangeEvent<HTMLInputElement>,
     type: "avatar" | "banner" | "background",
   ) => {
-    let file = e.target.files?.[0];
+    const file = e.target.files?.[0];
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      alert("Format tidak didukung! Harap unggah gambar.");
+      showAlert("Format tidak didukung! Harap unggah gambar.");
       return;
     }
 
@@ -94,50 +117,29 @@ export default function SettingsClient() {
     
     // Validasi Format
     if (!isNismaraPlus && file.type === "image/gif") {
-      alert("Hanya member Nismara+ yang diizinkan mengunggah GIF.");
+      showAlert("Hanya member Nismara+ yang diizinkan mengunggah GIF.");
       return;
     }
 
     // Validasi Ukuran
-    const MAX_SIZE = isNismaraPlus ? 10 * 1024 * 1024 : 3 * 1024 * 1024;
-    if (file.size > MAX_SIZE) {
-      alert(`Maksimal ukuran file adalah ${isNismaraPlus ? "10MB" : "3MB"}.`);
+    const maxSizeMB = isNismaraPlus ? 5 : 3;
+    if (file.size > maxSizeMB * 1024 * 1024) {
+      showAlert(`Maksimal ukuran file adalah ${maxSizeMB}MB.`);
       return;
     }
 
-    setIsUploading((prev) => ({ ...prev, [type]: true }));
-
-    try {
-      // Kompresi (otomatis bypass GIF di imageUtils)
-      file = await compressImageToWebP(file, isNismaraPlus ? 10 : 3, 1920);
-
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: JSON.stringify({
-          fileName: file.name,
-          fileType: file.type,
-          folder: "profiles",
-        }),
-      });
-      const { signedUrl, publicUrl } = await res.json();
-
-      const uploadRes = await fetch(signedUrl, {
-        method: "PUT",
-        headers: { "Content-Type": file.type },
-        body: file,
-      });
-
-      if (uploadRes.ok) {
-        if (type === "avatar") setAvatarUrl(publicUrl);
-        if (type === "banner") setBannerUrl(publicUrl);
-        if (type === "background") setBgUrl(publicUrl);
-      }
-    } catch (error) {
-      console.error(error);
-      alert("Gagal mengunggah gambar.");
-    } finally {
-      setIsUploading((prev) => ({ ...prev, [type]: false }));
-      e.target.value = "";
+    const previewUrl = URL.createObjectURL(file);
+    if (type === "avatar") {
+      setAvatarUrl(previewUrl);
+      setAvatarFile(file);
+    }
+    if (type === "banner") {
+      setBannerUrl(previewUrl);
+      setBannerFile(file);
+    }
+    if (type === "background") {
+      setBgUrl(previewUrl);
+      setBgFile(file);
     }
   };
 
@@ -163,16 +165,47 @@ export default function SettingsClient() {
       }
     }
 
-    const result = await updateProfile(formData);
+    try {
+      let finalAvatarUrl = formData.get("image") as string;
+      let finalBannerUrl = formData.get("bannerUrl") as string;
+      let finalBgUrl = formData.get("backgroundUrl") as string;
 
-    if (result.success) {
-      setMessage({ type: "success", text: result.message });
-      await update({
-        name: formData.get("name"),
-        image: formData.get("image"),
-      });
-    } else {
-      setMessage({ type: "error", text: result.message });
+      if (avatarFile) {
+        setIsUploading(prev => ({ ...prev, avatar: true }));
+        const compressed = await compressImageToWebP(avatarFile);
+        finalAvatarUrl = await uploadToR2(compressed, "profiles");
+        formData.set("image", finalAvatarUrl);
+        setIsUploading(prev => ({ ...prev, avatar: false }));
+      }
+      if (bannerFile) {
+        setIsUploading(prev => ({ ...prev, banner: true }));
+        const compressed = await compressImageToWebP(bannerFile);
+        finalBannerUrl = await uploadToR2(compressed, "profiles");
+        formData.set("bannerUrl", finalBannerUrl);
+        setIsUploading(prev => ({ ...prev, banner: false }));
+      }
+      if (bgFile) {
+        setIsUploading(prev => ({ ...prev, background: true }));
+        const compressed = await compressImageToWebP(bgFile);
+        finalBgUrl = await uploadToR2(compressed, "profiles");
+        formData.set("backgroundUrl", finalBgUrl);
+        setIsUploading(prev => ({ ...prev, background: false }));
+      }
+
+      const result = await updateProfile(formData);
+
+      if (result.success) {
+        setMessage({ type: "success", text: result.message });
+        await update({
+          name: formData.get("name"),
+          image: finalAvatarUrl,
+        });
+      } else {
+        setMessage({ type: "error", text: result.message });
+      }
+    } catch (error) {
+      console.error(error);
+      setMessage({ type: "error", text: "Terjadi kesalahan saat memproses gambar." });
     }
 
     setIsLoading(false);

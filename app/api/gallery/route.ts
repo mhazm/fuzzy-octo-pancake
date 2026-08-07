@@ -8,6 +8,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get("userId"); // Discord ID
     const isGlobal = searchParams.get("global") === "true";
+    const tag = searchParams.get("tag");
     const page = parseInt(searchParams.get("page") || "1");
     const limit = 12;
     const skip = (page - 1) * limit;
@@ -23,6 +24,10 @@ export async function GET(request: Request) {
     
     if (userId) {
       pipeline.push({ $match: { userId } });
+    }
+    
+    if (tag) {
+      pipeline.push({ $match: { tags: tag } });
     }
     
     pipeline.push({ $sort: { createdAt: -1 } });
@@ -114,7 +119,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { imageUrl, imageUrls, caption } = await request.json();
+    const { imageUrl, imageUrls, caption, tags } = await request.json();
 
     // For backward compatibility, allow either imageUrl or imageUrls
     const finalImageUrls = imageUrls || (imageUrl ? [imageUrl] : []);
@@ -148,11 +153,21 @@ export async function POST(request: Request) {
       }
     }
 
+    // Parse tags: split by comma, lowercase, trim, remove #, filter empty
+    let parsedTags: string[] = [];
+    if (typeof tags === "string" && tags.trim().length > 0) {
+      parsedTags = tags.split(",")
+        .map(t => t.trim().toLowerCase().replace(/^#+/, ""))
+        .filter(t => t.length > 0)
+        .slice(0, 10); // max 10 tags
+    }
+
     const newPost = {
       userId: userDiscordId,
       imageUrl: mainImageUrl, // store the first image for backward compat
       imageUrls: finalImageUrls, // store all images
       caption: caption || "",
+      tags: parsedTags,
       likes: [],
       createdAt: new Date(),
       updatedAt: new Date(),

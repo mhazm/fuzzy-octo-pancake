@@ -30,6 +30,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { showAlert } from "@/lib/dialog";
+
 
 const questionSchema = z.object({
   questionText: z.string().min(1, "Pertanyaan tidak boleh kosong"),
@@ -81,13 +83,13 @@ export default function EditSurveyForm({
     try {
       const response = await updateSurveyAction(data);
       if (response.success) {
-        alert("✅ Berhasil! Perubahan survey telah disimpan di MongoDB.");
+        await showAlert("✅ Berhasil! Perubahan survey telah disimpan di MongoDB.");
         router.push("/dashboard/manage/surveys");
       } else {
-        alert(`❌ Gagal: ${response.error}`);
+        await showAlert(`❌ Gagal: ${response.error}`);
       }
     } catch (error) {
-      alert("❌ Terjadi kesalahan sistem saat menyimpan.");
+      await showAlert("❌ Terjadi kesalahan sistem saat menyimpan.");
     } finally {
       setIsSubmitting(false);
     }

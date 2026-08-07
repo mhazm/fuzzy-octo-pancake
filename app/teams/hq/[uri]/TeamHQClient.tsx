@@ -8,8 +8,11 @@ import {
 } from "@/app/actions/teamHqActions";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { compressImageToWebP } from "@/lib/imageUtils";
+import { showAlert, showConfirm } from "@/lib/dialog";
 
-export default function TeamHQClient({ team, members, pending }: any) {
+
+export default function TeamHQClient({ team, members, pending, isNismaraPlus }: any) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"settings" | "members" | "danger">(
     "settings",
@@ -18,6 +21,8 @@ export default function TeamHQClient({ team, members, pending }: any) {
   const [isSaving, setIsSaving] = useState(false);
   const [uriPreview, setUriPreview] = useState(team.uri);
   const [confirmDelete, setConfirmDelete] = useState("");
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
 
   const handleUriChange = (val: string) => {
     const slug = val
@@ -51,32 +56,68 @@ export default function TeamHQClient({ team, members, pending }: any) {
   const handleSave = async (e: any) => {
     e.preventDefault();
     setIsSaving(true);
-    const res = await updateTeamSettingsAction(team._id, form);
-    if (res.success) {
-      alert("Pengaturan disimpan!");
-      if (res.newUri !== team.uri) router.push(`/teams/hq/${res.newUri}`);
-    } else {
-      alert(res.message);
+    
+    try {
+      const maxSizeMB = isNismaraPlus ? 5 : 3;
+      const maxSizeBytes = maxSizeMB * 1024 * 1024;
+
+      const validateFile = (file: File, fieldName: string) => {
+        if (!isNismaraPlus && file.type === "image/gif") {
+          throw new Error(`Fitur upload GIF pada ${fieldName} hanya untuk pengguna Nismara+.`);
+        }
+        if (file.size > maxSizeBytes) {
+          throw new Error(`Ukuran ${fieldName} maksimal ${maxSizeMB}MB.`);
+        }
+      };
+
+      if (logoFile) validateFile(logoFile, "Logo");
+      if (bannerFile) validateFile(bannerFile, "Banner");
+
+      let finalLogoUrl = form.logoUrl;
+      let finalBannerUrl = form.bannerUrl;
+
+      if (logoFile) {
+        const compressed = await compressImageToWebP(logoFile);
+        finalLogoUrl = await uploadToR2(compressed, "teams/logos");
+      }
+      
+      if (bannerFile) {
+        const compressed = await compressImageToWebP(bannerFile);
+        finalBannerUrl = await uploadToR2(compressed, "teams/banners");
+      }
+
+      const updatedForm = { ...form, logoUrl: finalLogoUrl, bannerUrl: finalBannerUrl };
+
+      const res = await updateTeamSettingsAction(team._id, updatedForm);
+      if (res.success) {
+        await showAlert("Pengaturan disimpan!");
+        if (res.newUri !== team.uri) router.push(`/teams/hq/${res.newUri}`);
+      } else {
+        await showAlert(res.message || "Berhasil!");
+      }
+    } catch (error: any) {
+      await showAlert((error as any).message || "Gagal menyimpan pengaturan.");
     }
+
     setIsSaving(false);
   };
 
   const handleDeleteTeam = async () => {
     if (confirmDelete !== team.name) {
-      return alert("Nama tim yang kamu masukkan tidak sesuai.");
+      return await showAlert("Nama tim yang kamu masukkan tidak sesuai.");
     }
 
     if (
-      confirm(
+      await showConfirm(
         "Apakah kamu benar-benar yakin? Tindakan ini tidak bisa dibatalkan.",
       )
     ) {
       const res = await deleteTeamAction(team._id);
       if (res.success) {
-        alert("Tim berhasil dihapus.");
+        await showAlert("Tim berhasil dihapus.");
         router.push("/teams");
       } else {
-        alert(res.message);
+        await showAlert(res.message || "Berhasil!");
       }
     }
   };
@@ -164,12 +205,8 @@ export default function TeamHQClient({ team, members, pending }: any) {
               <input
                 type="file"
                 accept="image/*"
-                onChange={async (e) => {
-                  const url = await uploadToR2(
-                    e.target.files![0],
-                    "teams/logos",
-                  );
-                  setForm({ ...form, logoUrl: url });
+                onChange={(e) => {
+                  setLogoFile(e.target.files?.[0] || null);
                 }}
                 className="text-xs text-foreground/50 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-primary/20 file:text-primary font-bold cursor-pointer"
               />
@@ -181,12 +218,8 @@ export default function TeamHQClient({ team, members, pending }: any) {
               <input
                 type="file"
                 accept="image/*"
-                onChange={async (e) => {
-                  const url = await uploadToR2(
-                    e.target.files![0],
-                    "teams/banners",
-                  );
-                  setForm({ ...form, bannerUrl: url });
+                onChange={(e) => {
+                  setBannerFile(e.target.files?.[0] || null);
                 }}
                 className="text-xs text-foreground/50 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-accent-sky/20 file:text-accent-sky font-bold cursor-pointer"
               />

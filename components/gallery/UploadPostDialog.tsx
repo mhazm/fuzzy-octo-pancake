@@ -14,6 +14,7 @@ export default function UploadPostDialog({
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [caption, setCaption] = useState("");
+  const [tagsInput, setTagsInput] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -104,6 +105,7 @@ export default function UploadPostDialog({
           imageUrl: publicUrls[0], // primary for backwards compat
           imageUrls: publicUrls,
           caption,
+          tags: tagsInput,
         }),
       });
 
@@ -191,8 +193,18 @@ export default function UploadPostDialog({
                   value={caption}
                   onChange={(e) => setCaption(e.target.value)}
                   placeholder="Ceritakan tentang truk Anda..."
-                  className="w-full bg-background border border-border/50 rounded-xl p-3 text-sm min-h-[100px] focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  className="w-full bg-background border border-border/50 rounded-xl p-3 text-sm min-h-[80px] focus:outline-none focus:ring-2 focus:ring-primary/50 mb-4"
                   maxLength={500}
+                />
+                
+                <label className="block text-sm font-medium mb-2">Tagar (Opsional)</label>
+                <input
+                  type="text"
+                  value={tagsInput}
+                  onChange={(e) => setTagsInput(e.target.value)}
+                  placeholder="scania, mabar, konvoi (pisahkan dengan koma)"
+                  className="w-full bg-background border border-border/50 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  maxLength={100}
                 />
               </div>
             </div>

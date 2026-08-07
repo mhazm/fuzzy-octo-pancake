@@ -17,6 +17,9 @@ import {
 } from "lucide-react";
 import { payPenaltyPoints, validateJobPoints, usePenaltyTicket } from "./actions";
 import { createPenaltyPayment } from "@/app/actions/payment";
+import { Modal } from "@/components/ui/Modal";
+import { showAlert } from "@/lib/dialog";
+
 
 interface HistoryItem {
   _id: string;
@@ -56,6 +59,8 @@ export default function PenaltyClientUI({
   const [currentPage, setCurrentPage] = useState(1);
   const [isTicketLoading, setIsTicketLoading] = useState(false);
   const [ticketAmountToUse, setTicketAmountToUse] = useState<number>(1);
+  const [validationModal, setValidationModal] = useState<{ open: boolean; jobId: string | null; potentialReduction: number }>({ open: false, jobId: null, potentialReduction: 0 });
+  const [validationMessage, setValidationMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
   const ITEMS_PER_PAGE = 5;
 
   const totalItems = eligibleJobs.length;
@@ -126,17 +131,24 @@ export default function PenaltyClientUI({
     setIsTicketLoading(false);
   };
 
-  const handleValidation = async (jobId: string) => {
-    if (!confirm("Validasi job ini untuk pengurangan poin penalti?")) return;
+  const handleValidation = (jobId: string, potentialReduction: number) => {
+    setValidationMessage(null);
+    setValidationModal({ open: true, jobId, potentialReduction });
+  };
+
+  const confirmValidation = async () => {
+    if (!validationModal.jobId) return;
     setIsLoading(true);
-    const res = await validateJobPoints(jobId);
+    setValidationMessage(null);
+    const res = await validateJobPoints(validationModal.jobId);
     if (res.success) {
-      alert(res.message);
+      setValidationMessage({ text: res.message, type: "success" });
       if (currentJobs.length === 1 && currentPage > 1) {
         setCurrentPage(currentPage - 1);
       }
+      setTimeout(() => setValidationModal({ open: false, jobId: null, potentialReduction: 0 }), 2000);
     } else {
-      alert(res.message);
+      setValidationMessage({ text: res.message, type: "error" });
     }
     setIsLoading(false);
   };
@@ -149,14 +161,14 @@ export default function PenaltyClientUI({
       if (res.token) {
         (window as any).snap.pay(res.token, {
           onSuccess: (result: any) => {
-            alert("Pembayaran Berhasil!");
+            showAlert("Pembayaran Berhasil!");
             setIsRupiahModalOpen(false);
           },
           onPending: (result: any) => {
-            alert("Menunggu pembayaran...");
+            showAlert("Menunggu pembayaran...");
           },
           onError: (result: any) => {
-            alert("Pembayaran gagal!");
+            showAlert("Pembayaran gagal!");
           },
           onClose: () => {
             setIsLoading(false);
@@ -164,7 +176,7 @@ export default function PenaltyClientUI({
         });
       }
     } catch (error) {
-      alert("Terjadi kesalahan sistem.");
+      showAlert("Terjadi kesalahan sistem.");
       console.error(error);
     } finally {
       setIsLoading(false);
@@ -385,7 +397,7 @@ export default function PenaltyClientUI({
                   </p>
                 </div>
                 <button
-                  onClick={() => handleValidation(job._id)}
+                  onClick={() => handleValidation(job._id, job.potentialReduction)}
                   disabled={isLoading}
                   className="px-4 py-2 bg-primary text-white md:bg-primary/10 md:text-primary md:hover:bg-primary md:hover:text-white rounded-lg text-xs font-black transition-all"
                 >
@@ -687,6 +699,39 @@ export default function PenaltyClientUI({
           </div>
         </div>
       )}
+      {/* Validation Modal */}
+      <Modal
+        isOpen={validationModal.open}
+        onClose={() => !isLoading && setValidationModal({ open: false, jobId: null, potentialReduction: 0 })}
+        title="Konfirmasi Validasi"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Apakah Anda yakin ingin memvalidasi job ini? Poin penalti Anda akan berkurang sebanyak <strong>{validationModal.potentialReduction}</strong> poin.
+          </p>
+          {validationMessage && (
+            <div className={`p-3 rounded-md text-sm ${validationMessage.type === "success" ? "bg-green-500/10 text-green-600" : "bg-red-500/10 text-red-600"}`}>
+              {validationMessage.text}
+            </div>
+          )}
+          <div className="flex gap-2 justify-end mt-4">
+            <button
+              onClick={() => setValidationModal({ open: false, jobId: null, potentialReduction: 0 })}
+              disabled={isLoading}
+              className="px-4 py-2 rounded-md hover:bg-secondary text-sm font-medium transition-colors"
+            >
+              Batal
+            </button>
+            <button
+              onClick={confirmValidation}
+              disabled={isLoading}
+              className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+            >
+              {isLoading ? "Memproses..." : "Konfirmasi"}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

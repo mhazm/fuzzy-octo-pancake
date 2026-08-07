@@ -8,6 +8,8 @@ import Link from "next/link";
 import { GalleryPost, UserComment } from "./GalleryGrid";
 import UserBadges from "@/components/icons/UserBadges";
 import { Modal } from "@/components/ui/Modal";
+import { showAlert } from "@/lib/dialog";
+
 
 export default function PostDetailClient({
   post,
@@ -139,12 +141,12 @@ export default function PostDetailClient({
         window.location.href = `/profile/${loggedInUserTruckyId || ""}`;
       } else {
         const err = await res.json();
-        alert(err.error || "Gagal menghapus postingan");
+        await showAlert(err.error || "Gagal menghapus postingan");
         setIsDeleting(false);
         setShowDeleteModal(false);
       }
     } catch (error) {
-      alert("Terjadi kesalahan sistem saat menghapus postingan");
+      await showAlert("Terjadi kesalahan sistem saat menghapus postingan");
       setIsDeleting(false);
       setShowDeleteModal(false);
     }

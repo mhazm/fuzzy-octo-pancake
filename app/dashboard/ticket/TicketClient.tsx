@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { Ticket, Plus, Star, CheckCircle, XCircle, AlertCircle, MessageSquare, ChevronLeft, ChevronRight } from "lucide-react";
+import { showAlert } from "@/lib/dialog";
+
 
 export default function TicketPage() {
   const { data: session } = useSession();
@@ -100,16 +102,16 @@ export default function TicketPage() {
       
       let finalSubject = subject;
       if (categoryName.toLowerCase().includes("banding")) {
-        if (!dynamicJobId) { alert("Isi Job ID"); setSubmitting(false); return; }
+        if (!dynamicJobId) { await showAlert("Isi Job ID"); setSubmitting(false); return; }
         finalSubject = `Banding Job: ${dynamicJobId}`;
       } else if (categoryName.toLowerCase().includes("report")) {
-        if (!dynamicReportUser) { alert("Isi nama user"); setSubmitting(false); return; }
+        if (!dynamicReportUser) { await showAlert("Isi nama user"); setSubmitting(false); return; }
         finalSubject = `Report User: ${dynamicReportUser}`;
       } else {
-        if (!subject) { alert("Isi subjek"); setSubmitting(false); return; }
+        if (!subject) { await showAlert("Isi subjek"); setSubmitting(false); return; }
       }
 
-      if (!categoryId || !description) { alert("Isi semua field"); setSubmitting(false); return; }
+      if (!categoryId || !description) { await showAlert("Isi semua field"); setSubmitting(false); return; }
 
       const res = await fetch("/api/tickets", {
         method: "POST",
@@ -127,10 +129,10 @@ export default function TicketPage() {
         setDescription("");
         fetchData(1, filterStatus);
       } else {
-        alert(data.error);
+        await showAlert(data.error);
       }
     } catch (error) {
-      alert("Terjadi kesalahan");
+      await showAlert("Terjadi kesalahan");
     } finally {
       setSubmitting(false);
     }
@@ -149,10 +151,10 @@ export default function TicketPage() {
         setRatingData(null);
         fetchData(currentPage, filterStatus);
       } else {
-        alert(data.error);
+        await showAlert(data.error);
       }
     } catch (error) {
-      alert("Terjadi kesalahan");
+      await showAlert("Terjadi kesalahan");
     }
   };
 

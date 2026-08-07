@@ -262,13 +262,24 @@ export async function validateJobPoints(jobId: string) {
       throw new Error("Job ini sudah pernah divalidasi sebelumnya.");
     }
 
+    // 3. Ambil data poin penalti user saat ini
+    const userPointsData = await db.collection("points").findOne({ userId, guildId: GUILD_ID });
+    const currentPoints = userPointsData?.totalPoints || 0;
+
+    if (currentPoints <= 0) {
+      throw new Error("Anda tidak memiliki poin penalti untuk divalidasi.");
+    }
+
     const distance = job.distanceKm || 0;
     const reduction = Math.floor(distance / 500);
 
     if (reduction <= 0)
       throw new Error("Jarak job tidak mencukupi untuk pengurangan poin.");
 
-    // 3. Jalankan operasi atomik
+    // Mencegah poin menjadi minus
+    const actualReduction = Math.min(reduction, currentPoints);
+
+    // 4. Jalankan operasi atomik
     await Promise.all([
       // Update koleksi jobs (untuk fitur baru)
       db
@@ -283,7 +294,7 @@ export async function validateJobPoints(jobId: string) {
         userId: userId,
         jobId: job.jobId,
         distance: distance,
-        deducted: reduction,
+        deducted: actualReduction,
         createdAt: new Date(),
         updatedAt: new Date(),
         __v: 0,
@@ -293,15 +304,15 @@ export async function validateJobPoints(jobId: string) {
         .collection("points")
         .updateOne(
           { userId, guildId: GUILD_ID },
-          { $inc: { totalPoints: -reduction } },
+          { $inc: { totalPoints: -actualReduction } },
         ),
       // Catat sejarah poin
       db.collection("pointhistories").insertOne({
         userId,
         guildId: GUILD_ID,
         managerId: userId,
-        points: reduction,
-        reason: `Validasi Job Hardcore #${job.jobId} (-${reduction} Poin)`,
+        points: actualReduction,
+        reason: `Validasi Job Hardcore #${job.jobId} (-${actualReduction} Poin)`,
         type: "remove",
         createdAt: new Date(),
       }),
@@ -315,7 +326,7 @@ export async function validateJobPoints(jobId: string) {
         { name: "Job ID", value: `#${job.jobId}`, inline: true },
         { name: "Rute", value: `${job.sourceCity} ➡️ ${job.destinationCity}` },
         { name: "Jarak", value: `${distance} km`, inline: true },
-        { name: "Poin Berkurang", value: `-${reduction} Poin`, inline: true },
+        { name: "Poin Berkurang", value: `-${actualReduction} Poin`, inline: true },
       ],
     });
 

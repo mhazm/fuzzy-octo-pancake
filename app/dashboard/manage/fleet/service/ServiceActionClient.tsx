@@ -3,13 +3,15 @@
 import React, { useState } from "react";
 import { Check } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { showAlert, showConfirm } from "@/lib/dialog";
+
 
 export default function ServiceActionClient({ orderId }: { orderId: string }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
   const handleConfirm = async () => {
-    if (!confirm("Apakah Anda yakin ingin mengonfirmasi servis ini? Saldo NC user akan dipotong.")) return;
+    if (!await showConfirm("Apakah Anda yakin ingin mengonfirmasi servis ini? Saldo NC user akan dipotong.")) return;
     
     setIsSubmitting(true);
     try {
@@ -24,7 +26,7 @@ export default function ServiceActionClient({ orderId }: { orderId: string }) {
 
       router.refresh();
     } catch (err: any) {
-      alert(err.message);
+      await showAlert(err.message);
     } finally {
       setIsSubmitting(false);
     }

@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { submitSurveyAction } from "./actions";
+import { showAlert } from "@/lib/dialog";
+
 
 export default function DriverSurveyForm({ survey }: { survey: any }) {
   const router = useRouter();
@@ -52,7 +54,7 @@ export default function DriverSurveyForm({ survey }: { survey: any }) {
           val === "" ||
           (Array.isArray(val) && val.length === 0)
         ) {
-          alert(`❌ Pertanyaan "${q.questionText}" wajib diisi!`);
+          await showAlert(`❌ Pertanyaan "${q.questionText}" wajib diisi!`);
           return;
         }
       }
@@ -72,14 +74,14 @@ export default function DriverSurveyForm({ survey }: { survey: any }) {
       });
 
       if (response.success) {
-        alert(`✅ ${response.message}`);
+        await showAlert(`✅ ${response.message}`);
         router.push("/surveys");
         router.refresh();
       } else {
-        alert(`❌ Gagal: ${response.error}`);
+        await showAlert(`❌ Gagal: ${response.error}`);
       }
     } catch (error) {
-      alert("Terjadi kesalahan jaringan saat mengirim jawaban.");
+      await showAlert("Terjadi kesalahan jaringan saat mengirim jawaban.");
     } finally {
       setIsSubmitting(false);
     }

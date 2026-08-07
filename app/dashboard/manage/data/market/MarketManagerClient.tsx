@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { CheckCircle, XCircle, AlertTriangle, Edit, Eye, MessageSquare, Download, Clock, Store } from "lucide-react";
 import Image from "next/image";
+import { showAlert } from "@/lib/dialog";
+
 
 export default function MarketManagerClient() {
   const [items, setItems] = useState<any[]>([]);
@@ -59,17 +61,17 @@ export default function MarketManagerClient() {
         setConfirmModal({ open: false, action: "", itemId: null, title: "" });
         fetchItems();
       } else {
-        alert(data.error);
+        showAlert(data.error);
       }
     } catch (error) {
-      alert("Terjadi kesalahan sistem");
+      showAlert("Terjadi kesalahan sistem");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const submitReason = () => {
-    if (!reason.trim()) return alert("Alasan wajib diisi");
+    if (!reason.trim()) return showAlert("Alasan wajib diisi");
     handleAction(reasonModal.itemId!, reasonModal.action, { reason });
   };
 

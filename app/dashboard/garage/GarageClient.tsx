@@ -15,6 +15,8 @@ import Link from "next/link";
 import HireMechanicModal from "./HireMechanicModal";
 import { MechanicSpecialty } from "@/lib/constants/mechanics";
 import { Modal } from "@/components/ui/Modal";
+import { showAlert, showConfirm } from "@/lib/dialog";
+
 
 interface GarageClientProps {
   garage: any;
@@ -47,7 +49,7 @@ export default function GarageClient({ garage }: GarageClientProps) {
 
       window.location.reload();
     } catch (err: any) {
-      alert(err.message);
+      await showAlert(err.message);
     } finally {
       setLoadingAction(false);
       setUpgradeModalOpen(false);
@@ -66,7 +68,7 @@ export default function GarageClient({ garage }: GarageClientProps) {
 
       window.location.reload();
     } catch (err: any) {
-      alert(err.message);
+      await showAlert(err.message);
     } finally {
       setLoadingAction(false);
       setDowngradeModalOpen(false);
@@ -86,7 +88,7 @@ export default function GarageClient({ garage }: GarageClientProps) {
 
       window.location.reload();
     } catch (err: any) {
-      alert(err.message);
+      await showAlert(err.message);
     } finally {
       setLoadingAction(false);
       setFuelUpgradeModalOpen(false);
@@ -106,7 +108,7 @@ export default function GarageClient({ garage }: GarageClientProps) {
 
       window.location.reload();
     } catch (err: any) {
-      alert(err.message);
+      await showAlert(err.message);
     } finally {
       setLoadingAction(false);
       setFuelDowngradeModalOpen(false);
@@ -115,7 +117,7 @@ export default function GarageClient({ garage }: GarageClientProps) {
 
   const handleFire = async (specialty: MechanicSpecialty) => {
     if (
-      !confirm(
+      !await showConfirm(
         `Apakah Anda yakin ingin memecat Mekanik ${specialty}? Uang sewa yang sudah dibayar minggu ini tidak akan dikembalikan.`,
       )
     )
@@ -132,7 +134,7 @@ export default function GarageClient({ garage }: GarageClientProps) {
 
       window.location.reload();
     } catch (err: any) {
-      alert(err.message);
+      await showAlert(err.message);
     } finally {
       setFiring(null);
     }

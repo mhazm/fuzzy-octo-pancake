@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createPurchaseTicket } from "./actions";
+import { showAlert } from "@/lib/dialog";
 import {
   MessageSquarePlus,
   Sparkles,
@@ -30,7 +31,7 @@ export default function NismaraPlusClient() {
     if (res.success && res.url) {
       setTicketUrl(res.url);
     } else {
-      alert(res.message || "Gagal memproses.");
+      await showAlert(res.message || "Gagal memproses.");
       setIsLoading(false);
     }
   };

@@ -15,8 +15,10 @@ import {
   Upload
 } from "lucide-react";
 import { compressImageToWebP } from "@/lib/imageUtils";
+import { useSession } from "next-auth/react";
 
 export default function FleetStoreManager() {
+  const { data: session } = useSession();
   const [stores, setStores] = useState<any[]>([]);
   const [brands, setBrands] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,6 +39,7 @@ export default function FleetStoreManager() {
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
 
   // Toast State
   const [toast, setToast] = useState({
@@ -80,6 +83,7 @@ export default function FleetStoreManager() {
 
   const handleAddClick = () => {
     setIsEditMode(false);
+    setPhotoFile(null);
     setFormData({ 
       id: "", name: "", game_id: "1", in_game_id: "", type: "truck", price: "", brand: "", photo_url: "",
       component_cost_maintenance: { ...initialCostMaintenance },
@@ -90,6 +94,7 @@ export default function FleetStoreManager() {
 
   const handleEditClick = (store: any) => {
     setIsEditMode(true);
+    setPhotoFile(null);
     setFormData({
       id: store.id,
       name: store.name,
@@ -108,11 +113,43 @@ export default function FleetStoreManager() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
+      let finalPhotoUrl = formData.photo_url;
+      const isNismaraPlus = (session?.user as any)?.nismaraplus?.status === true;
+
+      if (photoFile) {
+        setIsUploading(true);
+        const compressed = await compressImageToWebP(photoFile, isNismaraPlus ? 5 : 3, 1920);
+        
+        const resUpload = await fetch("/api/upload", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fileName: compressed.name,
+            fileType: compressed.type,
+            fileSize: compressed.size,
+            folder: "fleet/store",
+          }),
+        });
+        const uploadData = await resUpload.json();
+        if (!resUpload.ok) throw new Error(uploadData.error || "Gagal mendapatkan URL upload");
+
+        const s3Res = await fetch(uploadData.signedUrl, {
+          method: "PUT",
+          headers: { "Content-Type": compressed.type },
+          body: compressed,
+        });
+        if (!s3Res.ok) throw new Error("Gagal mengupload file ke server");
+        
+        finalPhotoUrl = uploadData.publicUrl;
+        setIsUploading(false);
+      }
+
       const url = isEditMode ? `/api/fleet/store/${formData.id}` : `/api/fleet/store`;
       const method = isEditMode ? "PATCH" : "POST";
       
       const payload = {
         ...formData,
+        photo_url: finalPhotoUrl,
         game_id: parseInt(formData.game_id),
         in_game_id: formData.in_game_id,
         price: parseFloat(formData.price),
@@ -148,44 +185,31 @@ export default function FleetStoreManager() {
     }
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setIsUploading(true);
-    try {
-      // 1. Kompresi gambar menjadi WebP (max 2MB, 1920px untuk kualitas foto)
-      const optimizedFile = await compressImageToWebP(file, 2, 1920);
-
-      // 2. Minta Presigned URL dari backend
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fileName: optimizedFile.name,
-          fileType: optimizedFile.type,
-          fileSize: optimizedFile.size,
-          folder: "fleet/store",
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Gagal mendapatkan URL upload");
-
-      // 3. Upload file yang sudah dikompresi ke R2
-      const uploadRes = await fetch(data.signedUrl, {
-        method: "PUT",
-        headers: { "Content-Type": optimizedFile.type },
-        body: optimizedFile,
-      });
-      if (!uploadRes.ok) throw new Error("Gagal mengupload file ke server");
-
-      setFormData({ ...formData, photo_url: data.publicUrl });
-      showToast("Foto berhasil diupload!", "success");
-    } catch (error: any) {
-      showToast(error.message || "Gagal mengupload foto", "error");
-    } finally {
-      setIsUploading(false);
+    if (!file.type.startsWith("image/")) {
+      showToast("Format tidak didukung! Harap unggah gambar.", "error");
+      return;
     }
+
+    const isNismaraPlus = (session?.user as any)?.nismaraplus?.status === true;
+    
+    if (!isNismaraPlus && file.type === "image/gif") {
+      showToast("Hanya member Nismara+ yang diizinkan mengunggah GIF.", "error");
+      return;
+    }
+
+    const maxSizeMB = isNismaraPlus ? 5 : 3;
+    if (file.size > maxSizeMB * 1024 * 1024) {
+      showToast(`Maksimal ukuran file adalah ${maxSizeMB}MB.`, "error");
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+    setFormData({ ...formData, photo_url: previewUrl });
+    setPhotoFile(file);
   };
 
   const showToast = (message: string, type: "success" | "error") => {

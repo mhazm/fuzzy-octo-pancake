@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Plus, Edit2, Box, Package, Trash2, AlertCircle } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { showAlert } from "@/lib/dialog";
+
 
 export default function MyMarket() {
   const [items, setItems] = useState<any[]>([]);
@@ -48,10 +50,10 @@ export default function MyMarket() {
         setItems(items.filter(item => item._id !== deleteModal.id));
         setDeleteModal({ open: false, id: null, title: "" });
       } else {
-        alert(data.error || "Gagal menghapus mod");
+        await showAlert(data.error || "Gagal menghapus mod");
       }
     } catch (error) {
-      alert("Terjadi kesalahan sistem");
+      await showAlert("Terjadi kesalahan sistem");
     } finally {
       setLoading(false);
     }
