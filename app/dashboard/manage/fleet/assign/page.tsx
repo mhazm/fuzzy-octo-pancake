@@ -13,6 +13,7 @@ import {
   Plus,
   Zap,
   User,
+  ChevronDown,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -36,13 +37,27 @@ export default function FleetAssignManager() {
     fleet_name: "",
     game_id: "1",
     fleet_number: "",
-    driver: "",
+    owner: "",
     model: "",
     odometer: 0,
     wheels: "4x2",
     status: "active",
   });
   const [isSaving, setIsSaving] = useState(false);
+
+  // Owner Search State
+  const [searchOwnerTerm, setSearchOwnerTerm] = useState("");
+  const [showOwnerDropdown, setShowOwnerDropdown] = useState(false);
+
+  // Filter Users
+  const filteredUsers = users.filter((u) => {
+    const term = searchOwnerTerm.toLowerCase();
+    return (
+      (u.name && u.name.toLowerCase().includes(term)) ||
+      (u.discordId && String(u.discordId).includes(term)) ||
+      (u.truckyId && String(u.truckyId).includes(term))
+    );
+  });
 
   // Toast State
   const [toast, setToast] = useState({
@@ -86,10 +101,10 @@ export default function FleetAssignManager() {
       gameFilter === "all" || fleet.game_id?.toString() === gameFilter;
 
     let matchesDriver = true;
-    if (driverFilter === "assigned") matchesDriver = !!fleet.driver;
-    else if (driverFilter === "unassigned") matchesDriver = !fleet.driver;
+    if (driverFilter === "assigned") matchesDriver = !!fleet.owner;
+    else if (driverFilter === "unassigned") matchesDriver = !fleet.owner;
     else if (driverFilter !== "all")
-      matchesDriver = fleet.driver?._id === driverFilter;
+      matchesDriver = fleet.owner?._id === driverFilter;
 
     return matchesSearch && matchesGame && matchesDriver;
   });
@@ -101,7 +116,7 @@ export default function FleetAssignManager() {
       fleet_name: fleet.fleet_name,
       game_id: fleet.game_id.toString(),
       fleet_number: fleet.fleet_number,
-      driver: fleet.driver?._id || "",
+      owner: fleet.owner?._id || "",
       model: fleet.model?._id || fleet.model || "",
       odometer: fleet.odometer || 0,
       wheels: fleet.wheels || "4x2",
@@ -252,7 +267,7 @@ export default function FleetAssignManager() {
                 <tr className="text-foreground/20 text-[10px] font-black uppercase tracking-widest border-b border-border bg-card/80 sticky top-0 z-10 backdrop-blur-md">
                   <th className="px-8 py-5">Fleet Info</th>
                   <th className="px-8 py-5">Model</th>
-                  <th className="px-8 py-5">Driver</th>
+                  <th className="px-8 py-5">Owner</th>
                   <th className="px-8 py-5">Game & Status</th>
                   <th className="px-8 py-5 text-right">Action</th>
                 </tr>
@@ -311,23 +326,23 @@ export default function FleetAssignManager() {
                         </div>
                       </td>
 
-                      {/* Driver */}
+                      {/* Owner */}
                       <td className="px-8 py-4">
-                        {fleet.driver ? (
+                        {fleet.owner ? (
                           <div className="flex items-center gap-2">
-                            {fleet.driver.image ? (
+                            {fleet.owner.image ? (
                               <img
-                                src={fleet.driver.image}
-                                alt={fleet.driver.name}
+                                src={fleet.owner.image}
+                                alt={fleet.owner.name}
                                 className="w-6 h-6 rounded-full border border-amber-500/50"
                               />
                             ) : (
                               <div className="w-6 h-6 rounded-full bg-amber-500/20 text-amber-500 flex items-center justify-center text-[10px] font-black uppercase">
-                                {fleet.driver.name?.charAt(0) || "U"}
+                                {fleet.owner.name?.charAt(0) || "U"}
                               </div>
                             )}
                             <span className="text-xs font-bold text-amber-500 uppercase tracking-wider">
-                              {fleet.driver.name}
+                              {fleet.owner.name}
                             </span>
                           </div>
                         ) : (
@@ -427,11 +442,10 @@ export default function FleetAssignManager() {
                 <input
                   type="text"
                   value={formData.id}
-                  disabled
                   onChange={(e) =>
                     setFormData({ ...formData, id: e.target.value })
                   }
-                  className="w-full bg-white/5 border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-amber-500 transition-all disabled:opacity-50 cursor-not-allowed"
+                  className="w-full bg-white/5 border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-amber-500 transition-all"
                   placeholder="e.g. F-001"
                 />
               </div>
@@ -457,11 +471,10 @@ export default function FleetAssignManager() {
                 <input
                   type="text"
                   value={formData.fleet_number}
-                  disabled
                   onChange={(e) =>
                     setFormData({ ...formData, fleet_number: e.target.value })
                   }
-                  className="w-full bg-white/5 border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-amber-500 transition-all disabled:opacity-50 cursor-not-allowed"
+                  className="w-full bg-white/5 border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-amber-500 transition-all"
                   placeholder="e.g. 01"
                 />
               </div>
@@ -514,33 +527,73 @@ export default function FleetAssignManager() {
                       ))}
                     </select>
                   </div>
-                  <div>
+                  <div className="relative">
                     <label className="block text-[10px] font-black text-foreground/40 uppercase tracking-widest mb-2">
-                      Assign To Driver
+                      Assign To Owner
                     </label>
-                    <select
-                      value={formData.driver}
-                      onChange={(e) =>
-                        setFormData({ ...formData, driver: e.target.value })
-                      }
-                      className="w-full bg-white/5 border border-border rounded-xl px-4 py-3 text-amber-500 font-bold focus:outline-none focus:border-amber-500 transition-all appearance-none cursor-pointer"
+                    <div 
+                      className="relative cursor-pointer"
+                      onClick={() => setShowOwnerDropdown(!showOwnerDropdown)}
                     >
-                      <option
-                        value=""
-                        className="bg-card font-normal text-foreground"
-                      >
-                        -- Kosongkan (Unassigned) --
-                      </option>
-                      {users.map((u) => (
-                        <option
-                          key={u._id}
-                          value={u._id}
-                          className="bg-card text-foreground"
-                        >
-                          {u.name}
-                        </option>
-                      ))}
-                    </select>
+                      <div className="w-full bg-white/5 border border-border rounded-xl px-4 py-3 text-amber-500 font-bold flex items-center justify-between transition-all hover:border-amber-500">
+                        <span>
+                          {formData.owner 
+                            ? users.find(u => u._id === formData.owner)?.name || "Unknown Owner"
+                            : "-- Kosongkan (Unassigned) --"}
+                        </span>
+                        <ChevronDown size={18} className="text-foreground/40" />
+                      </div>
+                    </div>
+
+                    {showOwnerDropdown && (
+                      <div className="absolute top-full left-0 w-full mt-2 bg-[#1a1a1a] border border-border rounded-xl shadow-2xl z-50 overflow-hidden">
+                        <div className="p-3 border-b border-border bg-white/5 sticky top-0 flex items-center gap-2">
+                          <Search size={16} className="text-foreground/40" />
+                          <input 
+                            type="text"
+                            placeholder="Cari nama, Discord ID, Trucky ID..."
+                            className="w-full bg-transparent text-sm focus:outline-none text-foreground placeholder:text-foreground/20 font-medium"
+                            value={searchOwnerTerm}
+                            onChange={(e) => setSearchOwnerTerm(e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                        <div className="max-h-60 overflow-y-auto p-2 space-y-1">
+                          <button
+                            onClick={() => {
+                              setFormData({ ...formData, owner: "" });
+                              setShowOwnerDropdown(false);
+                              setSearchOwnerTerm("");
+                            }}
+                            className="w-full text-left px-3 py-2.5 rounded-lg text-foreground hover:bg-amber-500/10 hover:text-amber-500 transition-colors text-sm font-medium"
+                          >
+                            -- Kosongkan (Unassigned) --
+                          </button>
+                          {filteredUsers.length > 0 ? (
+                            filteredUsers.map((u) => (
+                              <button
+                                key={u._id}
+                                onClick={() => {
+                                  setFormData({ ...formData, owner: u._id });
+                                  setShowOwnerDropdown(false);
+                                  setSearchOwnerTerm("");
+                                }}
+                                className="w-full text-left px-3 py-2.5 rounded-lg text-foreground hover:bg-amber-500/10 hover:text-amber-500 transition-colors flex flex-col"
+                              >
+                                <span className="text-sm font-bold">{u.name}</span>
+                                <span className="text-[10px] font-mono text-foreground/40 uppercase tracking-widest mt-0.5">
+                                  Trucky: {u.truckyId} • Discord: {u.discordId || "N/A"}
+                                </span>
+                              </button>
+                            ))
+                          ) : (
+                            <div className="text-center text-foreground/40 text-xs py-4 italic">
+                              Member tidak ditemukan
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

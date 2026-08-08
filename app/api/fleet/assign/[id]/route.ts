@@ -15,9 +15,14 @@ export async function PATCH(
     const { id } = await params;
     const body = await request.json();
 
-    // Pastikan jika driver dikosongkan dari form (string kosong), diset ke null
-    if (body.driver === "") {
-      body.driver = null;
+    // Pastikan jika owner dikosongkan dari form (string kosong), diset ke null
+    if (body.owner === "") {
+      body.owner = null;
+    }
+
+    // Set driver sama dengan owner
+    if (body.owner !== undefined) {
+       body.driver = body.owner;
     }
 
     const updatedFleet = await Fleet.findOneAndUpdate(

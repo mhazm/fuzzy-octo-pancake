@@ -53,8 +53,8 @@ export async function POST(request: Request) {
       fleet_name: data.fleet_name,
       game_id: data.game_id,
       fleet_number: data.fleet_number,
-      owner: data.driver || null,
-      driver: data.driver || null,
+      owner: data.owner || null,
+      driver: data.owner || null, // Keep driver in sync with owner for legacy features
       model: data.model,
       odometer: Number(data.odometer),
       wheels: data.wheels || "4x2",
