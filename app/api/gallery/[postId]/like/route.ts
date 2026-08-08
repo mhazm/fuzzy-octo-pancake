@@ -4,6 +4,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { sendPersonalNotification } from "@/lib/services/NotificationService";
+import { redis } from "@/lib/redis";
 
 export async function POST(
   request: Request,
@@ -41,16 +42,24 @@ export async function POST(
         { $push: { likes: userDiscordId } as any }
       );
 
-      // Notification
+      // Notification with Redis cooldown
       if (post.userId && post.userId !== userDiscordId) {
-        const userName = session.user.name || "Seseorang";
-        sendPersonalNotification(
-          post.userId,
-          "Postingan Disukai",
-          `${userName} menyukai postingan galeri Anda.`,
-          "info",
-          `/p/${postId}`
-        ).catch((err) => console.error("Failed to send notification:", err));
+        const cooldownKey = `cooldown:notification:like:${postId}:${userDiscordId}`;
+        const isOnCooldown = await redis.get(cooldownKey);
+
+        if (!isOnCooldown) {
+          const userName = session.user.name || "Seseorang";
+          sendPersonalNotification(
+            post.userId,
+            "Postingan Disukai",
+            `${userName} menyukai postingan galeri Anda.`,
+            "info",
+            `/p/${postId}`
+          ).catch((err) => console.error("Failed to send notification:", err));
+
+          // Set cooldown for 1 hour (3600 seconds) to prevent spam
+          await redis.set(cooldownKey, "1", "EX", 3600);
+        }
       }
     }
 
