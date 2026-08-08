@@ -21,13 +21,15 @@ export async function POST(req: NextRequest) {
     const discordId = session.user.discordId;
     const body = await req.json().catch(() => ({}));
     const ticketType = body.ticketType || "basic";
-    
+
     const TICKET_PRICE = ticketType === "100x" ? 1000 : 400;
 
     if (!checkRateLimit(discordId, "scratchers-buy", 1000)) {
-      return NextResponse.json({ error: "Terlalu banyak permintaan. Mohon tunggu sesaat." }, { status: 429 });
+      return NextResponse.json(
+        { error: "Terlalu banyak permintaan. Mohon tunggu sesaat." },
+        { status: 429 },
+      );
     }
-
 
     // Check balance
     let currencyData;
@@ -36,7 +38,7 @@ export async function POST(req: NextRequest) {
     } catch (err) {
       return NextResponse.json(
         { error: "Failed to fetch currency" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -50,7 +52,7 @@ export async function POST(req: NextRequest) {
       if (estimatedBalance < TICKET_PRICE) {
         return NextResponse.json(
           { error: "Saldo Nismara Coin tidak mencukupi" },
-          { status: 400 }
+          { status: 400 },
         );
       }
     } else {
@@ -60,8 +62,11 @@ export async function POST(req: NextRequest) {
       const estimatedBalance = currencyData.balance + netProfit;
       if (estimatedBalance < TICKET_PRICE) {
         return NextResponse.json(
-          { error: "Saldo Nismara Coin tidak mencukupi (termasuk potongan sebelumnya)" },
-          { status: 400 }
+          {
+            error:
+              "Saldo Nismara Coin tidak mencukupi (termasuk potongan sebelumnya)",
+          },
+          { status: 400 },
         );
       }
     }
@@ -73,13 +78,13 @@ export async function POST(req: NextRequest) {
     // Determine prize based on RNG and probability table
     const rand = Math.random();
     let prizeWon = 0;
-    
+
     if (ticketType === "100x") {
       // Distribusi 100x Ticket (Harga 1000)
-      if (rand < 0.001) {
-        prizeWon = 100000; // 0.1% Jackpot
+      if (rand < 0.0005) {
+        prizeWon = 100000; // 0.05% Jackpot
       } else if (rand < 0.01) {
-        prizeWon = 20000; // 0.9%
+        prizeWon = 20000; // 0.95%
       } else if (rand < 0.05) {
         prizeWon = 5000; // 4%
       } else if (rand < 0.15) {
@@ -91,7 +96,7 @@ export async function POST(req: NextRequest) {
       }
     } else {
       // Distribusi Basic Ticket (Harga 400)
-      if (rand < 0.005) {
+      if (rand < 0.002) {
         prizeWon = 20000;
       } else if (rand < 0.02) {
         prizeWon = 4000;
@@ -122,7 +127,7 @@ export async function POST(req: NextRequest) {
       isWinning: prizeWon > 0,
       isScratched: false,
       gameData: gameData ? JSON.stringify(gameData) : null,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
     };
 
     await redis.hset(`ticket:${ticketId}`, ticketData);
@@ -142,13 +147,13 @@ export async function POST(req: NextRequest) {
       ticketType: ticketType,
       prizeWon: prizeWon,
       gameData: gameData,
-      warningLimitReached: isWarningLimit
+      warningLimitReached: isWarningLimit,
     });
   } catch (error: any) {
     console.error("Scratch Buy Error:", error);
     return NextResponse.json(
       { error: "Failed to process ticket purchase" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
