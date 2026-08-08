@@ -4,6 +4,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { sendPersonalNotification } from "@/lib/services/NotificationService";
+import { redis } from "@/lib/redis";
 
 export async function GET(
   request: Request,
@@ -121,28 +122,44 @@ export async function POST(
       const shortText = text.trim().length > 30 ? text.trim().substring(0, 30) + "..." : text.trim();
 
       if (parentId) {
-        // Notification for Reply
+        // Notification for Reply with Redis Cooldown
         const parentComment = await db.collection("gallery_comments").findOne({ _id: new ObjectId(parentId) });
         if (parentComment && parentComment.userId && parentComment.userId !== userDiscordId) {
-          sendPersonalNotification(
-            parentComment.userId,
-            "Balasan Komentar",
-            `${userName} membalas komentar Anda di galeri: "${shortText}"`,
-            "info",
-            `/p/${postId}`
-          ).catch((err) => console.error("Failed to send reply notification:", err));
+          const cooldownKey = `cooldown:notification:reply:${parentId}:${userDiscordId}`;
+          const isOnCooldown = await redis.get(cooldownKey);
+
+          if (!isOnCooldown) {
+            sendPersonalNotification(
+              parentComment.userId,
+              "Balasan Komentar",
+              `${userName} membalas komentar Anda di galeri: "${shortText}"`,
+              "info",
+              `/p/${postId}`
+            ).catch((err) => console.error("Failed to send reply notification:", err));
+
+            // Cooldown 15 menit (900 detik) untuk reply ke komentar yang sama oleh user yang sama
+            await redis.set(cooldownKey, "1", "EX", 900);
+          }
         }
       } else {
-        // Notification for Top-level Comment
+        // Notification for Top-level Comment with Redis Cooldown
         const post = await db.collection("gallery_posts").findOne({ _id: new ObjectId(postId) });
         if (post && post.userId && post.userId !== userDiscordId) {
-          sendPersonalNotification(
-            post.userId,
-            "Komentar Baru",
-            `${userName} mengomentari postingan galeri Anda: "${shortText}"`,
-            "info",
-            `/p/${postId}`
-          ).catch((err) => console.error("Failed to send comment notification:", err));
+          const cooldownKey = `cooldown:notification:comment:${postId}:${userDiscordId}`;
+          const isOnCooldown = await redis.get(cooldownKey);
+
+          if (!isOnCooldown) {
+            sendPersonalNotification(
+              post.userId,
+              "Komentar Baru",
+              `${userName} mengomentari postingan galeri Anda: "${shortText}"`,
+              "info",
+              `/p/${postId}`
+            ).catch((err) => console.error("Failed to send comment notification:", err));
+
+            // Cooldown 15 menit (900 detik) untuk komentar ke postingan yang sama oleh user yang sama
+            await redis.set(cooldownKey, "1", "EX", 900);
+          }
         }
       }
     } catch (notifError) {

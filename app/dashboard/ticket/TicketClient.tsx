@@ -82,6 +82,11 @@ export default function TicketPage() {
     if (categories.length > 0) {
       const searchParams = new URLSearchParams(window.location.search);
       const prefillJobId = searchParams.get("jobId");
+      const prefillCommentId = searchParams.get("commentId");
+      const prefillPostId = searchParams.get("postId");
+      const prefillReportedUser = searchParams.get("reportedUser");
+      const prefillCommentText = searchParams.get("commentText");
+
       if (prefillJobId) {
         const bandingCat = categories.find((c) => c.name.toLowerCase().includes("banding"));
         if (bandingCat) {
@@ -89,6 +94,22 @@ export default function TicketPage() {
           setSelectedCategoryName(bandingCat.name);
           setShowForm(true);
           setDynamicJobId(prefillJobId);
+        }
+      } else if (prefillCommentId && prefillPostId) {
+        const reportCat = categories.find((c) => c.name.toLowerCase().includes("report komentar")) || categories.find((c) => c.name.toLowerCase().includes("report"));
+        if (reportCat) {
+          setCategoryId(reportCat._id);
+          setSelectedCategoryName(reportCat.name);
+          setShowForm(true);
+          setSubject(`Report Komentar Galeri`);
+          setDynamicReportUser(prefillReportedUser ? prefillReportedUser : `Komentar ID: ${prefillCommentId}`); // Use real user name if available
+          
+          let prefillDescription = `Saya ingin melaporkan sebuah komentar di Galeri.\n\nLink Postingan: ${window.location.origin}/p/${prefillPostId}\n`;
+          if (prefillCommentText) {
+             prefillDescription += `\nKomentar asli:\n"${prefillCommentText}"\n`;
+          }
+          prefillDescription += `\nAlasan pelaporan:\n`;
+          setDescription(prefillDescription);
         }
       }
     }

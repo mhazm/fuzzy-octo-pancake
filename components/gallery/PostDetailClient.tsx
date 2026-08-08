@@ -3,12 +3,12 @@
 import { useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { id as localeId } from "date-fns/locale";
-import { Heart, MessageCircle, Share2, ArrowLeft, Trash2, Loader2, X } from "lucide-react";
+import { Heart, MessageCircle, Share2, ArrowLeft, Trash2, Loader2, X, Pencil, Check, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { GalleryPost, UserComment } from "./GalleryGrid";
 import UserBadges from "@/components/icons/UserBadges";
 import { Modal } from "@/components/ui/Modal";
-import { showAlert } from "@/lib/dialog";
+import { showAlert, showConfirm } from "@/lib/dialog";
 
 
 export default function PostDetailClient({
@@ -46,6 +46,50 @@ export default function PostDetailClient({
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editCommentText, setEditCommentText] = useState("");
+
+  const startEdit = (commentId: string, currentText: string) => {
+    setEditingCommentId(commentId);
+    setEditCommentText(currentText);
+  };
+
+  const saveEdit = async (commentId: string) => {
+    if (!editCommentText.trim()) return;
+    try {
+      const res = await fetch(`/api/gallery/${post._id}/comment/${commentId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: editCommentText }),
+      });
+      if (res.ok) {
+        setComments(prev => prev.map(c => c._id === commentId ? { ...c, text: editCommentText.trim() } : c));
+        setEditingCommentId(null);
+      } else {
+        showAlert("Gagal mengedit komentar");
+      }
+    } catch (e) {
+      showAlert("Terjadi kesalahan saat mengedit komentar");
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (await showConfirm("Apakah Anda yakin ingin menghapus komentar ini?")) {
+      try {
+        const res = await fetch(`/api/gallery/${post._id}/comment/${commentId}`, {
+          method: "DELETE",
+        });
+        if (res.ok) {
+          setComments(prev => prev.filter(c => c._id !== commentId && c.parentId !== commentId));
+        } else {
+          showAlert("Gagal menghapus komentar");
+        }
+      } catch (e) {
+        showAlert("Terjadi kesalahan saat menghapus komentar");
+      }
+    }
+  };
 
   // Helper untuk menentukan label role
   const getRoleLabel = () => {
@@ -321,7 +365,29 @@ export default function PostDetailClient({
                       truckyRank={comment.user.truckyRank}
                     />
                   </div>
-                  <span className="text-sm leading-relaxed">{comment.text}</span>
+                  {editingCommentId === comment._id ? (
+                    <div className="flex items-center gap-2 mt-1">
+                      <input 
+                        type="text" 
+                        className="flex-1 bg-muted/50 border border-border/50 text-sm px-3 py-1.5 rounded-lg focus:outline-none focus:border-primary transition-colors" 
+                        value={editCommentText} 
+                        onChange={(e) => setEditCommentText(e.target.value)} 
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') saveEdit(comment._id);
+                          if (e.key === 'Escape') setEditingCommentId(null);
+                        }}
+                      />
+                      <button onClick={() => saveEdit(comment._id)} className="p-1.5 bg-primary/20 text-primary rounded hover:bg-primary hover:text-white transition-colors" title="Simpan">
+                        <Check className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => setEditingCommentId(null)} className="p-1.5 bg-red-500/20 text-red-500 rounded hover:bg-red-500 hover:text-white transition-colors" title="Batal">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="text-sm leading-relaxed">{comment.text}</span>
+                  )}
                   <div className="flex items-center gap-4 mt-1.5 text-[11px] font-semibold text-muted-foreground">
                     <span className="uppercase tracking-wide">
                       {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true, locale: localeId })}
@@ -339,6 +405,23 @@ export default function PostDetailClient({
                     >
                       Balas
                     </button>
+                    
+                    {/* Comment Actions */}
+                    {(loggedInUserId === comment.userId) && (
+                      <button onClick={() => startEdit(comment._id, comment.text)} className="hover:text-foreground transition-colors flex items-center gap-1">
+                        Edit
+                      </button>
+                    )}
+                    {(loggedInUserId === comment.userId || isManager) && (
+                      <button onClick={() => handleDeleteComment(comment._id)} className="hover:text-red-500 transition-colors flex items-center gap-1">
+                        Hapus
+                      </button>
+                    )}
+                    {(loggedInUserId !== comment.userId && loggedInUserId) && (
+                      <Link href={`/dashboard/ticket?commentId=${comment._id}&postId=${post._id}&reportedUser=${encodeURIComponent(comment.user.name)}&commentText=${encodeURIComponent(comment.text)}`} className="hover:text-orange-500 transition-colors flex items-center gap-1" title="Laporkan komentar">
+                        Lapor
+                      </Link>
+                    )}
                   </div>
                 </div>
               </div>
@@ -383,10 +466,32 @@ export default function PostDetailClient({
                             className="w-3.5 h-3.5"
                           />
                         </div>
-                        <span className="text-sm leading-relaxed">
-                          {reply.replyToUser && <span className="text-primary font-medium mr-1">@{reply.replyToUser}</span>}
-                          {reply.text}
-                        </span>
+                        {editingCommentId === reply._id ? (
+                          <div className="flex items-center gap-2 mt-1">
+                            <input 
+                              type="text" 
+                              className="flex-1 bg-muted/50 border border-border/50 text-sm px-3 py-1.5 rounded-lg focus:outline-none focus:border-primary transition-colors" 
+                              value={editCommentText} 
+                              onChange={(e) => setEditCommentText(e.target.value)} 
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') saveEdit(reply._id);
+                                if (e.key === 'Escape') setEditingCommentId(null);
+                              }}
+                            />
+                            <button onClick={() => saveEdit(reply._id)} className="p-1.5 bg-primary/20 text-primary rounded hover:bg-primary hover:text-white transition-colors" title="Simpan">
+                              <Check className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => setEditingCommentId(null)} className="p-1.5 bg-red-500/20 text-red-500 rounded hover:bg-red-500 hover:text-white transition-colors" title="Batal">
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-sm leading-relaxed">
+                            {reply.replyToUser && <span className="text-primary font-medium mr-1">@{reply.replyToUser}</span>}
+                            {reply.text}
+                          </span>
+                        )}
                         <div className="flex items-center gap-4 mt-1 text-[11px] font-semibold text-muted-foreground">
                           <span className="uppercase tracking-wide">
                             {formatDistanceToNow(new Date(reply.createdAt), { addSuffix: true, locale: localeId })}
@@ -404,6 +509,23 @@ export default function PostDetailClient({
                           >
                             Balas
                           </button>
+
+                          {/* Reply Actions */}
+                          {(loggedInUserId === reply.userId) && (
+                            <button onClick={() => startEdit(reply._id, reply.text)} className="hover:text-foreground transition-colors flex items-center gap-1">
+                              Edit
+                            </button>
+                          )}
+                          {(loggedInUserId === reply.userId || isManager) && (
+                            <button onClick={() => handleDeleteComment(reply._id)} className="hover:text-red-500 transition-colors flex items-center gap-1">
+                              Hapus
+                            </button>
+                          )}
+                          {(loggedInUserId !== reply.userId && loggedInUserId) && (
+                            <Link href={`/dashboard/ticket?commentId=${reply._id}&postId=${post._id}&reportedUser=${encodeURIComponent(reply.user.name)}&commentText=${encodeURIComponent(reply.text)}`} className="hover:text-orange-500 transition-colors flex items-center gap-1" title="Laporkan balasan">
+                              Lapor
+                            </Link>
+                          )}
                         </div>
                       </div>
                     </div>

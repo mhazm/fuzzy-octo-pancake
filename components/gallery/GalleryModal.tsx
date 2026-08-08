@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { X, Heart, MessageCircle, Send, Share2, Trash2, Loader2 } from "lucide-react";
+import { X, Heart, MessageCircle, Send, Share2, Trash2, Loader2, Pencil, Check, AlertTriangle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import Link from "next/link";
 import UserBadges from "@/components/icons/UserBadges";
 import { Modal } from "@/components/ui/Modal";
-import { showAlert } from "@/lib/dialog";
+import { showAlert, showConfirm } from "@/lib/dialog";
 
 
 interface Comment {
@@ -59,6 +59,56 @@ export default function GalleryModal({
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editCommentText, setEditCommentText] = useState("");
+
+  const startEdit = (commentId: string, currentText: string) => {
+    setEditingCommentId(commentId);
+    setEditCommentText(currentText);
+  };
+
+  const saveEdit = async (commentId: string) => {
+    if (!editCommentText.trim()) return;
+    try {
+      const res = await fetch(`/api/gallery/${post._id}/comment/${commentId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: editCommentText }),
+      });
+      if (res.ok) {
+        setComments(prev => prev.map(c => c._id === commentId ? { ...c, text: editCommentText.trim() } : c));
+        setEditingCommentId(null);
+      } else {
+        showAlert("Gagal mengedit komentar");
+      }
+    } catch (e) {
+      showAlert("Terjadi kesalahan saat mengedit komentar");
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (await showConfirm("Apakah Anda yakin ingin menghapus komentar ini?")) {
+      try {
+        const res = await fetch(`/api/gallery/${post._id}/comment/${commentId}`, {
+          method: "DELETE",
+        });
+        if (res.ok) {
+          setComments(prev => prev.filter(c => c._id !== commentId && c.parentId !== commentId));
+          if (onPostUpdate) {
+            onPostUpdate({
+              ...post,
+              commentCount: Math.max(0, (post.commentCount || 0) - 1)
+            });
+          }
+        } else {
+          showAlert("Gagal menghapus komentar");
+        }
+      } catch (e) {
+        showAlert("Terjadi kesalahan saat menghapus komentar");
+      }
+    }
+  };
 
   const images = post.imageUrls && post.imageUrls.length > 0 ? post.imageUrls : [post.imageUrl];
   const currentImage = images[currentImageIndex];
@@ -414,11 +464,33 @@ export default function GalleryModal({
                           {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true, locale: localeId })}
                         </span>
                       </div>
-                      <p className="text-sm mt-0.5 break-words text-foreground/90 leading-relaxed">{comment.text}</p>
+                      {editingCommentId === comment._id ? (
+                        <div className="flex items-center gap-2 mt-1 w-full">
+                          <input 
+                            type="text" 
+                            className="flex-1 bg-black/20 border border-border/50 text-sm px-3 py-1.5 rounded-lg focus:outline-none focus:border-primary transition-colors text-foreground" 
+                            value={editCommentText} 
+                            onChange={(e) => setEditCommentText(e.target.value)} 
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') saveEdit(comment._id);
+                              if (e.key === 'Escape') setEditingCommentId(null);
+                            }}
+                          />
+                          <button onClick={() => saveEdit(comment._id)} className="p-1.5 bg-primary/20 text-primary rounded hover:bg-primary hover:text-white transition-colors" title="Simpan">
+                            <Check className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => setEditingCommentId(null)} className="p-1.5 bg-red-500/20 text-red-500 rounded hover:bg-red-500 hover:text-white transition-colors" title="Batal">
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <p className="text-sm mt-0.5 break-words text-foreground/90 leading-relaxed">{comment.text}</p>
+                      )}
                     </div>
                     
                     {/* Comment Actions */}
-                    <div className="flex items-center gap-4 mt-1.5 ml-4 text-[11px] font-semibold text-muted-foreground">
+                    <div className="flex items-center gap-4 mt-1.5 ml-4 text-[11px] font-semibold text-muted-foreground flex-wrap">
                       <button 
                         onClick={() => handleLikeComment(comment._id)}
                         className={`hover:text-foreground transition-colors ${(comment.likes || []).includes(loggedInUserId || '') ? 'text-red-500' : ''}`}
@@ -432,6 +504,22 @@ export default function GalleryModal({
                       >
                         Balas
                       </button>
+
+                      {(loggedInUserId === comment.user.discordId) && (
+                        <button onClick={() => startEdit(comment._id, comment.text)} className="hover:text-foreground transition-colors flex items-center gap-1">
+                          Edit
+                        </button>
+                      )}
+                      {(loggedInUserId === comment.user.discordId || isManager) && (
+                        <button onClick={() => handleDeleteComment(comment._id)} className="hover:text-red-500 transition-colors flex items-center gap-1">
+                          Hapus
+                        </button>
+                      )}
+                      {(loggedInUserId !== comment.user.discordId && loggedInUserId) && (
+                        <Link href={`/dashboard/ticket?commentId=${comment._id}&postId=${post._id}&reportedUser=${encodeURIComponent(comment.user.name)}&commentText=${encodeURIComponent(comment.text)}`} className="hover:text-orange-500 transition-colors flex items-center gap-1" title="Laporkan komentar">
+                          Lapor
+                        </Link>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -480,28 +568,66 @@ export default function GalleryModal({
                                 {formatDistanceToNow(new Date(reply.createdAt), { addSuffix: true, locale: localeId })}
                               </span>
                             </div>
-                            <p className="text-xs mt-0.5 break-words text-foreground/90 leading-relaxed">
-                              {reply.replyToUser && <span className="text-primary font-medium mr-1">@{reply.replyToUser}</span>}
-                              {reply.text}
-                            </p>
-                          </div>
+                              {editingCommentId === reply._id ? (
+                                <div className="flex items-center gap-2 mt-1 w-full">
+                                  <input 
+                                    type="text" 
+                                    className="flex-1 bg-black/20 border border-border/50 text-xs px-3 py-1.5 rounded-lg focus:outline-none focus:border-primary transition-colors text-foreground" 
+                                    value={editCommentText} 
+                                    onChange={(e) => setEditCommentText(e.target.value)} 
+                                    autoFocus
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') saveEdit(reply._id);
+                                      if (e.key === 'Escape') setEditingCommentId(null);
+                                    }}
+                                  />
+                                  <button onClick={() => saveEdit(reply._id)} className="p-1 bg-primary/20 text-primary rounded hover:bg-primary hover:text-white transition-colors" title="Simpan">
+                                    <Check className="w-3 h-3" />
+                                  </button>
+                                  <button onClick={() => setEditingCommentId(null)} className="p-1 bg-red-500/20 text-red-500 rounded hover:bg-red-500 hover:text-white transition-colors" title="Batal">
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <p className="text-xs mt-0.5 break-words text-foreground/90 leading-relaxed">
+                                  {reply.replyToUser && <span className="text-primary font-medium mr-1">@{reply.replyToUser}</span>}
+                                  {reply.text}
+                                </p>
+                              )}
+                            </div>
 
-                          {/* Reply Actions */}
-                          <div className="flex items-center gap-4 mt-1 ml-3 text-[10px] font-semibold text-muted-foreground">
-                            <button 
-                              onClick={() => handleLikeComment(reply._id)}
-                              className={`hover:text-foreground transition-colors ${(reply.likes || []).includes(loggedInUserId || '') ? 'text-red-500' : ''}`}
-                            >
-                              {(reply.likes || []).length > 0 && <span className="mr-1">{(reply.likes || []).length}</span>}
-                              Suka
-                            </button>
-                            <button 
-                              onClick={() => setReplyingTo({ commentId: comment._id, userName: reply.user.name })}
-                              className="hover:text-foreground transition-colors"
-                            >
-                              Balas
-                            </button>
-                          </div>
+                            {/* Reply Actions */}
+                            <div className="flex items-center gap-4 mt-1 ml-3 text-[10px] font-semibold text-muted-foreground flex-wrap">
+                              <button 
+                                onClick={() => handleLikeComment(reply._id)}
+                                className={`hover:text-foreground transition-colors ${(reply.likes || []).includes(loggedInUserId || '') ? 'text-red-500' : ''}`}
+                              >
+                                {(reply.likes || []).length > 0 && <span className="mr-1">{(reply.likes || []).length}</span>}
+                                Suka
+                              </button>
+                              <button 
+                                onClick={() => setReplyingTo({ commentId: comment._id, userName: reply.user.name })}
+                                className="hover:text-foreground transition-colors"
+                              >
+                                Balas
+                              </button>
+
+                              {(loggedInUserId === reply.user.discordId) && (
+                                <button onClick={() => startEdit(reply._id, reply.text)} className="hover:text-foreground transition-colors flex items-center gap-1">
+                                  Edit
+                                </button>
+                              )}
+                              {(loggedInUserId === reply.user.discordId || isManager) && (
+                                <button onClick={() => handleDeleteComment(reply._id)} className="hover:text-red-500 transition-colors flex items-center gap-1">
+                                  Hapus
+                                </button>
+                              )}
+                              {(loggedInUserId !== reply.user.discordId && loggedInUserId) && (
+                                <Link href={`/dashboard/ticket?commentId=${reply._id}&postId=${post._id}&reportedUser=${encodeURIComponent(reply.user.name)}&commentText=${encodeURIComponent(reply.text)}`} className="hover:text-orange-500 transition-colors flex items-center gap-1" title="Laporkan balasan">
+                                  Lapor
+                                </Link>
+                              )}
+                            </div>
                         </div>
                       </div>
                     ))}
