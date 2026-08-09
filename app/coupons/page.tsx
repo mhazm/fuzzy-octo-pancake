@@ -2,16 +2,12 @@ import React from "react";
 import Image from "next/image";
 import clientPromise from "@/lib/mongodb";
 import CouponClientCard from "./CouponClientCard";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 export const metadata = {
   title: "Coupons",
 };
 
-
-
-export const revalidate = 86400;
+export const revalidate = 300;
 
 // 1. Definisikan Tipe Data (Berdasarkan JSON nismara_db.couponhistories)
 interface DriverClaim {
@@ -122,8 +118,6 @@ const formatDate = (dateString: string | Date) => {
 export default async function CouponsPage() {
   // Ambil data (Server-side)
   const { active, history } = await getCouponsData();
-  const session = await getServerSession(authOptions);
-  const currentUserId = session?.user?.discordId ? String(session.user.discordId) : null;
 
   return (
     <main className="min-h-screen py-16 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
@@ -134,10 +128,14 @@ export default async function CouponsPage() {
       <div className="max-w-7xl mx-auto">
         <header className="mb-16 text-center max-w-3xl mx-auto">
           <h1 className="text-4xl md:text-5xl font-black text-foreground mb-4 tracking-tight">
-            Sistem Kupon <span className="text-transparent bg-clip-text bg-linear-to-r from-primary to-accent-sky">Nismara</span>
+            Sistem Kupon{" "}
+            <span className="text-transparent bg-clip-text bg-linear-to-r from-primary to-accent-sky">
+              Nismara
+            </span>
           </h1>
           <p className="text-lg text-foreground/60 leading-relaxed">
-            Kelola dan pantau kupon Nismara Coin (NC) yang sedang berjalan maupun riwayat sebelumnya dalam ekosistem logistik virtual kami.
+            Kelola dan pantau kupon Nismara Coin (NC) yang sedang berjalan
+            maupun riwayat sebelumnya dalam ekosistem logistik virtual kami.
           </p>
         </header>
 
@@ -152,7 +150,7 @@ export default async function CouponsPage() {
           {active.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {active.map((coupon) => (
-                <CouponClientCard key={coupon._id} coupon={coupon} currentUserId={currentUserId} />
+                <CouponClientCard key={coupon._id} coupon={coupon} />
               ))}
             </div>
           ) : (
@@ -160,9 +158,12 @@ export default async function CouponsPage() {
               <div className="w-16 h-16 bg-background rounded-full flex items-center justify-center mx-auto mb-4 border border-border">
                 <span className="text-2xl opacity-50">🎫</span>
               </div>
-              <h3 className="text-xl font-bold text-foreground mb-2">Tidak Ada Kupon Aktif</h3>
+              <h3 className="text-xl font-bold text-foreground mb-2">
+                Tidak Ada Kupon Aktif
+              </h3>
               <p className="text-foreground/50">
-                Saat ini belum ada kupon spesial yang sedang berlangsung. Pantau terus Discord Nismara!
+                Saat ini belum ada kupon spesial yang sedang berlangsung. Pantau
+                terus Discord Nismara!
               </p>
             </div>
           )}
@@ -179,14 +180,12 @@ export default async function CouponsPage() {
           {history.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {history.map((coupon) => (
-                <CouponClientCard key={coupon._id} coupon={coupon} currentUserId={currentUserId} />
+                <CouponClientCard key={coupon._id} coupon={coupon} />
               ))}
             </div>
           ) : (
             <div className="bg-card/30 backdrop-blur-sm rounded-2xl p-12 text-center border border-border border-dashed">
-              <p className="text-foreground/50">
-                Belum ada riwayat kupon.
-              </p>
+              <p className="text-foreground/50">Belum ada riwayat kupon.</p>
             </div>
           )}
         </section>

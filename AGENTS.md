@@ -14,12 +14,15 @@ Nismara Logistics is a web platform for a virtual trucking community (VTC). It i
 
 ## 2. Technology Stack
 
+- **Language:** TypeScript (Strict typing, interfaces/types defined inline or in models).
 - **Framework:** Next.js (App Router, Server Components & Server Actions).
 - **Styling:** Tailwind CSS (Vanilla CSS/Tailwind without complex UI component libraries, relies on custom implementation).
 - **Icons:** `lucide-react`.
 - **Database (MongoDB):** MongoDB (using native `mongodb` driver). **CRITICAL:** Always use Mongo connection pooling via `clientPromise` from `@/lib/mongodb` rather than opening new connections.
 - **Cache / High-Performance Store (Redis):** Uses `ioredis` (exported from `@/lib/redis`). Use Redis for high-frequency, temporary, or time-sensitive tasks (like the "Scratchers" mechanic) where MongoDB would be too slow or expensive.
+- **Storage:** Cloudflare R2 (S3-compatible API for all media uploads, combined with WebP compression).
 - **Authentication:** NextAuth (Discord Provider).
+- **Deployment:** PM2 / Custom Node Server (via `ecosystem.config.js`).
 
 ## 3. Core Domains & Conventions
 
@@ -83,3 +86,11 @@ Nismara Logistics is a web platform for a virtual trucking community (VTC). It i
 - **searchParams (Next.js 15+):** In Server Components, `searchParams` is a Promise and **MUST** be unwrapped (e.g. `const resolvedParams = await searchParams;`) before accessing its properties (like `resolvedParams.tag`).
 - **Sticky Positioning & Overflow:** NEVER use `overflow-x-hidden` on `<html>`, `<body>`, or outer layout wrappers if you intend to use `position: sticky` on descendant elements. It establishes a new block formatting context that completely breaks sticky positioning relative to the viewport. Use `overflow-x-clip` instead, which clips horizontal overflow without breaking sticky behavior.
 - **Client State Re-hydration:** When a Server Component passes new props to a Client Component due to URL navigation (like changing `searchParams`), standard `useState(initialProp)` will NOT automatically update. Always use a `useEffect` to sync the state when the props change to ensure the UI reflects the new data without requiring a full manual reload.
+
+## 10. Recent Architectural Patterns & Conventions
+
+- **Fleet Assignment & Ownership:** When dealing with Fleet Assignments, ALWAYS use the `owner` field rather than `driver` to determine ownership. The `driver` field is maintained on the backend for legacy sync but should not be relied upon in frontend state. When rendering dropdowns to assign users (e.g. in Modals or Buy pages), NEVER use a native `<select>` due to the large number of users. Instead, use a custom searchable dropdown that allows filtering by `name`, `discordId`, and `truckyId`.
+- **Ticket Auto-fill via URL:** The Ticket System (`TicketClient.tsx`) supports automatic form filling via URL parameters. When linking users to report a feature (e.g. reporting a comment), pass rich context in the URL (e.g. `?commentId=...&postId=...&reportedUser=...&commentText=...`). The TicketClient will automatically detect these, select the appropriate Category (like "Report Komentar"), and construct a detailed description payload to help Managers quickly identify the issue without manual investigation.
+- **Modal vs Detail Page Consistency:** When building features that exist both on a standalone page (e.g., `PostDetailClient`) and a quick-view modal (e.g., `GalleryModal`), ensure complete feature parity. Actions like Edit, Delete, and Report must be fully synchronized and functional in both contexts with Optimistic UI updates.
+- **Hybrid Session Caching:** The NextAuth `session` callback utilizes a hybrid caching strategy using Redis. Do not perform heavy MongoDB queries or external API calls (Discord, Trucky) directly inside the `session` callback on every request. Always check for a cached profile in Redis (`session:profile:${user.id}`) first. If a cache miss occurs, perform the queries and save the result to Redis with a 15-minute TTL (`900` seconds) before returning the session.
+- **Session Garbage Collection:** The MongoDB `sessions` collection must have a TTL index on the `expires` field (`{ "expires": 1 }, { expireAfterSeconds: 0 }`) to automatically delete expired sessions and prevent database bloat. Do not rely on application-level cron jobs to clean up expired NextAuth sessions.

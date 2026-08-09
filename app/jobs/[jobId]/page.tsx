@@ -1,10 +1,9 @@
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getTruckyFullJobData, getCompanyMembersMap } from "@/lib/trucky";
 import IncidentLogs from "@/components/IncidentLogs";
+import AppealButton from "./AppealButton";
 import {
 
   ArrowLeft,
@@ -88,8 +87,6 @@ export default async function JobDetailPage(props: {
   const client = await clientPromise;
   const db = client.db();
   
-  const session = await getServerSession(authOptions);
-
   const localJob = await db.collection("jobhistories").findOne({
     $or: [{ jobId: jobId }, { jobId: Number(jobId) }],
   });
@@ -156,7 +153,6 @@ export default async function JobDetailPage(props: {
   // Prioritas Data Driver
   const truckyId = localJob?.truckyId || details?.user_id;
   const discordId = localJob?.driverId;
-  const isOwner = session?.user?.discordId === discordId;
 
   let driverName = `Driver #${discordId || truckyId}`;
   let driverAvatar = null;
@@ -238,14 +234,7 @@ export default async function JobDetailPage(props: {
             Kembali ke Daftar Job
           </Link>
           <div className="flex items-center gap-3">
-            {isOwner && (
-              <Link 
-                href={`/dashboard/ticket?jobId=${jobId}`}
-                className="px-4 py-1.5 rounded-full border border-red-500/30 bg-red-500/10 text-red-500 hover:bg-red-500/20 text-xs font-bold uppercase tracking-widest transition-colors flex items-center gap-1"
-              >
-                <AlertCircle className="w-3 h-3" /> Banding Pekerjaan
-              </Link>
-            )}
+            <AppealButton jobId={jobId} driverId={discordId} />
             <div
               className={`px-3 py-1.5 rounded-full border text-[10px] font-black uppercase tracking-widest ${statusColor}`}
             >

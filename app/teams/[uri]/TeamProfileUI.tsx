@@ -5,30 +5,34 @@ import Link from "next/link";
 import { joinTeamAction } from "@/app/actions/teamHqActions";
 import ReactMarkdown from "react-markdown";
 import { showAlert } from "@/lib/dialog";
-
+import { useSession } from "next-auth/react";
 
 interface TeamProfileUIProps {
   team: any;
   members: any[];
   recentJobs: any[];
-  isOwner: boolean;
-  currentUserId?: string;
 }
 
 export default function TeamProfileUI({
   team,
   members,
   recentJobs,
-  isOwner,
-  currentUserId,
 }: TeamProfileUIProps) {
   const [activeTab, setActiveTab] = useState<"members" | "recent-jobs">(
     "members",
   );
   const [loading, setLoading] = useState(false);
+  
+  const { data: session } = useSession();
+  const currentUserId = session?.user ? (session.user as any)._id : null;
+  const isDriver = session?.user?.isDriver;
+  
+  const isOwner = team.owner?.toString() === currentUserId;
 
   const handleJoin = async () => {
     if (!currentUserId) return await showAlert("Silakan login terlebih dahulu.");
+    if (!isDriver) return await showAlert("Hanya Pengemudi (Driver) Nismara yang bisa bergabung dengan tim.");
+    
     setLoading(true);
     try {
       await joinTeamAction(team._id, currentUserId);

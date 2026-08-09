@@ -1,8 +1,6 @@
 import clientPromise from "@/lib/mongodb";
 import { notFound } from "next/navigation";
 import { ObjectId } from "mongodb";
-import { getServerSession } from "next-auth"; // Wajib untuk cek session
-import { authOptions } from "@/app/api/auth/[...nextauth]/route"; // Sesuaikan path ini
 import TeamProfileUI from "./TeamProfileUI";
 
 
@@ -24,7 +22,6 @@ export default async function TeamDetailPage({ params }: PageProps) {
 
     const client = await clientPromise;
     const db = client.db();
-    const session = await getServerSession(authOptions); // Ambil session visitor
 
     // 1. Cari tim berdasarkan URI
     const teamRaw = await db.collection("teams").findOne({ uri: uri });
@@ -33,11 +30,7 @@ export default async function TeamDetailPage({ params }: PageProps) {
       return notFound();
     }
 
-    // 2. Ambil data User yang sedang login (untuk identifikasi Join/Owner)
-    const currentUser = session?.user?.email
-      ? await db.collection("users").findOne({ email: session.user.email })
-      : null;
-    const currentUserId = currentUser?._id.toString();
+
 
     // 3. Ekstraksi ID Member Aman
     const rawMembers = teamRaw.members || [];
@@ -114,7 +107,6 @@ export default async function TeamDetailPage({ params }: PageProps) {
     }
 
     // 6. Serialisasi Akhir & Penentuan Role
-    const isOwner = teamRaw.owner?.toString() === currentUserId;
 
     const team = {
       ...teamRaw,
@@ -158,8 +150,6 @@ export default async function TeamDetailPage({ params }: PageProps) {
         team={team}
         members={members}
         recentJobs={recentJobs}
-        isOwner={isOwner}
-        currentUserId={currentUserId}
       />
     );
   } catch (error) {

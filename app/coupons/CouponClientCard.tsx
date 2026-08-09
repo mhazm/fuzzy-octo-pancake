@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Copy, Check, TicketPercent, Coins, ShieldAlert, Loader2 } from "lucide-react";
+import { useSession } from "next-auth/react";
 
 interface Coupon {
   _id: string;
@@ -31,11 +32,15 @@ const formatDate = (dateString: string | Date) => {
   }).format(new Date(dateString));
 };
 
-export default function CouponClientCard({ coupon, currentUserId }: { coupon: Coupon, currentUserId: string | null }) {
+export default function CouponClientCard({ coupon }: { coupon: Coupon }) {
   const [copied, setCopied] = useState(false);
   const [isClaiming, setIsClaiming] = useState(false);
   const [claimStatus, setClaimStatus] = useState<"idle" | "success" | "error">("idle");
   const [claimMessage, setClaimMessage] = useState("");
+
+  const { data: session } = useSession();
+  const currentUserId = session?.user?.discordId ? String(session.user.discordId) : null;
+  const isDriver = session?.user?.isDriver;
 
   const hasClaimed = currentUserId && coupon.driverClaims?.some((c: any) => c.discordId === currentUserId);
   const isExpired = new Date() > new Date(coupon.endDate) || !coupon.isActive;
@@ -50,6 +55,12 @@ export default function CouponClientCard({ coupon, currentUserId }: { coupon: Co
     if (!currentUserId) {
       setClaimStatus("error");
       setClaimMessage("Harap login terlebih dahulu.");
+      return;
+    }
+    
+    if (!isDriver) {
+      setClaimStatus("error");
+      setClaimMessage("Hanya Pengemudi (Driver) Nismara yang bisa mengeklaim kupon.");
       return;
     }
     
