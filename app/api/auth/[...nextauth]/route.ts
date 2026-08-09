@@ -4,6 +4,7 @@ import { MongoDBAdapter } from "@auth/mongodb-adapter";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { getCompanyMemberStats } from "@/lib/trucky";
+import { redis } from "@/lib/redis";
 
 export const authOptions: NextAuthOptions = {
   adapter: MongoDBAdapter(clientPromise),
@@ -26,6 +27,19 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async session({ session, user }) {
+      // --- REDIS CACHE CHECK ---
+      const cacheKey = `session:profile:${user.id}`;
+      try {
+        const cachedProfile = await redis.get(cacheKey);
+        if (cachedProfile) {
+          const parsedProfile = JSON.parse(cachedProfile);
+          session.user = { ...session.user, ...parsedProfile };
+          return session;
+        }
+      } catch (err) {
+        console.error("❌ [REDIS] Error reading session cache:", err);
+      }
+
       const client = await clientPromise;
       const db = client.db();
 
@@ -218,6 +232,28 @@ export const authOptions: NextAuthOptions = {
       session.user.level = dbUser?.level || 1;
       session.user.teamId = dbUser?.teamId ? dbUser.teamId.toString() : null;
       session.user.truckyId = dbUser?.truckyId;
+      session.user._id = dbUser?._id.toString() || user.id;
+
+      // --- SAVE TO REDIS CACHE ---
+      try {
+        const profileToCache = {
+          discordId: session.user.discordId,
+          isDriver,
+          driverData,
+          role: userRole,
+          isBooster,
+          nismaraplus,
+          xp: session.user.xp,
+          level: session.user.level,
+          teamId: session.user.teamId,
+          truckyId: session.user.truckyId,
+          _id: session.user._id,
+        };
+        // Set TTL to 15 minutes (900 seconds)
+        await redis.setex(cacheKey, 900, JSON.stringify(profileToCache));
+      } catch (err) {
+        console.error("❌ [REDIS] Error saving session cache:", err);
+      }
 
       return session;
     },

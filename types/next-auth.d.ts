@@ -4,6 +4,7 @@ declare module "next-auth" {
   interface Session {
     user: {
       id: string;
+      _id: string;
       discordId?: string | number | null;
       role: "user" | "manager" | "admin";
       isDriver: boolean;
