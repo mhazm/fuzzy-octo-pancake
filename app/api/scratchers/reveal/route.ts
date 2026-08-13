@@ -37,6 +37,11 @@ export async function POST(req: NextRequest) {
     }
 
     if (isFromRedis && ticketData) {
+      // Validasi kepemilikan — pastikan tiket ini benar-benar milik user yang sedang request
+      if (ticketData.discordId !== discordId) {
+        return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
+      }
+
       if (String(ticketData.isScratched) === "true") {
         return NextResponse.json({ error: "Ticket has already been scratched" }, { status: 400 });
       }

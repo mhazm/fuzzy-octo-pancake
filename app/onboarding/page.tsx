@@ -136,7 +136,7 @@ export default async function OnboardingPage() {
       desc: "Masuk ke website ini dan kamu langsung bisa melakukan pendaftaran. Channel khusus pendaftaranmu akan dibuat secara otomatis.",
       action: {
         text: "Daftar Sekarang",
-        url: "/register",
+        url: "https://career.nismara.web.id",
       },
     },
     {
@@ -480,7 +480,7 @@ export default async function OnboardingPage() {
               </p>
               
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-                <Link href="/register" className="w-full sm:w-auto">
+                <Link href="https://career.nismara.web.id" className="w-full sm:w-auto">
                   <Button className="w-full sm:w-auto h-14 px-10 text-lg font-bold rounded-2xl bg-primary text-primary-foreground shadow-xl shadow-primary/20 hover:scale-105 transition-all">
                     Daftar Sekarang <ArrowRight className="w-6 h-6 ml-2" />
                   </Button>

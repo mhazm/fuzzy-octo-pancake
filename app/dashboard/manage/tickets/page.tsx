@@ -96,8 +96,11 @@ export default function ManageTicketsPage() {
     }
   };
 
-  const handleClaim = async (ticketId: string) => {
-    if (!await showConfirm("Apakah Anda yakin ingin mengurus tiket ini?")) return;
+  const handleClaim = async (ticketId: string, isRetake = false) => {
+    const msg = isRetake 
+      ? "Apakah Anda yakin ingin mengambil alih (retake) tiket ini dari manager sebelumnya?" 
+      : "Apakah Anda yakin ingin mengurus tiket ini?";
+    if (!await showConfirm(msg)) return;
     try {
       const res = await fetch(`/api/manage/tickets/${ticketId}/claim`, {
         method: "POST"
@@ -393,10 +396,19 @@ export default function ManageTicketsPage() {
                   <div className="flex flex-col gap-2 min-w-[150px]">
                     {t.status === "open" && (
                       <button
-                        onClick={() => handleClaim(t.ticketId)}
+                        onClick={() => handleClaim(t.ticketId, false)}
                         className="w-full py-3 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 font-bold rounded-xl transition-colors border border-blue-500/30 flex items-center justify-center gap-2"
                       >
                         <Play className="w-4 h-4" /> Klaim
+                      </button>
+                    )}
+
+                    {t.status === "claimed" && !isMine && (
+                      <button
+                        onClick={() => handleClaim(t.ticketId, true)}
+                        className="w-full py-3 bg-orange-600/20 text-orange-400 hover:bg-orange-600/30 font-bold rounded-xl transition-colors border border-orange-500/30 flex items-center justify-center gap-2"
+                      >
+                        <Play className="w-4 h-4" /> Retake
                       </button>
                     )}
                     

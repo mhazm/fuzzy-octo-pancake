@@ -62,7 +62,7 @@ export default async function DriverAccessBlocker({ session }: { session: Sessio
             </a>
           ) : (
             <Link
-              href="/register"
+              href="https://career.nismara.web.id"
               className="inline-flex items-center gap-3 px-10 py-4 bg-primary text-foreground text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-primary/80 transition-all shadow-lg shadow-primary/20"
             >
               Daftar Sekarang <ArrowRight size={14} />

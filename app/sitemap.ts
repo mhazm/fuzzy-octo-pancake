@@ -23,7 +23,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     db.collection("teams").find({}, { projection: { uri: 1, updatedAt: 1 } }).toArray(),
     db.collection("contracts").find({}, { projection: { contractName: 1, updatedAt: 1 } }).toArray(),
     db.collection("convoylobby").find({}, { projection: { convoyUri: 1, updatedAt: 1 } }).toArray(),
-    db.collection("gallery").find({}, { projection: { _id: 1, updatedAt: 1 } }).toArray(),
+    db.collection("gallery_posts").find({}, { projection: { _id: 1, updatedAt: 1 } }).toArray(),
     db.collection("users").find({}, { projection: { truckyId: 1, updatedAt: 1 } }).toArray(),
     db.collection("surveys").find({}, { projection: { uri: 1, updatedAt: 1 } }).toArray(),
     // Data MarketItem dari Mongoose secara native menggunakan nama koleksi 'marketitems'
@@ -127,7 +127,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/cookies",
     "/faq",
     "/onboarding",
-    "/register",
+
     "/gallery",
     "/drivers",
     "/racing",

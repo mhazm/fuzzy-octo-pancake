@@ -28,13 +28,20 @@ export async function POST(
       return NextResponse.json({ error: "Tiket tidak ditemukan" }, { status: 404 });
     }
 
-    if (ticket.status !== "open") {
-      return NextResponse.json({ error: "Tiket sudah diklaim atau ditutup" }, { status: 400 });
+    if (ticket.status === "resolved" || ticket.status === "rejected") {
+      return NextResponse.json({ error: "Tiket sudah ditutup" }, { status: 400 });
     }
 
-    if (process.env.NODE_ENV === "production" && ticket.discordId === session.user.discordId) {
+    if (ticket.status === "claimed" && ticket.managerId === session.user.discordId) {
+      return NextResponse.json({ error: "Anda sudah mengurus tiket ini" }, { status: 400 });
+    }
+
+    // Mencegah manager mengklaim tiket yang dibuat oleh dirinya sendiri
+    if (ticket.discordId === session.user.discordId) {
       return NextResponse.json({ error: "Anda tidak dapat mengurus tiket Anda sendiri" }, { status: 403 });
     }
+
+    const isRetake = ticket.status === "claimed";
 
     ticket.managerId = session.user.discordId;
     ticket.status = "claimed";
@@ -42,6 +49,10 @@ export async function POST(
 
     // Notify in Discord channel
     if (DISCORD_BOT_TOKEN && ticket.discordChannelId) {
+      const message = isRetake
+        ? `Perhatian: Tiket ini telah **diambil alih (Retake)** oleh <@${session.user.discordId}> dari pengurus sebelumnya. Mohon sampaikan detail lanjutan di sini.`
+        : `Tiket ini telah diambil alih oleh <@${session.user.discordId}>. Mohon sampaikan detail lanjutan di sini.`;
+        
       await fetch(`https://discord.com/api/v10/channels/${ticket.discordChannelId}/messages`, {
         method: "POST",
         headers: {
@@ -49,7 +60,7 @@ export async function POST(
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          content: `Tiket ini telah diambil alih oleh <@${session.user.discordId}>. Mohon sampaikan detail lanjutan di sini.`
+          content: message
         })
       });
     }

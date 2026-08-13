@@ -89,7 +89,7 @@ export default function NavbarClient({ session }: { session: any }) {
   // Standard top-level items (excluding Home and Events which are custom handled)
   const mainMenuItems = [
     { name: "Convoy", href: "/convoy", icon: Truck },
-    { name: "Gallery", href: "/gallery", icon: Grid3X3 },
+    { name: "Feeds", href: "/feeds", icon: Grid3X3 },
     { name: "Market", href: "/market", icon: ShoppingCart },
     { name: "Leaderboard", href: "/leaderboard", icon: Trophy },
     { name: "TimeZone", href: "/timezone", icon: Gamepad2 },
@@ -102,7 +102,7 @@ export default function NavbarClient({ session }: { session: any }) {
     { name: "Cargo Market", href: "/cargo-market", icon: Package },
     { name: "Fuel Market", href: "/fuel-market", icon: Fuel },
     { name: "Convoy", href: "/convoy", icon: Truck },
-    { name: "Gallery", href: "/gallery", icon: Grid3X3 },
+    { name: "Feeds", href: "/feeds", icon: Grid3X3 },
     { name: "Market", href: "/market", icon: ShoppingCart },
     { name: "Leaderboard", href: "/leaderboard", icon: Trophy },
     { name: "TimeZone", href: "/timezone", icon: Gamepad2 },

@@ -59,11 +59,15 @@ export async function POST(request: Request) {
     }
 
     // Eksekusi Transaksi
-    // 1. Potong saldo pembeli
-    await db.collection("currencies").updateOne(
-      { userId: buyerDiscordId, guildId: GUILD_ID },
+    // 1. Potong saldo pembeli secara atomik untuk mencegah race condition
+    const updateResult = await db.collection("currencies").updateOne(
+      { userId: buyerDiscordId, guildId: GUILD_ID, totalNC: { $gte: roundedCost } },
       { $inc: { totalNC: -roundedCost } }
     );
+
+    if (updateResult.modifiedCount === 0) {
+      return NextResponse.json({ error: "Transaksi gagal, saldo NC Anda tidak mencukupi." }, { status: 400 });
+    }
 
     // 2. Tambah BBM ke pembeli
     await db.collection("garages").updateOne(

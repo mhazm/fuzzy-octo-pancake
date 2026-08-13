@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import ScratchTicket from "@/lib/models/ScratchTicket";
 import { getCurrencyData } from "@/app/dashboard/currency/actions";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { logExtremeActivity } from "@/lib/securityLogger";
@@ -31,7 +30,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check balance
+    // Cek saldo dengan memperhitungkan pengeluaran sesi saat ini yang masih ada di Redis.
+    // Arsitektur Redis-first: MongoDB hanya ditulis saat sync di akhir sesi (bukan per-tiket),
+    // sehingga estimasi saldo real = saldo MongoDB + (earned Redis - spent Redis).
     let currencyData;
     try {
       currencyData = await getCurrencyData();
@@ -42,36 +43,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (currencyData.balance < TICKET_PRICE) {
-      // Tunggu, karena ada state di Redis, kita harus hitung real balance
-      const spentStr = await redis.get(`scratch_spent:${discordId}`);
-      const earnedStr = await redis.get(`scratch_earned:${discordId}`);
-      const netProfit = Number(earnedStr || 0) - Number(spentStr || 0);
-      const estimatedBalance = currencyData.balance + netProfit;
+    const spentStr = await redis.get(`scratch_spent:${discordId}`);
+    const earnedStr = await redis.get(`scratch_earned:${discordId}`);
+    const netRedis = Number(earnedStr || 0) - Number(spentStr || 0);
+    const estimatedBalance = currencyData.balance + netRedis;
 
-      if (estimatedBalance < TICKET_PRICE) {
-        return NextResponse.json(
-          { error: "Saldo Nismara Coin tidak mencukupi" },
-          { status: 400 },
-        );
-      }
-    } else {
-      const spentStr = await redis.get(`scratch_spent:${discordId}`);
-      const earnedStr = await redis.get(`scratch_earned:${discordId}`);
-      const netProfit = Number(earnedStr || 0) - Number(spentStr || 0);
-      const estimatedBalance = currencyData.balance + netProfit;
-      if (estimatedBalance < TICKET_PRICE) {
-        return NextResponse.json(
-          {
-            error:
-              "Saldo Nismara Coin tidak mencukupi (termasuk potongan sebelumnya)",
-          },
-          { status: 400 },
-        );
-      }
+    if (estimatedBalance < TICKET_PRICE) {
+      return NextResponse.json(
+        { error: "Saldo Nismara Coin tidak mencukupi" },
+        { status: 400 },
+      );
     }
 
-    // 1. Tambah scratch_spent di Redis (Super Cepat)
+    // Catat pengeluaran sesi ke Redis (tidak menyentuh MongoDB sama sekali)
     await redis.incrby(`scratch_spent:${discordId}`, TICKET_PRICE);
     await redis.expire(`scratch_spent:${discordId}`, 3600);
 

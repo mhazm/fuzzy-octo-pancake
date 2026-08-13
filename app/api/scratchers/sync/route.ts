@@ -63,7 +63,9 @@ export async function POST(req: NextRequest) {
     const client = await clientPromise;
     const db = client.db();
 
-    // 3. Simpan Perubahan Saldo ke MongoDB
+    // 3. Simpan Perubahan Saldo ke MongoDB — satu operasi untuk seluruh sesi.
+    // Arsitektur Redis-first: semua transaksi sesi (beli + menang) diakumulasi di Redis,
+    // lalu diterapkan ke MongoDB dalam satu batch write di sini.
     if (netProfit !== 0) {
       await db.collection("currencies").updateOne(
         { userId: discordId, guildId: GUILD_ID },
@@ -71,7 +73,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Catat histori pengeluaran terpisah
+    // Catat histori pengeluaran (batch untuk seluruh sesi)
     if (spent > 0) {
       await db.collection("currencyhistories").insertOne({
         userId: discordId,
@@ -83,7 +85,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Catat histori pendapatan terpisah
+    // Catat histori pendapatan kemenangan
     if (earned > 0) {
       await db.collection("currencyhistories").insertOne({
         userId: discordId,

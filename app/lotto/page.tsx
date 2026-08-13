@@ -203,6 +203,8 @@ export default async function LottoPage() {
                           src={p.image}
                           alt={p.name}
                           fill
+                          unoptimized
+                          sizes="40px"
                           className="object-cover"
                         />
                       ) : (
