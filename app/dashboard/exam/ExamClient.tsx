@@ -147,6 +147,33 @@ export default function ExamClient() {
           <br/>
           {result.message}
         </p>
+
+        {result.review && result.review.length > 0 && (
+          <div className="w-full bg-card border border-border/50 rounded-2xl p-6 text-left mb-8 space-y-4 max-h-[500px] overflow-y-auto custom-scrollbar">
+            <h2 className="text-xl font-bold text-white mb-4 border-b border-border/50 pb-4 sticky top-0 bg-card z-10">Pembahasan Ujian</h2>
+            {result.review.map((item: any, idx: number) => (
+              <div key={idx} className={`p-4 rounded-xl border ${item.isCorrect ? 'bg-green-500/10 border-green-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
+                <div className="flex gap-3">
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${item.isCorrect ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
+                    {item.isCorrect ? <CheckCircle className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-bold text-white mb-2 text-sm">{idx + 1}. {item.question}</div>
+                    <div className="text-xs text-gray-400 mb-1">
+                      Jawaban Anda: <span className={item.isCorrect ? "text-green-400 font-bold" : "text-red-400 font-bold"}>{item.selectedOption}</span>
+                    </div>
+                    {!item.isCorrect && (
+                      <div className="text-xs text-gray-400">
+                        Jawaban Benar: <span className="text-green-400 font-bold">{item.correctOption}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
         <button 
           onClick={() => router.push("/dashboard")}
           className="bg-accent-lilac hover:bg-accent-lilac/80 px-8 py-3 rounded-xl font-bold text-white"

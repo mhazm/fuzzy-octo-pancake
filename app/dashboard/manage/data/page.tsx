@@ -2,7 +2,6 @@ import Link from "next/link";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import {
-
   Users,
   UserPlus,
   User2,
@@ -18,8 +17,6 @@ import {
 export const metadata = {
   title: "Manage Data",
 };
-
-
 
 export default async function UserDataHub() {
   const session = await getServerSession(authOptions);
@@ -37,17 +34,6 @@ export default async function UserDataHub() {
       border: "border-primary/20",
       hoverBorder: "group-hover:border-primary/50",
       glow: "group-hover:bg-primary/20",
-    },
-    {
-      name: "Registrasi",
-      desc: "Tinjau dan setujui pendaftaran driver baru.",
-      icon: UserPlus,
-      href: "/dashboard/manage/data/register-user",
-      color: "text-accent-sky",
-      bg: "bg-accent-sky/10",
-      border: "border-accent-sky/20",
-      hoverBorder: "group-hover:border-accent-sky/50",
-      glow: "group-hover:bg-accent-sky/20",
     },
     {
       name: "Manage Intern",

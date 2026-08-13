@@ -109,6 +109,39 @@ export default function InternMonitorClient() {
     }
   };
 
+  const handleResetQuiz = async (intern: any) => {
+    const confirm = await Swal.fire({
+      title: "Reset Kesempatan Ujian?",
+      text: `Intern ${intern.name} sudah gagal 2 kali. Anda akan menghapus riwayat ujiannya agar dia bisa mengulang ujian lagi.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#f59e0b",
+      confirmButtonText: "Ya, Reset!",
+      cancelButtonText: "Batal",
+      background: "#1e1e2d",
+      color: "#ffffff"
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    setActionLoading(intern._id);
+    try {
+      const res = await fetch(`/api/manage/interns/${intern.discordId}/reset-quiz`, { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        Swal.fire({ icon: "success", title: "Berhasil", text: data.message, background: "#1e1e2d", color: "#ffffff" });
+        fetchInterns();
+      } else {
+        Swal.fire({ icon: "error", title: "Gagal", text: data.error, background: "#1e1e2d", color: "#ffffff" });
+      }
+    } catch (error) {
+      console.error(error);
+      Swal.fire({ icon: "error", title: "Error", text: "Terjadi kesalahan sistem", background: "#1e1e2d", color: "#ffffff" });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const StatCard = ({ icon: Icon, label, value, sub, color = "text-white" }: any) => (
     <div className="bg-black/30 border border-border/30 rounded-xl p-3">
       <div className="flex items-center gap-2 mb-1">
@@ -418,6 +451,14 @@ export default function InternMonitorClient() {
                         className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-colors disabled:opacity-50"
                       >
                         {actionLoading === intern._id ? "Memproses..." : "Luluskan (Promosi)"} <CheckCircle2 className="w-4 h-4" />
+                      </button>
+                    ) : intern.quiz?.attemptCount >= 2 ? (
+                      <button 
+                        onClick={() => handleResetQuiz(intern)}
+                        disabled={actionLoading === intern._id}
+                        className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-colors disabled:opacity-50"
+                      >
+                        {actionLoading === intern._id ? "Memproses..." : "Reset Ujian"} <AlertTriangle className="w-4 h-4" />
                       </button>
                     ) : (
                       <button 

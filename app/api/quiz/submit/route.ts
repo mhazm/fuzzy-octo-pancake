@@ -134,11 +134,24 @@ export async function POST(req: Request) {
       }
     }
 
+    const reviewData = answers.map((a: any) => {
+      const q = questionMap.get(a.questionId.toString());
+      const isCorrect = q && !isTimeout ? (q.correctOptionIndex === a.selectedOptionIndex) : false;
+      return {
+        questionId: a.questionId,
+        question: q?.question || "Soal tidak ditemukan",
+        selectedOption: q?.options[a.selectedOptionIndex] || "Tidak dijawab",
+        correctOption: q?.options[q?.correctOptionIndex] || "Tidak ada jawaban benar",
+        isCorrect
+      };
+    });
+
     return NextResponse.json({ 
       success: true, 
       score, 
       passed, 
       isTimeout,
+      review: reviewData,
       message: passed ? "Selamat! Anda lulus ujian kelayakan." : "Maaf, Anda belum lulus ujian kelayakan." 
     });
   } catch (error) {
