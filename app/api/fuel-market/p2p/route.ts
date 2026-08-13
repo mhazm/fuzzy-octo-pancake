@@ -6,6 +6,9 @@ import dbConnect from "@/lib/mongoose";
 import FuelMarketListing from "@/lib/models/FuelMarketListing";
 import User from "@/lib/models/User";
 
+export const dynamic = "force-dynamic";
+
+
 export async function GET(request: Request) {
   try {
     await dbConnect();
