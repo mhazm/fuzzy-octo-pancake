@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createNCEventAction } from "@/app/actions/eventActions";
+import { showAlert } from "@/lib/dialog";
 import {
   Plus,
   Zap,
@@ -48,9 +49,9 @@ export default function EventManageUI({ active, history, manager }: any) {
         guildId: process.env.DISCORD_GUILD_ID || "863959415702028318",
       });
       setIsModalOpen(false);
-      alert("NC Boost Event berhasil diaktifkan!");
+      await showAlert("NC Boost Event berhasil diaktifkan!");
     } catch (err) {
-      alert("Gagal membuat event.");
+      await showAlert("Gagal membuat event.");
     } finally {
       setLoading(false);
     }

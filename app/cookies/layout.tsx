@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import React from "react";
 
 export const metadata: Metadata = {
-  title: "Cookies Policy - Nismara Transport",
+  title: "Cookies Policy",
   description:
     "Informasi kebijakan cookie Nismara Transport mengenai penggunaan cookie dan teknologi serupa untuk meningkatkan layanan",
   openGraph: {
-    title: "Cookies Policy - Nismara Transport",
+    title: "Cookies Policy",
     description:
       "Informasi kebijakan cookie Nismara Transport mengenai penggunaan cookie dan teknologi serupa untuk meningkatkan layanan",
     images: ["https://images.nismara.my.id/227300_188.jpg"],

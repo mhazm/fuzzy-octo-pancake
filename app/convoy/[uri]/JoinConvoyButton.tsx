@@ -3,14 +3,17 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { joinConvoyAction } from "@/app/actions/convoyActions";
-import { Lock, CheckCircle2, ShieldAlert } from "lucide-react";
+import { joinConvoyAction, rsvpConvoyAction } from "@/app/actions/convoyActions";
+import { Lock, CheckCircle2, ShieldAlert, CalendarHeart, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface JoinButtonProps {
   convoyId: string;
   isLoggedIn: boolean;
   isDriver: boolean;
   isJoined: boolean;
+  isBeforeMeetup?: boolean;
+  isInterested?: boolean;
 }
 
 export default function JoinConvoyButton({
@@ -18,13 +21,20 @@ export default function JoinConvoyButton({
   isLoggedIn,
   isDriver,
   isJoined,
+  isBeforeMeetup = false,
+  isInterested = false,
 }: JoinButtonProps) {
   const [showModal, setShowModal] = useState(false);
   const [password, setPassword] = useState("");
   const [jobId, setJobId] = useState("");
   const [loading, setLoading] = useState(false);
+  const [rsvpLoading, setRsvpLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [message, setMessage] = useState<{ type: "success" | "error", text: string } | null>(null);
   const router = useRouter();
+
+  // Import rsvpConvoyAction directly inside handleRSVP to avoid circular issues or just from the same path
+  // Wait, I can import it at the top. Let's assume it's imported (I will add it to the imports).
 
   useEffect(() => {
     setMounted(true);
@@ -60,20 +70,67 @@ export default function JoinConvoyButton({
     );
   }
 
+  const handleRSVP = async () => {
+    setRsvpLoading(true);
+    try {
+      await rsvpConvoyAction(convoyId);
+      setMessage({ type: "success", text: "Terima kasih! Kamu sudah terdaftar dalam daftar hadir convoy ini." });
+      router.refresh();
+    } catch (err: any) {
+      setMessage({ type: "error", text: err.message || "Gagal melakukan reservasi." });
+    } finally {
+      setRsvpLoading(false);
+    }
+  };
+
+  if (isBeforeMeetup) {
+    if (isInterested) {
+      return (
+        <div className="px-6 py-3.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold rounded-xl flex items-center gap-2 select-none">
+          <CalendarHeart size={16} /> Kamu Sudah Mendaftar Reservasi
+        </div>
+      );
+    }
+
+    return (
+      <div className="w-full sm:w-auto">
+        {message && isBeforeMeetup && !isInterested && (
+          <Alert variant={message.type === "error" ? "destructive" : "default"} className={`mb-3 ${message.type === "success" ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-500" : ""}`}>
+            {message.type === "error" ? <AlertCircle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4 stroke-emerald-500" />}
+            <AlertTitle>{message.type === "success" ? "Berhasil" : "Error"}</AlertTitle>
+            <AlertDescription>{message.text}</AlertDescription>
+          </Alert>
+        )}
+        <button
+          onClick={handleRSVP}
+          disabled={rsvpLoading}
+          className="px-6 py-3.5 bg-primary text-primary-foreground font-black uppercase tracking-wider rounded-xl transition-all shadow-xl hover:scale-105 active:scale-95 text-sm flex items-center justify-center gap-2 disabled:opacity-50 w-full"
+        >
+          <CalendarHeart size={18} />{" "}
+          {rsvpLoading ? "Mendaftar..." : "Saya Ingin Hadir"}
+        </button>
+      </div>
+    );
+  }
+
   const handleProcessJoin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!password || !jobId) return;
 
     setLoading(true);
+    setMessage(null);
     try {
       await joinConvoyAction(convoyId, password, Number(jobId));
-      alert("Kamu berhasil terdaftar masuk dalam sesi convoy!");
-      setShowModal(false);
-      setPassword("");
-      setJobId("");
-      router.refresh();
+      setMessage({ type: "success", text: "Kamu berhasil terdaftar masuk dalam sesi convoy!" });
+      setTimeout(() => {
+        setShowModal(false);
+        setPassword("");
+        setJobId("");
+        setMessage(null);
+        router.refresh();
+      }, 2000);
     } catch (err: any) {
-      alert(err.message || "Gagal melakukan konfirmasi masuk.");
+      setMessage({ type: "error", text: err.message || "Gagal melakukan konfirmasi masuk." });
     } finally {
       setLoading(false);
     }
@@ -89,6 +146,16 @@ export default function JoinConvoyButton({
           Masukkan password rahasia admin beserta Job ID pekerjaan aktif yang
           Anda jalankan untuk sesi ini.
         </p>
+
+        {message && (
+          <Alert variant={message.type === "error" ? "destructive" : "default"} className={`mb-5 ${message.type === "success" ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-500" : ""}`}>
+            {message.type === "error" ? <AlertCircle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4 stroke-emerald-500" />}
+            <AlertTitle>{message.type === "success" ? "Berhasil" : "Error"}</AlertTitle>
+            <AlertDescription className="text-xs font-medium">
+              {message.text}
+            </AlertDescription>
+          </Alert>
+        )}
 
         <form onSubmit={handleProcessJoin} className="space-y-5">
           <div className="space-y-1.5">
@@ -126,6 +193,7 @@ export default function JoinConvoyButton({
                 setShowModal(false);
                 setPassword("");
                 setJobId("");
+                setMessage(null);
               }}
               className="px-5 py-2.5 text-foreground/50 hover:text-foreground transition-colors"
             >

@@ -4,6 +4,12 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
 import ContractManageUI from "./ContractManageUI";
 
+export const metadata = {
+  title: "Manage Contracts",
+};
+
+
+
 export default async function ManageContractPage() {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "manager") redirect("/dashboard");

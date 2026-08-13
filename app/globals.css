@@ -1,19 +1,49 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
 
 /* 1. Mendaftarkan warna kustom ke dalam sistem Tailwind v4 */
 @theme {
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
   --color-border: hsl(var(--border));
+  
   --color-primary: hsl(var(--primary));
   --color-primary-foreground: hsl(var(--primary-foreground));
+  
   --color-accent-sky: hsl(var(--accent-sky));
   --color-accent-lilac: hsl(var(--accent-lilac));
+  
   --color-card: hsl(var(--card));
   --color-card-foreground: hsl(var(--card-foreground));
+  
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  
+  --radius-sm: calc(var(--radius) * 0.5);
+  --radius-md: calc(var(--radius) * 0.75);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.5);
 }
 
-/* 2. Mendefinisikan nilai warna untuk Light Mode dan Dark Mode */
+/* 2. Mendefinisikan nilai warna untuk Light Mode dan Dark Mode (HSL Space-separated) */
 @layer base {
   :root {
     --background: 240 20% 98%;
@@ -25,6 +55,19 @@
     --card: 0 0% 100%;
     --card-foreground: 222 47% 7%;
     --border: 240 6% 90%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 7%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 262 80% 50%;
+    --radius: 0.5rem;
   }
 
   .dark {
@@ -37,12 +80,71 @@
     --card: 222 47% 11%;
     --card-foreground: 210 40% 98%;
     --border: 217 33% 25%;
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --input: 217 33% 25%;
+    --ring: 262 80% 65%;
+  }
+
+  /* 5. USER PREFERENCE THEMES (Color Overrides for .dark & light) */
+  .theme-red {
+    --primary: 348 83% 47%; 
+    --accent-sky: 0 84% 60%; 
+    --ring: 348 83% 47%;
+  }
+  .theme-green {
+    --primary: 142 71% 45%; 
+    --accent-sky: 160 84% 39%; 
+    --ring: 142 71% 45%;
+  }
+  .theme-blue {
+    --primary: 221 83% 53%; 
+    --accent-sky: 199 89% 48%; 
+    --ring: 221 83% 53%;
+  }
+  .theme-amber {
+    --primary: 38 92% 50%; 
+    --accent-sky: 48 96% 53%; 
+    --ring: 38 92% 50%;
+  }
+  .theme-rose {
+    --primary: 346 87% 60%; 
+    --accent-sky: 330 81% 60%; 
+    --ring: 346 87% 60%;
+  }
+
+  .theme-wldr-blue {
+    --primary: 204 35% 56%; 
+    --accent-sky: 199 89% 48%; 
+    --ring: 204 35% 56%;
+  }
+  .theme-orange-wbr {
+    --primary: 21 80% 54%; 
+    --accent-sky: 38 92% 50%; 
+    --ring: 21 80% 54%;
+  }
+
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
   }
 }
 
 /* 3. Menerapkan gaya dasar ke elemen HTML */
 @layer base {
-  /* Mengganti @apply border-border yang error dengan native CSS */
   *,
   ::after,
   ::before {
@@ -56,16 +158,16 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 
-    /* Efek Gradien Background */
+    /* Efek Gradien Background (Fix Syntax Tailwind v4) */
     background-image:
       radial-gradient(
         circle at 15% 0%,
-        hsla(var(--primary), 0.15) 0%,
+        hsl(var(--primary) / 0.15) 0%,
         transparent 40%
       ),
       radial-gradient(
         circle at 85% 0%,
-        hsla(var(--accent-sky), 0.12) 0%,
+        hsl(var(--accent-sky) / 0.12) 0%,
         transparent 40%
       );
     background-attachment: fixed;
@@ -78,10 +180,23 @@
 /* 4. Membuat utility class kustom */
 @layer utilities {
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-linear-to-r from-primary to-accent-sky;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent-sky;
   }
 
   .glass-panel {
     @apply bg-card/40 backdrop-blur-md border border-border shadow-lg;
+  }
+
+  .animate-marquee {
+    animation: marquee 30s linear infinite;
+  }
+
+  @keyframes marquee {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-50%);
+    }
   }
 }

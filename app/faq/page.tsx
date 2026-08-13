@@ -10,6 +10,11 @@ import {
   UserPlus,
   MessageSquare,
   Zap,
+  Gamepad2,
+  LineChart,
+  Gift,
+  Crown,
+  MonitorPlay,
 } from "lucide-react";
 
 interface FaqItemProps {
@@ -44,7 +49,7 @@ const FaqItem = ({ question, answer, icon }: FaqItemProps) => {
             {icon}
           </div>
           <h3
-            className={`text-lg md:text-xl font-black uppercase italic tracking-tight transition-colors ${
+            className={`text-lg md:text-xl font-black uppercase tracking-tight transition-colors ${
               isOpen
                 ? "text-(-primary-foreground)"
                 : "text-(-primary-foreground)/80"
@@ -84,28 +89,58 @@ export default function FaqPage() {
         "Sangat mudah! Anda hanya perlu login menggunakan akun Discord melalui halaman pendaftaran, pastikan Anda sudah menginstal Trucky Client, dan hubungkan profil Trucky Anda di dashboard. Setelah itu, Anda bisa langsung mengambil kontrak kerja pertama Anda.",
     },
     {
+      icon: <MonitorPlay size={20} />,
+      question: "Apakah harus punya full DLC map untuk bergabung?",
+      answer:
+        "Tidak. Anda cukup memiliki game base/original Euro Truck Simulator 2 atau American Truck Simulator di akun Steam Anda. DLC bersifat opsional dan tidak diwajibkan untuk menjadi anggota Nismara.",
+    },
+    {
       icon: <Coins size={20} />,
       question: "Apa kegunaan Nismara Coin (N¢)?",
       answer:
-        "Nismara Coin adalah mata uang virtual internal kami. Anda mendapatkannya dengan menyelesaikan pengiriman kargo. Di masa depan, N¢ dapat digunakan untuk kustomisasi profil, 'membeli' peran khusus di Discord, hingga berpartisipasi dalam event eksklusif berhadiah.",
+        "Nismara Coin adalah mata uang virtual internal kami. Anda mendapatkannya dengan menyelesaikan pengiriman kargo. N¢ digunakan untuk berbagai transaksi di dalam platform, seperti fitur permainan, pembelian kargo, hingga upgrade armada.",
+    },
+    {
+      icon: <Gift size={20} />,
+      question: "Bagaimana cara mendapatkan Nismara Coin tambahan?",
+      answer:
+        "Selain dari pengiriman kargo (hauling), Anda bisa mendapatkan tambahan N¢ dengan berpartisipasi mengisi Survey aktif, mengklaim Kupon yang dibagikan pengurus, mengikuti Event resmi, atau memenangkan permainan di platform kami.",
+    },
+    {
+      icon: <Gamepad2 size={20} />,
+      question: "Apakah fitur Lotto dan Scratchers menggunakan uang asli?",
+      answer:
+        "Tidak. Seluruh fitur hiburan virtual di Nismara (Lotto, Scratch & Win, Drag Race) murni hanya menggunakan Nismara Coin (N¢) dan tidak dapat diuangkan atau diperdagangkan ke uang dunia nyata. Semua transaksi bersifat hiburan.",
+    },
+    {
+      icon: <LineChart size={20} />,
+      question: "Bagaimana cara kerja harga di Cargo Market?",
+      answer:
+        "Tingkat permintaan (demand) dan harga per kargo di Cargo Market bersifat dinamis. Sistem akan secara otomatis menghitung ulang dan memperbarui harga setiap 3 jam sekali, bergantung pada intensitas pengambilan kargo oleh seluruh pengemudi.",
+    },
+    {
+      icon: <Crown size={20} />,
+      question: "Apa itu Nismara Plus?",
+      answer:
+        "Nismara Plus adalah layanan premium berbayar (donasi) untuk mendukung operasional server. Pengguna Nismara Plus akan mendapatkan keuntungan ekstra di dalam game seperti diskon perbaikan, potongan asuransi, dan bonus XP mingguan.",
     },
     {
       icon: <Truck size={20} />,
       question: "Apakah saya harus selalu online saat hauling?",
       answer:
-        "Sistem pelacakan kami terintegrasi dengan Trucky API. Selama Trucky Client Anda aktif dan merekam perjalanan, data akan otomatis masuk ke database Nismara setelah Anda menyelesaikan pekerjaan (Job Completed). Anda tidak wajib membuka website Nismara saat sedang menyetir.",
+        "Sistem pelacakan kami terintegrasi dengan Trucky API. Selama Trucky Client Anda aktif dan merekam perjalanan, data akan otomatis masuk ke database Nismara setelah Anda menyelesaikan pekerjaan. Anda tidak wajib membuka website saat menyetir.",
     },
     {
       icon: <ShieldAlert size={20} />,
       question: "Kenapa saya mendapatkan Poin Penalti?",
       answer:
-        "Poin Penalti diberikan secara otomatis atau manual jika terjadi pelanggaran seperti: kerusakan kargo di atas ambang batas (damage), pembatalan kontrak tanpa alasan, atau perilaku tidak sopan di komunitas. Pastikan Anda selalu menjaga kualitas pengemudian Anda.",
+        "Poin Penalti diberikan jika terjadi pelanggaran seperti: kerusakan kargo di atas ambang batas (damage), pembatalan kontrak tanpa alasan, atau perilaku tidak sopan di komunitas. Akumulasi Poin Penalti bisa berujung pada penangguhan akun.",
     },
     {
       icon: <Zap size={20} />,
       question: "Apa itu Special Contract & Event?",
       answer:
-        "Special Contract adalah muatan khusus dengan rute spesifik yang memberikan reward N¢ lebih tinggi. Event adalah kegiatan komunitas dalam periode tertentu yang biasanya memiliki multiplier (pengganda) NC. Anda bisa melihat daftar aktifnya di halaman utama atau dashboard.",
+        "Special Contract adalah muatan khusus dengan rute spesifik yang memberikan reward N¢ lebih tinggi secara kolektif. Event adalah kegiatan komunitas dalam periode tertentu yang biasanya memiliki multiplier pengganda penghasilan N¢.",
     },
     {
       icon: <MessageSquare size={20} />,
@@ -122,7 +157,7 @@ export default function FaqPage() {
         <div className="p-3 bg-primary/10 rounded-2xl text-primary inline-block mb-2">
           <HelpCircle size={32} />
         </div>
-        <h1 className="text-6xl font-black text-(-primary-foreground) tracking-tighter uppercase italic leading-none">
+        <h1 className="text-6xl font-black text-(-primary-foreground) tracking-tighter uppercase leading-none">
           Common <span className="text-primary">Questions</span>
         </h1>
         <p className="text-foreground/40 font-bold uppercase text-xs tracking-[0.3em]">
@@ -133,9 +168,9 @@ export default function FaqPage() {
       {/* SEARCH TEASER (AESTHETIC ONLY) */}
       <div className="relative max-w-2xl mx-auto">
         <div className="p-6 rounded-[2rem] bg-card border border-border text-center">
-          <p className="text-sm font-medium text-foreground/40 italic">
-            "Punya pertanyaan yang tidak ada di sini? Langsung tanyakan di kanal
-            Discord kami untuk respon lebih cepat."
+          <p className="text-sm font-medium text-foreground/40">
+            Punya pertanyaan yang tidak ada di sini? Langsung tanyakan di kanal
+            Discord kami untuk respon lebih cepat.
           </p>
         </div>
       </div>

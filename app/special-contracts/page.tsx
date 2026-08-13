@@ -7,6 +7,7 @@ import {
   Users,
   Award,
   ChevronRight,
+  ChevronLeft,
   Anchor,
   Truck,
   History,
@@ -21,7 +22,16 @@ import {
 } from "lucide-react";
 import { getCompanyMembersMap } from "@/lib/trucky";
 
-export default async function SpecialContractsPage() {
+export default async function SpecialContractsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const resolvedParams = await searchParams;
+  const page = Math.max(1, parseInt((resolvedParams.page as string) || "1", 10));
+  const limit = 4;
+  const skip = (page - 1) * limit;
+
   const client = await clientPromise;
   const db = client.db();
 
@@ -33,12 +43,16 @@ export default async function SpecialContractsPage() {
     .find({ guildId })
     .toArray();
 
-  // 2. Ambil Riwayat Kontrak
+  // 2. Ambil Riwayat Kontrak (dengan Pagination)
+  const totalHistoryCount = await db.collection("contracthistories").countDocuments({ guildId });
+  const totalPages = Math.ceil(totalHistoryCount / limit) || 1;
+
   const historyContracts = await db
     .collection("contracthistories")
     .find({ guildId })
     .sort({ closedAt: -1 })
-    .limit(10)
+    .skip(skip)
+    .limit(limit)
     .toArray();
 
   // =========================================================================
@@ -318,6 +332,41 @@ export default async function SpecialContractsPage() {
                 </div>
               );
             })}
+
+            {/* KONTROL PAGINASI */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-4 mt-12 mb-4">
+                {page > 1 ? (
+                  <Link
+                    href={`/special-contracts?page=${page - 1}`}
+                    className="p-3 bg-card border border-border rounded-xl hover:bg-muted transition-colors shadow-sm"
+                  >
+                    <ChevronLeft className="w-5 h-5 text-foreground" />
+                  </Link>
+                ) : (
+                  <div className="p-3 bg-card border border-border rounded-xl opacity-50 cursor-not-allowed shadow-sm">
+                    <ChevronLeft className="w-5 h-5 text-foreground" />
+                  </div>
+                )}
+                
+                <span className="text-sm font-bold text-foreground bg-card border border-border px-5 py-2.5 rounded-xl shadow-sm">
+                  Halaman {page} dari {totalPages}
+                </span>
+
+                {page < totalPages ? (
+                  <Link
+                    href={`/special-contracts?page=${page + 1}`}
+                    className="p-3 bg-card border border-border rounded-xl hover:bg-muted transition-colors shadow-sm"
+                  >
+                    <ChevronRight className="w-5 h-5 text-foreground" />
+                  </Link>
+                ) : (
+                  <div className="p-3 bg-card border border-border rounded-xl opacity-50 cursor-not-allowed shadow-sm">
+                    <ChevronRight className="w-5 h-5 text-foreground" />
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </section>
       </div>

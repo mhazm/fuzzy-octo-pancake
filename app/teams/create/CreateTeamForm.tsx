@@ -4,8 +4,13 @@ import { useState } from "react";
 import { createTeamAction } from "./actions";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { compressImageToWebP } from "@/lib/imageUtils";
 
-export default function CreateTeamForm() {
+export default function CreateTeamForm({
+  isNismaraPlus,
+}: {
+  isNismaraPlus?: boolean;
+}) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -48,12 +53,34 @@ export default function CreateTeamForm() {
 
     try {
       const formData = new FormData(e.currentTarget);
+      const maxSizeMB = isNismaraPlus ? 5 : 3;
+      const maxSizeBytes = maxSizeMB * 1024 * 1024;
+
+      const validateFile = (file: File, fieldName: string) => {
+        if (!isNismaraPlus && file.type === "image/gif") {
+          throw new Error(
+            `Fitur upload GIF pada ${fieldName} hanya untuk pengguna Nismara+.`,
+          );
+        }
+        if (file.size > maxSizeBytes) {
+          throw new Error(`Ukuran ${fieldName} maksimal ${maxSizeMB}MB.`);
+        }
+      };
+
+      if (logoFile) validateFile(logoFile, "Logo Tim");
+      if (bannerFile) validateFile(bannerFile, "Banner Tim");
+
       let finalLogoUrl = "";
       let finalBannerUrl = "";
 
-      if (logoFile) finalLogoUrl = await uploadToR2(logoFile, "teams/logos");
-      if (bannerFile)
-        finalBannerUrl = await uploadToR2(bannerFile, "teams/banners");
+      if (logoFile) {
+        const compressedLogo = await compressImageToWebP(logoFile);
+        finalLogoUrl = await uploadToR2(compressedLogo, "teams/logos");
+      }
+      if (bannerFile) {
+        const compressedBanner = await compressImageToWebP(bannerFile);
+        finalBannerUrl = await uploadToR2(compressedBanner, "teams/banners");
+      }
 
       const result = await createTeamAction({
         name: formData.get("name") as string,

@@ -11,8 +11,18 @@ import {
   Clock,
   Info,
   Users,
+  CalendarHeart,
+  Crown,
+  Edit3,
 } from "lucide-react";
 import JoinConvoyButton from "./JoinConvoyButton";
+import ClaimRewardButton from "./ClaimRewardButton";
+import EndConvoyButton from "./EndConvoyButton";
+import UserBadges from "@/components/icons/UserBadges";
+
+
+
+
 
 async function getConvoyDetails(uri: string) {
   const client = await clientPromise;
@@ -48,26 +58,41 @@ export default async function ConvoyDetailPage({
 
   const session = await getServerSession(authOptions);
   const isUserDriver = !!(session?.user?.isDriver && session?.user?.driverData);
+  const isManager = session?.user?.role === "manager" || session?.user?.role === "admin";
 
   const currentTruckyId = session?.user?.driverData?.truckyId?.toString();
   const currentDiscordId = session?.user?.discordId?.toString();
 
-  const isAlreadyJoined =
-    convoy.partisipan?.some(
-      (p: any) =>
-        (currentTruckyId && p.truckyId === currentTruckyId) ||
-        (currentDiscordId && p.discordId === currentDiscordId),
-    ) || false;
+  const isAlreadyJoined = Boolean(
+    session?.user &&
+      convoy.partisipan?.some(
+        (p: any) =>
+          p.discordId === session.user.discordId ||
+          p.truckyId === session.user.truckyId,
+      ),
+  );
 
-  // Persiapkan pemetaan profil pengemudi yang bergabung
+  const participantData = session?.user ? convoy.partisipan?.find(
+    (p: any) => p.discordId === session.user.discordId
+  ) : null;
+  const hasClaimed = Boolean(participantData?.claimedReward);
+
+  // Persiapkan pemetaan profil pengemudi yang bergabung beserta panitia
   const partisipanRaw = convoy.partisipan || [];
-  const validDiscordIds = partisipanRaw
-    .map((p: any) => p.discordId)
-    .filter(Boolean);
+  const interestedIds = convoy.interested || [];
 
-  const participantsData = await getParticipantsData(validDiscordIds);
+  const allDiscordIds = Array.from(
+    new Set([
+      ...partisipanRaw.map((p: any) => p.discordId),
+      ...interestedIds,
+      convoy.setBy,
+      convoy.roadCaptain,
+    ].filter(Boolean))
+  );
+
+  const allUsersData = await getParticipantsData(allDiscordIds);
   const usersMap = new Map();
-  participantsData.forEach((user) => {
+  allUsersData.forEach((user) => {
     usersMap.set(user.discordId?.toString(), user);
   });
 
@@ -75,8 +100,15 @@ export default async function ConvoyDetailPage({
   const startTime = new Date(convoy.meetupDate).getTime();
   const DURATION_MS = 2 * 60 * 60 * 1000;
 
-  const isOngoing = now >= startTime && now < startTime + DURATION_MS;
-  const isPast = now >= startTime + DURATION_MS;
+  const isBeforeMeetup = now < startTime;
+  const isPast = convoy.isEnded || now >= startTime + DURATION_MS;
+  const isOngoing = !isPast && now >= startTime;
+
+  const isInterested = currentDiscordId
+    ? convoy.interested?.includes(currentDiscordId)
+    : false;
+
+  // Attendees diproses di atas
 
   const formatDate = (date: Date) => {
     return new Date(date).toLocaleDateString("id-ID", {
@@ -148,6 +180,14 @@ export default async function ConvoyDetailPage({
                 {convoy.convoyName}
               </h1>
             </div>
+            {isManager && (
+              <Link
+                href={`/dashboard/manage/events/convoy/edit/${convoy.convoyUri}`}
+                className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shrink-0 mb-2 md:mb-0"
+              >
+                <Edit3 size={16} /> Edit Convoy
+              </Link>
+            )}
           </div>
         </div>
 
@@ -155,6 +195,105 @@ export default async function ConvoyDetailPage({
           <div className="bg-primary/5 border border-primary/10 rounded-2xl p-5 mb-8 text-foreground/80 leading-relaxed font-medium text-sm whitespace-pre-line">
             <Info className="w-5 h-5 text-primary mb-2 inline-block mr-2" />
             {convoy.description}
+          </div>
+
+          {/* Grid Penanggung Jawab & Road Captain */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            {/* Road Captain */}
+            <div className="flex items-center gap-4 bg-black/10 border border-white/5 rounded-2xl p-5 hover:border-emerald-500/30 transition-colors">
+              {convoy.roadCaptain && usersMap.has(convoy.roadCaptain) ? (
+                <>
+                  <Link href={`/profile/${usersMap.get(convoy.roadCaptain)?.truckyId || '#'}`} className="relative shrink-0 w-14 h-14 block hover:opacity-80 transition-opacity">
+                    {usersMap.get(convoy.roadCaptain)?.image ? (
+                      <img
+                        src={usersMap.get(convoy.roadCaptain).image}
+                        alt="Road Captain"
+                        className="w-full h-full rounded-full object-cover border-2 border-emerald-500/50"
+                      />
+                    ) : (
+                      <div className="w-full h-full rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-500 font-black border-2 border-emerald-500/50">
+                        {usersMap.get(convoy.roadCaptain)?.name?.charAt(0) || "R"}
+                      </div>
+                    )}
+                    <div className="absolute -bottom-1 -right-1 bg-emerald-500 text-white p-1 rounded-full border-2 border-background">
+                      <Crown size={12} />
+                    </div>
+                  </Link>
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500 mb-0.5">
+                      Road Captain
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Link href={`/profile/${usersMap.get(convoy.roadCaptain)?.truckyId || '#'}`} className="text-base font-bold text-foreground hover:text-primary transition-colors">
+                        {usersMap.get(convoy.roadCaptain)?.name}
+                      </Link>
+                      <UserBadges 
+                        role={usersMap.get(convoy.roadCaptain)?.discordRole} 
+                        isBooster={usersMap.get(convoy.roadCaptain)?.isBooster === true} 
+                        isNismaraPlus={usersMap.get(convoy.roadCaptain)?.nismaraplus?.status === true} 
+                        truckyRank={usersMap.get(convoy.roadCaptain)?.truckyRank}
+                        className="w-4 h-4" 
+                      />
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center gap-3 text-foreground/40 italic">
+                  <div className="w-14 h-14 rounded-full bg-white/5 border-2 border-white/10 flex items-center justify-center">
+                    <Users size={20} className="opacity-50" />
+                  </div>
+                  <div className="text-xs">Belum ada Road Captain</div>
+                </div>
+              )}
+            </div>
+
+            {/* Penanggung Jawab */}
+            <div className="flex items-center gap-4 bg-black/10 border border-white/5 rounded-2xl p-5 hover:border-accent-lilac/30 transition-colors">
+              {convoy.setBy && usersMap.has(convoy.setBy) ? (
+                <>
+                  <Link href={`/profile/${usersMap.get(convoy.setBy)?.truckyId || '#'}`} className="relative shrink-0 w-14 h-14 block hover:opacity-80 transition-opacity">
+                    {usersMap.get(convoy.setBy)?.image ? (
+                      <img
+                        src={usersMap.get(convoy.setBy).image}
+                        alt="Penanggung Jawab"
+                        className="w-full h-full rounded-full object-cover border-2 border-accent-lilac/50"
+                      />
+                    ) : (
+                      <div className="w-full h-full rounded-full bg-accent-lilac/20 flex items-center justify-center text-accent-lilac font-black border-2 border-accent-lilac/50">
+                        {usersMap.get(convoy.setBy)?.name?.charAt(0) || "P"}
+                      </div>
+                    )}
+                    <div className="absolute -bottom-1 -right-1 bg-accent-lilac text-white p-1 rounded-full border-2 border-background">
+                      <Crown size={12} />
+                    </div>
+                  </Link>
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-accent-lilac mb-0.5">
+                      Penanggung Jawab
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Link href={`/profile/${usersMap.get(convoy.setBy)?.truckyId || '#'}`} className="text-base font-bold text-foreground hover:text-primary transition-colors">
+                        {usersMap.get(convoy.setBy)?.name}
+                      </Link>
+                      <UserBadges 
+                        role={usersMap.get(convoy.setBy)?.discordRole} 
+                        isBooster={usersMap.get(convoy.setBy)?.isBooster === true} 
+                        isNismaraPlus={usersMap.get(convoy.setBy)?.nismaraplus?.status === true} 
+                        truckyRank={usersMap.get(convoy.setBy)?.truckyRank}
+                        className="w-4 h-4" 
+                      />
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center gap-3 text-foreground/40 italic">
+                  <div className="w-14 h-14 rounded-full bg-white/5 border-2 border-white/10 flex items-center justify-center">
+                    <Users size={20} className="opacity-50" />
+                  </div>
+                  <div className="text-xs">Belum ada Penanggung Jawab</div>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
@@ -298,11 +437,24 @@ export default async function ConvoyDetailPage({
                         isLoggedIn={!!session}
                         isDriver={isUserDriver}
                         isJoined={isAlreadyJoined}
+                        isBeforeMeetup={isBeforeMeetup}
+                        isInterested={isInterested}
                       />
                     </div>
                   ) : (
-                    <div className="w-full py-4 bg-red-500/10 border border-red-500/20 text-red-500 font-black uppercase text-xs rounded-xl text-center">
-                      Sesi Sudah Berakhir
+                    <div className="w-full flex flex-col gap-3">
+                      <div className="w-full py-4 bg-red-500/10 border border-red-500/20 text-red-500 font-black uppercase text-xs rounded-xl text-center">
+                        Sesi Sudah Berakhir
+                      </div>
+                      {isAlreadyJoined && (
+                        <ClaimRewardButton convoyId={convoy._id.toString()} hasClaimed={hasClaimed} />
+                      )}
+                    </div>
+                  )}
+                  {/* End Convoy Button */}
+                  {!isPast && (isManager || currentDiscordId === convoy.setBy || currentDiscordId === convoy.roadCaptain) && (
+                    <div className="mt-4">
+                      <EndConvoyButton convoyId={convoy._id.toString()} />
                     </div>
                   )}
                 </div>
@@ -311,6 +463,60 @@ export default async function ConvoyDetailPage({
           </div>
         </div>
       </div>
+
+      {/* SEKSI DAFTAR ATTENDEES (SAYA INGIN HADIR) */}
+      {interestedIds.length > 0 && (
+        <div className="glass-panel p-6 md:p-8 rounded-[2rem] border-border/50 bg-card/20 shadow-xl mt-8">
+          <h2 className="text-lg font-black text-foreground mb-6 flex items-center gap-2 border-b border-border/40 pb-4">
+            <CalendarHeart className="text-emerald-500 w-5 h-5" /> Daftar Hadir
+          </h2>
+
+          <div className="flex flex-wrap gap-3">
+            {interestedIds.map((discordId: string, idx: number) => {
+              const userDetail = usersMap.get(discordId);
+              const isRoadCaptain = convoy.roadCaptain === discordId;
+
+              return (
+                <Link
+                  href={
+                    userDetail?.truckyId
+                      ? `/profile/${userDetail.truckyId}`
+                      : "#"
+                  }
+                  key={idx}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl border ${isRoadCaptain ? "bg-emerald-500/10 border-emerald-500/30" : "bg-black/20 border-white/5"} hover:border-primary transition-colors`}
+                >
+                  {userDetail?.image ? (
+                    <img
+                      src={userDetail.image}
+                      className="w-6 h-6 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-[10px] font-bold">
+                      {userDetail?.name?.charAt(0) || "?"}
+                    </div>
+                  )}
+                  <span
+                    className={`text-xs font-bold ${isRoadCaptain ? "text-emerald-400" : "text-foreground"}`}
+                  >
+                    {userDetail?.name || "Unknown"}
+                  </span>
+                  <UserBadges 
+                    role={userDetail?.discordRole} 
+                    isBooster={userDetail?.isBooster === true} 
+                    isNismaraPlus={userDetail?.nismaraplus?.status === true} 
+                    truckyRank={userDetail?.truckyRank}
+                    className="w-3 h-3 ml-0.5" 
+                  />
+                  {isRoadCaptain && (
+                    <Crown size={12} className="text-emerald-400 ml-1" />
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* SEKSI DAFTAR PARTISIPAN BARU */}
       {partisipanRaw.length > 0 && (
@@ -348,12 +554,21 @@ export default async function ConvoyDetailPage({
 
                   <div className="flex-1 min-w-0">
                     {/* Nama sebagai Link */}
-                    <Link
-                      href={`/profile/${p.truckyId}`}
-                      className="text-sm font-bold text-foreground truncate hover:text-primary transition-colors block"
-                    >
-                      {userDetail?.name || "Driver Nismara"}
-                    </Link>
+                    <div className="flex items-center gap-1.5">
+                      <Link
+                        href={`/profile/${p.truckyId}`}
+                        className="text-sm font-bold text-foreground truncate hover:text-primary transition-colors block"
+                      >
+                        {userDetail?.name || "Driver Nismara"}
+                      </Link>
+                      <UserBadges 
+                        role={userDetail?.discordRole} 
+                        isBooster={userDetail?.isBooster === true} 
+                        isNismaraPlus={userDetail?.nismaraplus?.status === true} 
+                        truckyRank={userDetail?.truckyRank}
+                        className="w-3.5 h-3.5 shrink-0" 
+                      />
+                    </div>
 
                     {/* Job ID sebagai Link */}
                     <p className="text-[10px] font-semibold text-foreground/50 uppercase tracking-widest truncate mt-0.5">

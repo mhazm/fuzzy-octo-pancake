@@ -1,12 +1,21 @@
 // app/dashboard/manage-events/page.tsx
 import Link from "next/link";
 import {
+
   Calendar,
   FileText,
   Zap,
   ArrowRight,
   CalendarDays,
+  ClipboardList,
+  Gift,
 } from "lucide-react";
+
+export const metadata = {
+  title: "Manage Events",
+};
+
+
 
 export default function ManageEventsHub() {
   const menu = [
@@ -42,6 +51,28 @@ export default function ManageEventsHub() {
       border: "border-amber-500/20",
       hoverBorder: "group-hover:border-amber-500/50",
       glow: "group-hover:bg-amber-500/20",
+    },
+    {
+      name: "Surveys & Polling",
+      desc: "Kelola formulir survey untuk mendapatkan masukan dari para driver.",
+      icon: ClipboardList,
+      href: "/dashboard/manage/events/surveys",
+      color: "text-green-500",
+      bg: "bg-green-500/10",
+      border: "border-green-500/20",
+      hoverBorder: "group-hover:border-green-500/50",
+      glow: "group-hover:bg-green-500/20",
+    },
+    {
+      name: "Coupons",
+      desc: "Kelola kupon untuk mendapatkan masukan dari para driver.",
+      icon: Gift,
+      href: "/dashboard/manage/events/coupon",
+      color: "text-rose-500",
+      bg: "bg-rose-500/10",
+      border: "border-rose-500/20",
+      hoverBorder: "group-hover:border-rose-500/50",
+      glow: "group-hover:bg-rose-500/20",
     },
   ];
 

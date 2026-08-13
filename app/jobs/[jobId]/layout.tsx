@@ -29,10 +29,10 @@ export async function generateMetadata(
   const jobGame = localJob?.game || "Unknown";
 
   return {
-    title: `Job #${jobIds} Details | Nismara Transport`,
+    title: `Job #${jobIds} Details - Nismara Transport`,
     description: `Pekerjaan #${jobIds} Nismara Transport yang bertugas di ${jobGame} dengan status ${jobStatus}`,
     openGraph: {
-      title: `Job #${jobIds} Details | Nismara Transport`,
+      title: `Job #${jobIds} Details - Nismara Transport`,
       description: `Pekerjaan #${jobIds} Nismara Transport yang bertugas di ${jobGame} dengan status ${jobStatus}`,
       images: ["https://images.nismara.my.id/227300_188.jpg"],
     },

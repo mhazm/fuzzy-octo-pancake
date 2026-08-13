@@ -13,13 +13,21 @@ import {
   ChevronRight,
   Gamepad2,
   Briefcase,
-  Edit3, // Tambahkan Edit3 disini
+  Edit3,
+  Upload,
 } from "lucide-react";
+import { compressImageToWebP } from "@/lib/imageUtils";
+import { useSession } from "next-auth/react";
+import { showAlert } from "@/lib/dialog";
+
 
 export default function ContractManageUI({ ongoing, history, manager }: any) {
+  const { data: session } = useSession();
   const [mounted, setMounted] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   const [formData, setFormData] = useState({
     contractName: "",
@@ -52,21 +60,79 @@ export default function ContractManageUI({ ongoing, history, manager }: any) {
     e.preventDefault();
     setLoading(true);
     try {
+      let finalImageUrl = formData.imageUrl;
+      const isNismaraPlus = (session?.user as any)?.nismaraplus?.status === true;
+
+      if (imageFile) {
+        setIsUploading(true);
+        const compressed = await compressImageToWebP(imageFile, isNismaraPlus ? 5 : 3, 1920);
+        
+        const resUpload = await fetch("/api/upload", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fileName: compressed.name,
+            fileType: compressed.type,
+            fileSize: compressed.size,
+            folder: "events/contracts",
+          }),
+        });
+        const uploadData = await resUpload.json();
+        if (!resUpload.ok) throw new Error(uploadData.error || "Gagal mendapatkan URL upload");
+
+        const s3Res = await fetch(uploadData.signedUrl, {
+          method: "PUT",
+          headers: { "Content-Type": compressed.type },
+          body: compressed,
+        });
+        if (!s3Res.ok) throw new Error("Gagal mengupload file ke server");
+        
+        finalImageUrl = uploadData.publicUrl;
+        setIsUploading(false);
+      }
+
       await createContractAction({
         ...formData,
+        imageUrl: finalImageUrl,
         setBy: manager.discordId,
         guildId: process.env.DISCORD_GUILD_ID || "863959415702028318",
       });
       setIsModalOpen(false);
-      alert("Kontrak berhasil dideploy!");
+      showAlert("Kontrak berhasil dideploy!");
     } catch (err) {
-      alert("Gagal membuat kontrak.");
+      showAlert("Gagal membuat kontrak.");
     } finally {
       setLoading(false);
     }
   };
 
   const slugify = (text: string) => text.toLowerCase().replace(/\s+/g, "-");
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      showAlert("Format tidak didukung! Harap unggah gambar.");
+      return;
+    }
+
+    const isNismaraPlus = (session?.user as any)?.nismaraplus?.status === true;
+    
+    if (!isNismaraPlus && file.type === "image/gif") {
+      showAlert("Hanya member Nismara+ yang diizinkan mengunggah GIF.");
+      return;
+    }
+
+    const maxSizeMB = isNismaraPlus ? 5 : 3;
+    if (file.size > maxSizeMB * 1024 * 1024) {
+      showAlert(`Maksimal ukuran file adalah ${maxSizeMB}MB.`);
+      return;
+    }
+
+    setFormData({ ...formData, imageUrl: URL.createObjectURL(file) });
+    setImageFile(file);
+  };
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-700">
@@ -308,15 +374,29 @@ export default function ContractManageUI({ ongoing, history, manager }: any) {
 
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-accent-lilac uppercase ml-2">
-                  Cover Image URL
+                  Cover Image (Upload)
                 </label>
-                <input
-                  placeholder="Link gambar Imgur/Discord"
-                  className="w-full bg-foreground/5 border border-border rounded-2xl p-4 text-foreground text-sm"
-                  onChange={(e) =>
-                    setFormData({ ...formData, imageUrl: e.target.value })
-                  }
-                />
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileUpload}
+                    disabled={isUploading}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                  />
+                  <div className={`w-full bg-foreground/5 border ${formData.imageUrl ? "border-emerald-500/50" : "border-border"} rounded-2xl p-4 flex items-center justify-center gap-2 transition-colors`}>
+                    {isUploading ? (
+                      <span className="text-sm font-bold text-foreground/50 animate-pulse">Uploading...</span>
+                    ) : formData.imageUrl ? (
+                      <span className="text-sm font-bold text-emerald-500">Image Uploaded Successfully</span>
+                    ) : (
+                      <>
+                        <Upload size={16} className="text-foreground/50" />
+                        <span className="text-sm font-bold text-foreground/50">Click to upload cover image</span>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
 

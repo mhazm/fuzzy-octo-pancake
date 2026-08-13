@@ -1,14 +1,28 @@
 import Link from "next/link";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import {
   Users,
   UserPlus,
+  User2,
   Coins,
   Target,
   ArrowRight,
   ShieldCheck,
+  Store,
+  Trophy,
+  FileQuestion,
 } from "lucide-react";
 
-export default function UserDataHub() {
+export const metadata = {
+  title: "Manage Data",
+};
+
+export default async function UserDataHub() {
+  const session = await getServerSession(authOptions);
+  const isOwner =
+    session?.user?.discordId === process.env.OWNER_DISCORD_ID ||
+    session?.user?.discordId === process.env.NISMARA_OWNER_DISCORD_ID;
   const menu = [
     {
       name: "User List",
@@ -22,15 +36,15 @@ export default function UserDataHub() {
       glow: "group-hover:bg-primary/20",
     },
     {
-      name: "Registrasi",
-      desc: "Tinjau dan setujui pendaftaran driver baru.",
-      icon: UserPlus,
-      href: "/dashboard/manage/data/register-user",
-      color: "text-accent-sky",
-      bg: "bg-accent-sky/10",
-      border: "border-accent-sky/20",
-      hoverBorder: "group-hover:border-accent-sky/50",
-      glow: "group-hover:bg-accent-sky/20",
+      name: "Manage Intern",
+      desc: "Tinjau semua sopir intern.",
+      icon: User2,
+      href: "/dashboard/manage/data/interns",
+      color: "text-accent-indigo",
+      bg: "bg-accent-indigo/10",
+      border: "border-accent-indigo/20",
+      hoverBorder: "group-hover:border-accent-indigo/50",
+      glow: "group-hover:bg-accent-indigo/20",
     },
     {
       name: "Manage NC",
@@ -54,7 +68,54 @@ export default function UserDataHub() {
       hoverBorder: "group-hover:border-red-500/50",
       glow: "group-hover:bg-red-500/20",
     },
+    {
+      name: "Manage Market",
+      desc: "Kelola market dan status perilisan mod.",
+      icon: Store,
+      href: "/dashboard/manage/data/market",
+      color: "text-green-500",
+      bg: "bg-green-500/10",
+      border: "border-green-500/20",
+      hoverBorder: "group-hover:border-green-500/50",
+      glow: "group-hover:bg-green-500/20",
+    },
+    {
+      name: "Manage Achievement",
+      desc: "Kelola badge dan pencapaian driver.",
+      icon: Trophy,
+      href: "/dashboard/manage/data/achievement",
+      color: "text-yellow-500",
+      bg: "bg-yellow-500/10",
+      border: "border-yellow-500/20",
+      hoverBorder: "group-hover:border-yellow-500/50",
+      glow: "group-hover:bg-yellow-500/20",
+    },
+    {
+      name: "Quiz & Ujian",
+      desc: "Kelola bank soal ujian kelayakan untuk intern.",
+      icon: FileQuestion,
+      href: "/dashboard/manage/data/quiz",
+      color: "text-indigo-400",
+      bg: "bg-indigo-500/10",
+      border: "border-indigo-500/20",
+      hoverBorder: "group-hover:border-indigo-500/50",
+      glow: "group-hover:bg-indigo-500/20",
+    },
   ];
+
+  if (isOwner) {
+    menu.push({
+      name: "Manage Nismara+",
+      desc: "Kelola data Nismara+ dan status keanggotaan.",
+      icon: Target,
+      href: "/dashboard/manage/data/nismaraplus",
+      color: "text-red-500",
+      bg: "bg-red-500/10",
+      border: "border-red-500/20",
+      hoverBorder: "group-hover:border-red-500/50",
+      glow: "group-hover:bg-red-500/20",
+    });
+  }
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-10">
@@ -64,11 +125,11 @@ export default function UserDataHub() {
           <ShieldCheck className="w-4 h-4" /> Management Portal
         </div>
         <h1 className="text-3xl md:text-4xl font-black text-foreground tracking-tight">
-          User Data <span className="text-gradient">Hub</span>
+          Manage Data <span className="text-gradient">Hub</span>
         </h1>
         <p className="text-foreground/60 font-medium max-w-xl">
-          Pusat kendali administrator untuk mengelola seluruh data pengemudi,
-          pendaftaran, finansial, dan kedisiplinan.
+          Pusat kendali administrator untuk mengelola seluruh data anggota,
+          pendaftaran, finansial, dan lain-lain.
         </p>
       </div>
 

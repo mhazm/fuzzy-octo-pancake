@@ -4,6 +4,12 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
 import EventManageUI from "./EventManageUI";
 
+export const metadata = {
+  title: "Manage Ncboost",
+};
+
+
+
 export default async function ManageEventPage() {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "manager") redirect("/dashboard");

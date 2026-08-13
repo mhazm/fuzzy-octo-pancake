@@ -3,6 +3,8 @@ import DiscordProvider from "next-auth/providers/discord";
 import { MongoDBAdapter } from "@auth/mongodb-adapter";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
+import { getCompanyMemberStats } from "@/lib/trucky";
+import { redis } from "@/lib/redis";
 
 export const authOptions: NextAuthOptions = {
   adapter: MongoDBAdapter(clientPromise),
@@ -25,6 +27,19 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async session({ session, user }) {
+      // --- REDIS CACHE CHECK ---
+      const cacheKey = `session:profile:${user.id}`;
+      try {
+        const cachedProfile = await redis.get(cacheKey);
+        if (cachedProfile) {
+          const parsedProfile = JSON.parse(cachedProfile);
+          session.user = { ...session.user, ...parsedProfile };
+          return session;
+        }
+      } catch (err) {
+        console.error("❌ [REDIS] Error reading session cache:", err);
+      }
+
       const client = await clientPromise;
       const db = client.db();
 
@@ -38,6 +53,7 @@ export const authOptions: NextAuthOptions = {
       let driverData = null;
       let userRole: "user" | "manager" | "admin" = "user";
       let isBooster = false;
+      let nismaraplus: any = null;
       const guildId = "863959415702028318";
       const managerRoleId = "1406574228794507354";
 
@@ -74,6 +90,8 @@ export const authOptions: NextAuthOptions = {
               if (memberData.roles.includes(managerRoleId))
                 userRole = "manager";
               if (memberData.premium_since) isBooster = true;
+              
+              // NOTE: nismaraplus dikelola di DB, tidak dari Discord API
 
               // SIMPAN HASIL KE DATABASE AGAR TIDAK PERLU FETCH LAGI DALAM WAKTU DEKAT
               await db.collection("users").updateOne(
@@ -98,6 +116,9 @@ export const authOptions: NextAuthOptions = {
           isBooster = dbUser?.isBooster || false;
         }
 
+        // --- FETCH NISMARA+ DARI DB (SELALU) ---
+        nismaraplus = dbUser?.nismaraplus || { status: false };
+
         // --- UPDATE DISCORD ID & XP JIKA KOSONG ---
         await db.collection("users").updateOne(
           { _id: new ObjectId(user.id) },
@@ -115,6 +136,33 @@ export const authOptions: NextAuthOptions = {
             );
         }
 
+        if (dbUser && dbUser.nismaraplus === undefined) {
+          await db.collection("users").updateOne(
+            { _id: new ObjectId(user.id) },
+            {
+              $set: {
+                "nismaraplus.status": false,
+                "nismaraplus.startedAt": null,
+                "nismaraplus.expiredAt": null,
+              },
+            },
+          );
+        }
+
+        if (dbUser && dbUser.insurance === undefined) {
+          await db.collection("users").updateOne(
+            { _id: new ObjectId(user.id) },
+            {
+              $set: {
+                "insurance.status": false,
+                "insurance.rating": 100,
+                "insurance.startedAt": null,
+                "insurance.expiredAt": null,
+              },
+            },
+          );
+        }
+
         // --- SYNC TRUCKY ID ---
         const driverLink = await db.collection("driverlinks").findOne({
           userId: discordId,
@@ -128,11 +176,46 @@ export const authOptions: NextAuthOptions = {
             truckyName: driverLink.truckyName,
           };
 
+          const updateData: any = { truckyId: driverLink.truckyId, isDriver: true };
+
+          // --- SYNC TRUCKY RANK (12 Hour Throttle) ---
+          const lastTruckySync = dbUser?.lastTruckySync
+            ? new Date(dbUser.lastTruckySync).getTime()
+            : 0;
+            
+          const twelveHours = 12 * 60 * 60 * 1000;
+
+          if (now - lastTruckySync > twelveHours) {
+            try {
+              const NISMARA_COMPANY_ID = process.env.TRUCKY_COMPANY_ID || "4138";
+              const truckyStats = await getCompanyMemberStats(Number(NISMARA_COMPANY_ID), driverLink.truckyId);
+              
+              // Simpan Role (jabatan)
+              if (truckyStats?.role) {
+                updateData.truckyRole = typeof truckyStats.role === "object" ? truckyStats.role.name : truckyStats.role;
+                if (typeof truckyStats.role === "object" && truckyStats.role.color) {
+                  updateData.truckyRoleColor = truckyStats.role.color;
+                }
+              }
+              
+              // Simpan Rank (tingkatan/level)
+              if (truckyStats?.rank) {
+                updateData.truckyRank = typeof truckyStats.rank === "object" ? truckyStats.rank.name : truckyStats.rank;
+                if (typeof truckyStats.rank === "object" && truckyStats.rank.color) {
+                  updateData.truckyRankColor = truckyStats.rank.color;
+                }
+              }
+              updateData.lastTruckySync = new Date();
+            } catch (err) {
+              console.error("❌ [FETCH] Gagal menghubungi Trucky API:", err);
+            }
+          }
+
           await db
             .collection("users")
             .updateOne(
               { _id: new ObjectId(user.id) },
-              { $set: { truckyId: driverLink.truckyId, isDriver: true } },
+              { $set: updateData },
             );
         }
 
@@ -144,10 +227,33 @@ export const authOptions: NextAuthOptions = {
       session.user.driverData = driverData;
       session.user.role = userRole;
       session.user.isBooster = isBooster;
+      session.user.nismaraplus = nismaraplus;
       session.user.xp = dbUser?.xp || 0;
       session.user.level = dbUser?.level || 1;
       session.user.teamId = dbUser?.teamId ? dbUser.teamId.toString() : null;
       session.user.truckyId = dbUser?.truckyId;
+      session.user._id = dbUser?._id.toString() || user.id;
+
+      // --- SAVE TO REDIS CACHE ---
+      try {
+        const profileToCache = {
+          discordId: session.user.discordId,
+          isDriver,
+          driverData,
+          role: userRole,
+          isBooster,
+          nismaraplus,
+          xp: session.user.xp,
+          level: session.user.level,
+          teamId: session.user.teamId,
+          truckyId: session.user.truckyId,
+          _id: session.user._id,
+        };
+        // Set TTL to 15 minutes (900 seconds)
+        await redis.setex(cacheKey, 900, JSON.stringify(profileToCache));
+      } catch (err) {
+        console.error("❌ [REDIS] Error saving session cache:", err);
+      }
 
       return session;
     },

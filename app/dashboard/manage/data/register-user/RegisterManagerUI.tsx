@@ -12,7 +12,7 @@ import {
   Loader2,
 } from "lucide-react";
 
-export default function RegisterManagerUI({ initialData, guildId }: any) {
+export default function RegisterManagerUI({ initialData, guildId, currentUserDiscordId }: any) {
   const [data, setData] = useState(initialData);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<any>({});
@@ -25,7 +25,7 @@ export default function RegisterManagerUI({ initialData, guildId }: any) {
 
   const handleAction = async (
     id: string,
-    action: "approve" | "reject" | "update",
+    action: "claim" | "update" | "approve" | "reject",
   ) => {
     setLoading(id);
     try {
@@ -37,15 +37,19 @@ export default function RegisterManagerUI({ initialData, guildId }: any) {
 
       if (res.ok) {
         if (action === "update") {
-          // Update data di local state saja, jangan hapus dari list
           setData(
             data.map((item: any) =>
               item._id === id ? { ...item, ...editForm } : item,
             ),
           );
           setEditingId(null);
-        } else {
-          // Jika approve/reject, baru hapus dari list pending
+        } else if (action === "claim") {
+          setData(
+            data.map((item: any) =>
+              item._id === id ? { ...item, managerId: currentUserDiscordId } : item,
+            ),
+          );
+        } else if (action === "approve" || action === "reject") {
           setData(data.filter((item: any) => item._id !== id));
         }
       }
@@ -151,24 +155,43 @@ export default function RegisterManagerUI({ initialData, guildId }: any) {
                     >
                       <Edit3 size={20} />
                     </button>
-                    <button
-                      onClick={() => handleAction(reg._id, "approve")}
-                      className="p-4 bg-primary text-white rounded-2xl hover:bg-primary/80 transition-all shadow-lg shadow-primary/20"
-                      title="Approve & Register to Silvia"
-                    >
-                      {loading === reg._id ? (
-                        <Loader2 className="animate-spin" />
-                      ) : (
-                        <Check size={20} />
-                      )}
-                    </button>
-                    <button
-                      onClick={() => handleAction(reg._id, "reject")}
-                      className="p-4 bg-red-500/10 border border-red-500/20 text-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-all"
-                      title="Reject"
-                    >
-                      <X size={20} />
-                    </button>
+                    {!reg.managerId ? (
+                      <button
+                        onClick={() => handleAction(reg._id, "claim")}
+                        className="p-4 bg-primary text-white rounded-2xl hover:bg-primary/80 transition-all shadow-lg shadow-primary/20 flex items-center gap-2"
+                        title="Claim Registration"
+                      >
+                        {loading === reg._id ? (
+                          <Loader2 className="animate-spin" />
+                        ) : (
+                          <span className="text-xs font-bold uppercase px-2">Claim Tugas</span>
+                        )}
+                      </button>
+                    ) : reg.managerId === currentUserDiscordId ? (
+                      <div className="flex items-center gap-2">
+                        <div className="px-4 py-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-amber-500 text-xs font-bold uppercase tracking-widest text-center mr-2">
+                          Awaiting Webhook
+                        </div>
+                        <button
+                          onClick={() => handleAction(reg._id, "approve")}
+                          className="p-3 bg-primary text-white rounded-xl hover:bg-primary/80 transition-all shadow-lg shadow-primary/20"
+                          title="Force Approve (Abaikan Webhook)"
+                        >
+                          <Check size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleAction(reg._id, "reject")}
+                          className="p-3 bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all"
+                          title="Force Reject"
+                        >
+                          <X size={18} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="px-4 py-3 bg-red-500/10 border border-red-500/30 rounded-2xl text-red-500 text-xs font-bold uppercase tracking-widest text-center">
+                        Di-claim Manager Lain
+                      </div>
+                    )}
                   </>
                 )}
               </div>

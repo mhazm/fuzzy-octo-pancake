@@ -6,6 +6,12 @@ import { getCompanyMembersMap } from "@/lib/trucky";
 import CurrencyDataUI from "./CurrencyDataUI";
 import { WalletCards } from "lucide-react";
 
+export const metadata = {
+  title: "Manage Nc Data",
+};
+
+
+
 export default async function CurrencyDataPage() {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "manager") redirect("/dashboard");

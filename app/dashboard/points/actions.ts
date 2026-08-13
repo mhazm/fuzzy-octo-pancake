@@ -43,7 +43,7 @@ async function sendDiscordLog(embed: any) {
           {
             ...embed,
             timestamp: new Date().toISOString(),
-            footer: { text: "Nismara Logistics Logging System" },
+            footer: { text: "Nismara Transport Logging System" },
           },
         ],
       }),
@@ -58,7 +58,7 @@ export async function getUserPointsData(userId: string) {
     const client = await clientPromise;
     const db = client.db();
 
-    const [pointData, currencyData, historyData, guildSettings, isBooster] =
+    const [pointData, currencyData, historyData, guildSettings, isBooster, activeTicketsData] =
       await Promise.all([
         db.collection("points").findOne({ userId, guildId: GUILD_ID }),
         db.collection("currencies").findOne({ userId, guildId: GUILD_ID }),
@@ -70,7 +70,11 @@ export async function getUserPointsData(userId: string) {
           .toArray(),
         db.collection("guildsettings").findOne({ guildId: GUILD_ID }),
         checkDiscordBooster(userId), // Cek status booster paralel
+        db.collection("penaltytickets").find({ discordId: userId, status: "active", guildId: GUILD_ID }).toArray(),
       ]);
+
+    // Aggregate tickets
+    const totalPenaltyTickets = activeTicketsData.reduce((acc, ticket) => acc + (ticket.amount || 0), 0);
 
     // Berikan diskon 500 NC jika user adalah booster
     const discountBooster = isBooster ? 500 : 0;
@@ -80,6 +84,7 @@ export async function getUserPointsData(userId: string) {
       totalNC: currencyData?.totalNC || 0,
       pointPrice: guildSettings?.pointPrice || 3000,
       discountBooster,
+      totalPenaltyTickets,
       history: historyData.map((item) => ({
         ...item,
         _id: item._id.toString(),
@@ -257,13 +262,24 @@ export async function validateJobPoints(jobId: string) {
       throw new Error("Job ini sudah pernah divalidasi sebelumnya.");
     }
 
+    // 3. Ambil data poin penalti user saat ini
+    const userPointsData = await db.collection("points").findOne({ userId, guildId: GUILD_ID });
+    const currentPoints = userPointsData?.totalPoints || 0;
+
+    if (currentPoints <= 0) {
+      throw new Error("Anda tidak memiliki poin penalti untuk divalidasi.");
+    }
+
     const distance = job.distanceKm || 0;
     const reduction = Math.floor(distance / 500);
 
     if (reduction <= 0)
       throw new Error("Jarak job tidak mencukupi untuk pengurangan poin.");
 
-    // 3. Jalankan operasi atomik
+    // Mencegah poin menjadi minus
+    const actualReduction = Math.min(reduction, currentPoints);
+
+    // 4. Jalankan operasi atomik
     await Promise.all([
       // Update koleksi jobs (untuk fitur baru)
       db
@@ -278,7 +294,7 @@ export async function validateJobPoints(jobId: string) {
         userId: userId,
         jobId: job.jobId,
         distance: distance,
-        deducted: reduction,
+        deducted: actualReduction,
         createdAt: new Date(),
         updatedAt: new Date(),
         __v: 0,
@@ -288,15 +304,15 @@ export async function validateJobPoints(jobId: string) {
         .collection("points")
         .updateOne(
           { userId, guildId: GUILD_ID },
-          { $inc: { totalPoints: -reduction } },
+          { $inc: { totalPoints: -actualReduction } },
         ),
       // Catat sejarah poin
       db.collection("pointhistories").insertOne({
         userId,
         guildId: GUILD_ID,
         managerId: userId,
-        points: reduction,
-        reason: `Validasi Job Hardcore #${job.jobId} (-${reduction} Poin)`,
+        points: actualReduction,
+        reason: `Validasi Job Hardcore #${job.jobId} (-${actualReduction} Poin)`,
         type: "remove",
         createdAt: new Date(),
       }),
@@ -310,7 +326,7 @@ export async function validateJobPoints(jobId: string) {
         { name: "Job ID", value: `#${job.jobId}`, inline: true },
         { name: "Rute", value: `${job.sourceCity} ➡️ ${job.destinationCity}` },
         { name: "Jarak", value: `${distance} km`, inline: true },
-        { name: "Poin Berkurang", value: `-${reduction} Poin`, inline: true },
+        { name: "Poin Berkurang", value: `-${actualReduction} Poin`, inline: true },
       ],
     });
 
@@ -318,5 +334,124 @@ export async function validateJobPoints(jobId: string) {
     return { success: true, message: `Berhasil! Poin berkurang ${reduction}.` };
   } catch (error: any) {
     return { success: false, message: error.message };
+  }
+}
+
+export async function usePenaltyTicket(amountToUse: number) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.discordId) throw new Error("Unauthorized");
+    const userId = String(session.user.discordId);
+
+    if (!amountToUse || amountToUse <= 0) {
+      throw new Error("Jumlah tiket yang digunakan tidak valid.");
+    }
+
+    const client = await clientPromise;
+    const db = client.db();
+
+    // Cek poin user
+    const pointData = await db.collection("points").findOne({ userId, guildId: GUILD_ID });
+    if (!pointData || pointData.totalPoints <= 0) {
+      throw new Error("Poin penalti Anda sudah bersih (0).");
+    }
+
+    if (amountToUse > pointData.totalPoints) {
+      throw new Error("Anda tidak bisa menggunakan tiket lebih dari jumlah poin penalti Anda.");
+    }
+
+    // ==========================================
+    // 🛡️ MENCEGAH RACE CONDITION MULTI-DOKUMEN
+    // Kunci aksi (lock) pada user agar tidak bisa ditembak paralel
+    // ==========================================
+    const lockResult = await db.collection("users").updateOne(
+      { discordId: userId, ticketLock: { $ne: true } },
+      { $set: { ticketLock: true } }
+    );
+
+    if (lockResult.modifiedCount === 0) {
+      throw new Error("Sistem sedang memproses transaksi Anda sebelumnya. Harap coba lagi dalam beberapa detik.");
+    }
+
+    try {
+      // Ambil semua tiket aktif
+      const activeTickets = await db.collection("penaltytickets").find({ 
+        discordId: userId, 
+        status: "active", 
+        guildId: GUILD_ID 
+      }).toArray();
+      
+      const totalAvailable = activeTickets.reduce((acc, t) => acc + (t.amount || 0), 0);
+      
+      if (totalAvailable < amountToUse) {
+        throw new Error("Anda tidak memiliki cukup tiket penghapusan penalti.");
+      }
+
+      // Kalkulasi pengurangan antar dokumen
+      let remainingToDeduct = amountToUse;
+      const bulkOps = [];
+
+      for (const ticket of activeTickets) {
+        if (remainingToDeduct <= 0) break;
+
+        if (ticket.amount <= remainingToDeduct) {
+          // Habiskan tiket ini
+          bulkOps.push({
+            updateOne: {
+              filter: { _id: ticket._id },
+              update: { $set: { amount: 0, status: "used" } }
+            }
+          });
+          remainingToDeduct -= ticket.amount;
+        } else {
+          // Kurangi sebagian
+          bulkOps.push({
+            updateOne: {
+              filter: { _id: ticket._id },
+              update: { $set: { amount: ticket.amount - remainingToDeduct } }
+            }
+          });
+          remainingToDeduct = 0;
+        }
+      }
+
+      // Lakukan pemotongan paralel
+      const operations: Promise<any>[] = [
+        db.collection("points").updateOne({ userId, guildId: GUILD_ID }, { $inc: { totalPoints: -amountToUse } }),
+        db.collection("pointhistories").insertOne({
+          userId,
+          guildId: GUILD_ID,
+          managerId: userId,
+          points: amountToUse,
+          reason: `Penggunaan ${amountToUse} Tiket Hapus Penalti dari Kupon`,
+          type: "remove",
+          createdAt: new Date(),
+        })
+      ];
+
+      if (bulkOps.length > 0) {
+        operations.push(db.collection("penaltytickets").bulkWrite(bulkOps));
+      }
+
+      await Promise.all(operations);
+
+    } finally {
+      // 🔓 LEPAS LOCK APAPUN YANG TERJADI (BAIK BERHASIL MAUPUN ERROR)
+      await db.collection("users").updateOne({ discordId: userId }, { $unset: { ticketLock: "" } });
+    }
+
+    await sendDiscordLog({
+      title: "🎟️ Penggunaan Tiket Penalti",
+      color: 0xef4444,
+      fields: [
+        { name: "Driver", value: `<@${userId}>`, inline: true },
+        { name: "Poin Dihapus", value: `${amountToUse} Poin`, inline: true },
+      ],
+    });
+
+    revalidatePath("/dashboard/points");
+    return { success: true, message: `Berhasil menggunakan ${amountToUse} Tiket untuk menghapus ${amountToUse} Poin Penalti!` };
+  } catch (error: any) {
+    return { success: false, message: error.message || "Terjadi kesalahan sistem." };
   }
 }

@@ -3,6 +3,8 @@ import { Map } from "lucide-react";
 import JobList from "./jobList";
 import { fetchJobs } from "./actions";
 
+export const revalidate = 120;
+
 export default async function PublicJobsPage(props: {
   searchParams: Promise<{ tab?: string }>;
 }) {

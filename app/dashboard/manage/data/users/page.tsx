@@ -7,6 +7,12 @@ import { getCompanyMembersMap } from "@/lib/trucky";
 import ManageUsersTable from "./ManageUsersTable";
 import { Users, UserCheck, UserMinus, Globe, Shield, User } from "lucide-react";
 
+export const metadata = {
+  title: "Manage Users",
+};
+
+
+
 export default async function ManageUsersPage() {
   const session = await getServerSession(authOptions);
 

@@ -12,53 +12,99 @@ import {
   Loader2,
   Save,
   Lock as LockIcon,
+  Crown,
 } from "lucide-react";
+import { compressImageToWebP } from "@/lib/imageUtils";
+import CityCombobox from "@/components/ui/CityCombobox";
+import { useSession } from "next-auth/react";
+import { showAlert } from "@/lib/dialog";
 
-export default function EditConvoyForm({ convoy }: { convoy: any }) {
+
+export default function EditConvoyForm({ convoy, participantUsers = [] }: { convoy: any, participantUsers?: any[] }) {
   const router = useRouter();
+  const { data: session } = useSession();
   const [imageUrl, setImageUrl] = useState(convoy.imageUrl || "");
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [gameId, setGameId] = useState(convoy.gameId || "1");
 
   // Helper untuk formatting date/time input agar sesuai dengan value yang diterima
   const toDate = (d: any) => (d ? new Date(d).toISOString().split("T")[0] : "");
   const toTime = (d: any) =>
     d ? new Date(d).toTimeString().substring(0, 5) : "";
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setIsUploading(true);
-    try {
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: JSON.stringify({
-          fileName: file.name,
-          fileType: file.type,
-          folder: "convoys",
-        }),
-      });
-      const { signedUrl, publicUrl } = await res.json();
-      const uploadRes = await fetch(signedUrl, {
-        method: "PUT",
-        headers: { "Content-Type": file.type },
-        body: file,
-      });
-      if (uploadRes.ok) setImageUrl(publicUrl);
-    } catch (error) {
-      alert("Gagal mengunggah gambar.");
-    } finally {
-      setIsUploading(false);
+    if (!file.type.startsWith("image/")) {
+      showAlert("Format tidak didukung! Harap unggah gambar.");
+      return;
     }
+
+    const isNismaraPlus = (session?.user as any)?.nismaraplus?.status === true;
+    
+    if (!isNismaraPlus && file.type === "image/gif") {
+      showAlert("Hanya member Nismara+ yang diizinkan mengunggah GIF.");
+      return;
+    }
+
+    const maxSizeMB = isNismaraPlus ? 5 : 3;
+    if (file.size > maxSizeMB * 1024 * 1024) {
+      showAlert(`Maksimal ukuran file adalah ${maxSizeMB}MB.`);
+      return;
+    }
+
+    setImageUrl(URL.createObjectURL(file));
+    setBannerFile(file);
   };
 
   return (
     <form
       action={async (formData) => {
         setLoading(true);
-        await updateConvoy(convoy._id.toString(), formData);
-        router.push("/dashboard/manage/events/convoy");
+        try {
+          const isNismaraPlus = (session?.user as any)?.nismaraplus?.status === true;
+          let finalImageUrl = formData.get("imageUrl") as string;
+
+          if (bannerFile) {
+            setIsUploading(true);
+            const compressedFile = await compressImageToWebP(bannerFile, isNismaraPlus ? 5 : 3, 1920);
+
+            const res = await fetch("/api/upload", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                fileName: compressedFile.name,
+                fileType: compressedFile.type,
+                fileSize: compressedFile.size,
+                folder: "events/convoys",
+              }),
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || "Gagal mendapatkan URL upload");
+
+            const uploadRes = await fetch(data.signedUrl, {
+              method: "PUT",
+              headers: { "Content-Type": compressedFile.type },
+              body: compressedFile,
+            });
+
+            if (!uploadRes.ok) throw new Error("Gagal mengupload file ke server");
+            finalImageUrl = data.publicUrl;
+            formData.set("imageUrl", finalImageUrl);
+            setIsUploading(false);
+          }
+
+          await updateConvoy(convoy._id.toString(), formData);
+          router.push("/dashboard/manage/events/convoy");
+        } catch (err: any) {
+          showAlert(err.message || "Terjadi kesalahan sistem saat memperbarui convoy.");
+          setLoading(false);
+          setIsUploading(false);
+        }
       }}
       className="space-y-6"
     >
@@ -80,7 +126,7 @@ export default function EditConvoyForm({ convoy }: { convoy: any }) {
               ) : (
                 <div className="text-gray-500 text-xs flex flex-col items-center gap-2">
                   <ImageIcon className="w-8 h-8 opacity-50" />
-                  <span>Update Banner</span>
+                  <span>Update Banner (Max 3MB, Nismara+ 5MB & GIF)</span>
                 </div>
               )}
               <input
@@ -132,25 +178,45 @@ export default function EditConvoyForm({ convoy }: { convoy: any }) {
               </label>
               <select
                 name="gameId"
-                defaultValue={convoy.gameId}
+                value={gameId}
+                onChange={(e) => setGameId(e.target.value)}
                 className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-foreground"
               >
                 <option value="1">Euro Truck Simulator 2</option>
                 <option value="2">American Truck Simulator</option>
               </select>
             </div>
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-gray-400 uppercase">
-                Sifat Event
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                Tipe Convoy
               </label>
               <select
                 name="typeConvoy"
                 defaultValue={convoy.typeConvoy}
-                className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-foreground"
+                className="w-full bg-black/20 border border-border/50 rounded-xl p-3 text-white text-sm focus:border-primary outline-none"
               >
-                <option value="Mingguan">Mingguan</option>
-                <option value="Bulanan">Bulanan</option>
+                <option value="Mingguan">Rutin Mingguan</option>
+                <option value="Bulanan">Rutin Bulanan</option>
               </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-emerald-400 flex items-center gap-2 uppercase tracking-widest">
+                <Crown size={14} /> Road Captain
+              </label>
+              <select
+                name="roadCaptain"
+                defaultValue={convoy.roadCaptain || ""}
+                className="w-full bg-black/20 border border-emerald-500/30 rounded-xl p-3 text-emerald-400 text-sm focus:border-emerald-500 outline-none"
+              >
+                <option value="">-- Pilih Road Captain --</option>
+                {participantUsers.map((u) => (
+                  <option key={u.discordId} value={u.discordId}>
+                    {u.name}
+                  </option>
+                ))}
+              </select>
+              <p className="text-[10px] text-gray-500 italic mt-1">Hanya dari daftar user yang sudah bergabung (Partisipan).</p>
             </div>
             <div className="space-y-2 md:col-span-2">
               <label className="text-xs font-bold text-gray-400 uppercase">
@@ -249,13 +315,9 @@ export default function EditConvoyForm({ convoy }: { convoy: any }) {
             <h3 className="text-sm font-bold text-foreground/70 uppercase tracking-widest border-b border-white/10 pb-2">
               Asal
             </h3>
-            <input
-              name="sourceCity"
-              defaultValue={convoy.sourceCity}
-              required
-              className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-foreground"
-              placeholder="Kota Asal"
-            />
+            <div className="relative">
+              <CityCombobox name="sourceCity" gameId={gameId} placeholder="Kota Asal" defaultValue={convoy.sourceCity} />
+            </div>
             <input
               name="sourceCompany"
               defaultValue={convoy.sourceCompany}
@@ -268,13 +330,9 @@ export default function EditConvoyForm({ convoy }: { convoy: any }) {
             <h3 className="text-sm font-bold text-foreground/70 uppercase tracking-widest border-b border-white/10 pb-2">
               Tujuan
             </h3>
-            <input
-              name="destinationCity"
-              defaultValue={convoy.destinationCity}
-              required
-              className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-foreground"
-              placeholder="Kota Tujuan"
-            />
+            <div className="relative">
+              <CityCombobox name="destinationCity" gameId={gameId} placeholder="Kota Tujuan" defaultValue={convoy.destinationCity} />
+            </div>
             <input
               name="destinationCompany"
               defaultValue={convoy.destinationCompany}

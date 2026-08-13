@@ -13,81 +13,17 @@ import {
 } from "lucide-react";
 
 export default function LeaderboardUI({
-  currencies,
-  points,
-  jobs,
-  userMap,
-}: any) {
+  precalculatedData,
+}: {
+  precalculatedData: any;
+}) {
   const [category, setCategory] = useState<
     "nc" | "distance" | "points" | "jobs" | "mass"
   >("nc");
   const [period, setPeriod] = useState<"all" | "monthly">("monthly");
 
-  const leaderboardData = useMemo(() => {
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const aggregates: Record<string, number> = {};
-
-    if (category === "nc") {
-      // KALKULASI NC: (Earn - Spend)
-      currencies.forEach((tx: any) => {
-        const date = new Date(tx.createdAt);
-        if (period === "monthly" && date < startOfMonth) return;
-
-        const amount = tx.amount || 0;
-        // Jika earn (+), jika spend (-)
-        const value = tx.type === "earn" ? amount : -amount;
-        aggregates[tx.userId] = (aggregates[tx.userId] || 0) + value;
-      });
-    } else if (category === "points") {
-      // KALKULASI POIN: (Add - Remove)
-      points.forEach((p: any) => {
-        const date = new Date(p.createdAt);
-        if (period === "monthly" && date < startOfMonth) return;
-
-        const val = p.points || 0;
-        // Jika add (+), jika remove/pemutihan (-)
-        const value = p.type === "add" ? val : -val;
-        aggregates[p.userId] = (aggregates[p.userId] || 0) + value;
-      });
-    } else {
-      // Kategori lainnya (Distance, Jobs, Mass) tetap akumulasi positif
-      jobs.forEach((j: any) => {
-        const date = new Date(j.createdAt);
-        if (period === "monthly" && date < startOfMonth) return;
-
-        const val =
-          category === "distance"
-            ? j.distanceKm || 0
-            : category === "mass"
-              ? j.cargoMass || 0
-              : 1;
-
-        const id = j.driverId || j.userId;
-        aggregates[id] = (aggregates[id] || 0) + val;
-      });
-    }
-
-    // Khusus untuk Penalty, kita mungkin ingin mengurutkan dari yang TERKECIL (Driver paling rajin)
-    // Tapi biasanya leaderboard tetap dari yang terbesar. Di sini saya tetap pakai yang terbesar:
-    return Object.entries(aggregates)
-      .map(([userId, total]) => ({
-        userId,
-        total,
-        ...(userMap[userId] || {
-          name: "Unknown Driver",
-          image: null,
-          truckyId: "N/A",
-        }),
-      }))
-      .sort((a, b) => {
-        // Jika kategori points, mungkin Anda ingin mengurutkan dari poin terkecil (ASC)
-        // Jika NC/Lainnya, dari yang terbesar (DESC)
-        if (category === "points") return a.total - b.total;
-        return b.total - a.total;
-      })
-      .slice(0, 10);
-  }, [category, period, currencies, points, jobs, userMap]);
+  // Langsung ambil data matang dari prop, tidak perlu hitung ulang
+  const leaderboardData = precalculatedData?.[period]?.[category] || [];
 
   const getRankStyle = (index: number) => {
     switch (index) {
@@ -204,7 +140,7 @@ export default function LeaderboardUI({
 
       {/* TOP 3 PODIUM (Optional/Future) - Kita langsung ke List untuk Detail */}
       <div className="space-y-3">
-        {leaderboardData.map((row, index) => {
+        {leaderboardData.map((row: any, index: number) => {
           const style = getRankStyle(index);
           const unit =
             category === "nc"

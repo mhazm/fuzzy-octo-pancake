@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Search, Trash2, UserX, ShieldAlert, ChevronRight } from "lucide-react";
 import { dropDriverDataAction } from "@/app/actions/pointActions";
 import Link from "next/link";
+import { showAlert, showConfirm } from "@/lib/dialog";
+
 
 export default function PointDataUI({ initialData }: { initialData: any[] }) {
   const [searchTerm, setSearchTerm] = useState("");
@@ -23,7 +25,7 @@ export default function PointDataUI({ initialData }: { initialData: any[] }) {
     discordId: string,
     name: string,
   ) => {
-    const confirm = window.confirm(
+    const confirm = await showConfirm(
       `PERINGATAN: Hapus semua data poin dan link untuk ${name}? Tindakan ini tidak bisa dibatalkan.`,
     );
     if (!confirm) return;
@@ -31,9 +33,9 @@ export default function PointDataUI({ initialData }: { initialData: any[] }) {
     setIsProcessing(discordId);
     try {
       await dropDriverDataAction(truckyId, discordId);
-      alert("Data berhasil dibersihkan dari sistem.");
+      await showAlert("Data berhasil dibersihkan dari sistem.");
     } catch (err) {
-      alert("Gagal menghapus data.");
+      await showAlert("Gagal menghapus data.");
     } finally {
       setIsProcessing(null);
     }

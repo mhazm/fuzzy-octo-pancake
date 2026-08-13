@@ -24,6 +24,8 @@ export default function CurrencyClient({
 }) {
   const [filterType, setFilterType] = useState<"all" | "earn" | "spend">("all");
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
 
   const filteredHistory = initialHistory.filter((item) => {
     const matchesFilter = filterType === "all" || item.type === filterType;
@@ -32,6 +34,22 @@ export default function CurrencyClient({
       .includes(search.toLowerCase());
     return matchesFilter && matchesSearch;
   });
+
+  const totalPages = Math.max(1, Math.ceil(filteredHistory.length / itemsPerPage));
+  const currentData = filteredHistory.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const handleFilterChange = (type: "all" | "earn" | "spend") => {
+    setFilterType(type);
+    setCurrentPage(1);
+  };
+
+  const handleSearchChange = (val: string) => {
+    setSearch(val);
+    setCurrentPage(1);
+  };
 
   return (
     <div className="space-y-4">
@@ -43,7 +61,7 @@ export default function CurrencyClient({
             type="text"
             placeholder="Cari transaksi..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             className="w-full bg-card/50 border border-border/50 rounded-xl pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-accent-lilac outline-none transition-all"
           />
         </div>
@@ -51,7 +69,7 @@ export default function CurrencyClient({
           {(["all", "earn", "spend"] as const).map((type) => (
             <button
               key={type}
-              onClick={() => setFilterType(type)}
+              onClick={() => handleFilterChange(type)}
               className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all ${
                 filterType === type
                   ? "bg-accent-lilac border-accent-lilac text-foreground"
@@ -77,8 +95,8 @@ export default function CurrencyClient({
               </tr>
             </thead>
             <tbody className="divide-y divide-border/30">
-              {filteredHistory.length > 0 ? (
-                filteredHistory.map((item) => (
+              {currentData.length > 0 ? (
+                currentData.map((item) => (
                   <tr
                     key={item._id}
                     className="hover:bg-white/5 transition-colors"
@@ -132,6 +150,34 @@ export default function CurrencyClient({
           </table>
         </div>
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6">
+          <p className="text-sm text-muted-foreground">
+            Menampilkan <span className="font-bold text-foreground">{(currentPage - 1) * itemsPerPage + 1}</span> hingga <span className="font-bold text-foreground">{Math.min(currentPage * itemsPerPage, filteredHistory.length)}</span> dari <span className="font-bold text-foreground">{filteredHistory.length}</span> transaksi
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-4 py-2 rounded-xl text-sm font-medium border border-border/50 bg-card hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Sebelumnya
+            </button>
+            <div className="px-4 py-2 rounded-xl text-sm font-bold bg-accent-lilac/10 text-accent-lilac border border-accent-lilac/20">
+              {currentPage} / {totalPages}
+            </div>
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 rounded-xl text-sm font-medium border border-border/50 bg-card hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Selanjutnya
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

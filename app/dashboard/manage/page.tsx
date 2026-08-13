@@ -16,6 +16,12 @@ import {
 import Link from "next/link";
 import { getCompanyMembersMap } from "@/lib/trucky";
 
+export const metadata = {
+  title: "Manage",
+};
+
+
+
 export default async function ManageOverview() {
   const client = await clientPromise;
   const db = client.db();

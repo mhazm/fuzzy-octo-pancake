@@ -4,6 +4,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import {
+
   Plus,
   Timer,
   History,
@@ -12,6 +13,12 @@ import {
   ExternalLink,
   ChevronRight,
 } from "lucide-react";
+
+export const metadata = {
+  title: "Manage Convoy",
+};
+
+
 
 async function getConvoyData() {
   const client = await clientPromise;
@@ -32,8 +39,8 @@ export default async function ManageConvoyPage() {
   const convoys = await getConvoyData();
   const now = new Date();
 
-  const upcoming = convoys.filter((c) => new Date(c.meetupDate) >= now);
-  const past = convoys.filter((c) => new Date(c.meetupDate) < now);
+  const upcoming = convoys.filter((c) => c.active !== false);
+  const past = convoys.filter((c) => c.active === false);
 
   const getGameInfo = (id: string) => {
     return id === "2"

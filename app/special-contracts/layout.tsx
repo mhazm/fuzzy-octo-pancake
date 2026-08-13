@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import React from "react";
 
 export const metadata: Metadata = {
-  title: "Special Contract - Nismara Transport",
+  title: "Special Contract",
   description:
     "Lihat daftar Special Contract eksklusif di Nismara Transport dengan pengiriman prioritas, cargo khusus, tantangan driver, dan reward tambahan.",
   openGraph: {
-    title: "Special Contract - Nismara Transport",
+    title: "Special Contract",
     description:
       "Special Contract resmi Nismara Transport untuk pengiriman dan tantangan eksklusif.",
     images: ["https://images.nismara.my.id/227300_188.jpg"],

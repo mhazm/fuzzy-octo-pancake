@@ -4,6 +4,7 @@ declare module "next-auth" {
   interface Session {
     user: {
       id: string;
+      _id: string;
       discordId?: string | number | null;
       role: "user" | "manager" | "admin";
       isDriver: boolean;
@@ -18,6 +19,12 @@ declare module "next-auth" {
       level: number;
       joinedConvoy: number;
       isBooster: boolean;
+      nismaraplus: {
+        status: boolean;
+        startedAt?: Date | string | null;
+        expiredAt?: Date | string | null;
+        lastClaimAt?: Date | string | null;
+      };
     } & DefaultSession["user"];
   }
 

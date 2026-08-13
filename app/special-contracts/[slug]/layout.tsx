@@ -45,10 +45,10 @@ export async function generateMetadata(
     contract?.imageUrl || "https://images.nismara.my.id/227300_188.jpg";
 
   return {
-    title: `${contractName} - ${gameName} | Nismara Transport`,
+    title: `${contractName} - ${gameName}`,
     description: `Detail Special Contract ${contractName} Nismara Transport. Tersedia untuk ${gameName} dengan tujuan perusahaan ${contractCompany}.`,
     openGraph: {
-      title: `${contractName} | Nismara Transport`,
+      title: `${contractName}`,
       description: `Ambil muatan Special Contract ${contractName} di ${gameName}. Join Nismara Transport sekarang!`,
       images: [
         {
@@ -62,7 +62,7 @@ export async function generateMetadata(
     },
     twitter: {
       card: "summary_large_image",
-      title: `${contractName} | Nismara Transport`,
+      title: `${contractName}`,
       images: [contractImage],
     },
     robots: {

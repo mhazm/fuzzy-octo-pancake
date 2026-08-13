@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import {
   ShieldCheck,
@@ -10,10 +8,11 @@ import {
   UserCircle,
   FileSearch,
   Lock,
+  Image as ImageIcon,
 } from "lucide-react";
 
 export default function PrivacyPolicy() {
-  const lastUpdated = "07 Mei 2026";
+  const lastUpdated = "03 Agustus 2026";
 
   const sections = [
     {
@@ -51,6 +50,12 @@ export default function PrivacyPolicy() {
       title: "6. Hak Pengguna",
       content:
         "Anda berhak meminta penghapusan seluruh data terkait akun Anda di sistem Nismara (Data Wipe). Untuk melakukan ini, Anda dapat menghubungi tim manajemen melalui kanal dukungan di Discord resmi kami.",
+    },
+    {
+      icon: <ImageIcon size={20} />,
+      title: "7. Penyimpanan Media & UGC (User-Generated Content)",
+      content:
+        "Foto atau gambar yang Anda unggah ke dalam fitur Profil maupun Galeri akan disimpan secara aman di infrastruktur Cloud Storage pihak ketiga. Nismara berhak menampilkan konten tersebut di dalam platform. Anda tetap memegang hak penuh atas gambar Anda dan dapat meminta penghapusan permanen atas media tersebut kapan saja.",
     },
   ];
 

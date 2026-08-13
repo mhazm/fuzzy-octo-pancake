@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Search, UserX, Coins, ChevronRight, AlertCircle } from "lucide-react";
 import { dropCurrencyDataAction } from "@/app/actions/currencyActions";
 import Link from "next/link";
+import { showAlert, showConfirm } from "@/lib/dialog";
+
 
 export default function CurrencyDataUI({
   initialData,
@@ -27,7 +29,7 @@ export default function CurrencyDataUI({
     discordId: string,
     name: string,
   ) => {
-    const confirm = window.confirm(
+    const confirm = await showConfirm(
       `Peringatan: Hapus data SALDO N¢ untuk ${name}? Driver mungkin sudah keluar VTC. Tindakan ini permanen.`,
     );
     if (!confirm) return;
@@ -35,9 +37,9 @@ export default function CurrencyDataUI({
     setIsProcessing(discordId);
     try {
       await dropCurrencyDataAction(truckyId, discordId);
-      alert("Saldo berhasil dibersihkan dari sistem.");
+      await showAlert("Saldo berhasil dibersihkan dari sistem.");
     } catch (err) {
-      alert("Gagal menghapus data.");
+      await showAlert("Gagal menghapus data.");
     } finally {
       setIsProcessing(null);
     }
