@@ -12,6 +12,8 @@ import { sendPersonalNotification } from "@/lib/services/NotificationService";
 import dbConnect from "@/lib/mongoose";
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 
+export const dynamic = "force-dynamic";
+
 // This should be secured via an API key or Vercel cron secret in production
 export async function GET(request: Request) {
   try {

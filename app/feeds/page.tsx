@@ -4,6 +4,8 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import FeedsClient from "./FeedsClient";
 import { Sparkles } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Feeds",
   description:

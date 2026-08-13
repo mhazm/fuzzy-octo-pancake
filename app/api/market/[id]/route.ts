@@ -9,6 +9,9 @@ import { authOptions } from "../../auth/[...nextauth]/route";
 import { deleteFileFromR2 } from "@/lib/r2";
 
 import dbConnect from "@/lib/mongoose";
+
+export const revalidate = 60;
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> },

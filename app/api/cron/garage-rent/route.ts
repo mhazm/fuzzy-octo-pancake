@@ -4,6 +4,9 @@ import clientPromise from "@/lib/mongodb";
 import Garage from "@/lib/models/Garage";
 
 import dbConnect from "@/lib/mongoose";
+
+export const dynamic = "force-dynamic";
+
 const GUILD_ID = "863959415702028318";
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 

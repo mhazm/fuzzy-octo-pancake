@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 
+export const revalidate = 86400;
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const gameId = searchParams.get("gameId");

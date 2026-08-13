@@ -4,6 +4,8 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import GalleryIndexClient from "./GalleryIndexClient";
 import { Grid3X3 } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Galeri",
   description:

@@ -3,6 +3,8 @@ import clientPromise from "@/lib/mongodb";
 import { getCompanyMemberStats } from "@/lib/trucky";
 import { getUserAggregatedStats } from "@/lib/userStats";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ discordId: string }> }

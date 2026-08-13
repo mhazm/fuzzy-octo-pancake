@@ -6,6 +6,9 @@ import "@/lib/models/User"; // Ensure it's registered for populate
 import "@/lib/models/FleetBrand";
 
 import dbConnect from "@/lib/mongoose";
+
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     await dbConnect();
