@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import clientPromise from "@/lib/mongodb";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import RacingTicket from "@/lib/models/RacingTicket";
 import { getCurrencyData } from "@/app/dashboard/currency/actions";
 import { checkRateLimit } from "@/lib/rateLimit";
-import { logExtremeActivity } from "@/lib/securityLogger";
+import { redis } from "@/lib/redis";
 
-const GUILD_ID = process.env.DISCORD_GUILD_ID;
 const BASE_BET = 500;
 const VALID_MULTIPLIERS = [1, 2, 5, 10];
 const TRUCK_COUNT = 8;
@@ -52,7 +49,7 @@ export async function POST(req: NextRequest) {
 
     const totalBet = BASE_BET * multiplier;
 
-    // Check balance
+    // Hitung estimasi saldo dengan Redis
     let currencyData;
     try {
       currencyData = await getCurrencyData();
@@ -63,92 +60,55 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (currencyData.balance < totalBet) {
+    const spentStr = await redis.get(`racing_spent:${discordId}`);
+    const earnedStr = await redis.get(`racing_earned:${discordId}`);
+    const netRedis = Number(earnedStr || 0) - Number(spentStr || 0);
+    const estimatedBalance = currencyData.balance + netRedis;
+
+    if (estimatedBalance < totalBet) {
       return NextResponse.json(
         { error: "Saldo Nismara Coin tidak mencukupi" },
         { status: 400 },
       );
     }
 
-    await clientPromise;
-    const client = await clientPromise;
-    const db = client.db();
-
-    // Deduct balance atomically (Prevents Race Condition exploits)
-    const updateRes = await db
-      .collection("currencies")
-      .updateOne(
-        { userId: discordId, guildId: GUILD_ID, totalNC: { $gte: totalBet } },
-        { $inc: { totalNC: -totalBet } },
-      );
-
-    if (updateRes.modifiedCount === 0) {
-      return NextResponse.json(
-        { error: "Gagal memotong saldo NC" },
-        { status: 500 },
-      );
-    }
-
-    // Log the spend
-    await db.collection("currencyhistories").insertOne({
-      userId: discordId,
-      guildId: GUILD_ID,
-      amount: totalBet,
-      type: "spend",
-      reason: `Taruhan Balap Truk (x${multiplier})`,
-      createdAt: new Date(),
-    });
+    // Catat pengeluaran sesi ke Redis
+    await redis.incrby(`racing_spent:${discordId}`, totalBet);
+    await redis.expire(`racing_spent:${discordId}`, 3600);
 
     // RNG to determine winning truck (1 to 8)
-    // 12.5% chance for any truck
     const winningTruckId = Math.floor(Math.random() * TRUCK_COUNT) + 1;
-
     const isWinning = winningTruckId === truckId;
     const prizeWon = isWinning ? totalBet * 3 : 0;
 
     if (isWinning) {
-      // Award prize immediately
-      await db
-        .collection("currencies")
-        .updateOne(
-          { userId: discordId, guildId: GUILD_ID },
-          { $inc: { totalNC: prizeWon } },
-        );
-
-      await db.collection("currencyhistories").insertOne({
-        userId: discordId,
-        guildId: GUILD_ID,
-        amount: prizeWon,
-        type: "earn",
-        reason: `Menang Balap Truk! (Hadiah 3x)`,
-        createdAt: new Date(),
-      });
-
-      // Log extreme winnings
-      await logExtremeActivity(
-        discordId,
-        "RACING_WIN",
-        prizeWon,
-        `Menang balap truk dengan taruhan x${multiplier}`,
-      );
+      await redis.incrby(`racing_earned:${discordId}`, prizeWon);
+      await redis.expire(`racing_earned:${discordId}`, 3600);
     }
 
-    // Create ticket in DB
-    const newTicket = new RacingTicket({
+    // Buat tiket di Redis
+    const ticketId = `redis_racing_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const ticketData = {
+      _id: ticketId,
       discordId,
       truckId,
       winningTruckId,
       multiplier,
       betAmount: totalBet,
       prizeWon,
-      isWinning,
-    });
+      isWinning: isWinning.toString(),
+      createdAt: new Date().toISOString(),
+    };
 
-    await newTicket.save();
+    await redis.hset(`racing_ticket:${ticketId}`, ticketData);
+    await redis.expire(`racing_ticket:${ticketId}`, 3600);
+
+    await redis.rpush(`racing_session_tickets:${discordId}`, ticketId);
+    await redis.expire(`racing_session_tickets:${discordId}`, 3600);
 
     return NextResponse.json({
       message: "Race started successfully",
-      ticketId: newTicket._id,
+      ticketId: ticketId,
       winningTruckId,
       prizeWon,
     });

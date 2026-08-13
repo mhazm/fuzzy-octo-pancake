@@ -11,6 +11,7 @@ import {
   XCircle,
   CheckCircle2,
   History,
+  Info,
 } from "lucide-react";
 import { getCurrencyData } from "@/app/dashboard/currency/actions";
 
@@ -108,6 +109,29 @@ export default function RacingClient({
 
   useEffect(() => {
     fetchDashboardData();
+  }, []);
+
+  // Auto-Sync saat player keluar dari halaman (Write-Behind Flush)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        navigator.sendBeacon("/api/racing/sync");
+      }
+    };
+    
+    const handlePageHide = () => {
+      navigator.sendBeacon("/api/racing/sync");
+    };
+
+    window.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("pagehide", handlePageHide);
+    
+    return () => {
+      window.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("pagehide", handlePageHide);
+      // Saat komponen React di unmount (pindah page via Next.js router)
+      fetch("/api/racing/sync", { method: "POST", keepalive: true }).catch(() => {});
+    };
   }, []);
 
   // Cleanup interval on unmount
@@ -258,7 +282,7 @@ export default function RacingClient({
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-700 pb-20">
+    <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-700 pt-8 pb-20">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent-sky filter drop-shadow-lg uppercase tracking-tighter">
@@ -267,6 +291,12 @@ export default function RacingClient({
           <p className="text-muted-foreground font-medium">
             Balapan truk virtual. Pilih jagoanmu dan menangkan N¢!
           </p>
+          <div className="flex items-start gap-2 mt-3 bg-amber-500/10 border border-amber-500/20 p-3 rounded-xl max-w-lg">
+            <Info className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+            <p className="text-xs text-amber-500/90 leading-relaxed">
+              <strong>Info:</strong> Agar balapan berjalan tanpa gangguan jaringan, perubahan saldo sengaja ditangguhkan sementara waktu. Saldo Nismara Coin Anda yang sebenarnya akan disinkronisasi ketika Anda meninggalkan halaman ini.
+            </p>
+          </div>
         </div>
 
         <div className="glass-panel px-6 py-3 rounded-2xl flex items-center gap-3">
