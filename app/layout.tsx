@@ -7,6 +7,7 @@ import NismaraPlusAdPopup from "@/components/NismaraPlusAdPopup";
 import { Providers } from "@/components/Providers";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import { cn } from "@/lib/utils";
+import RadioWidget from "@/components/RadioWidget";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -85,6 +86,7 @@ export default function RootLayout({
         {/* Navbar akan selalu ada di paling atas */}
         <Providers>
           <Navbar />
+          <RadioWidget />
 
           <div className="flex-1 w-full max-w-full overflow-x-clip">
             {children}
