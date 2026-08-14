@@ -199,6 +199,18 @@ export default function TimezonePage() {
               </div>
             ))}
           </div>
+
+          {/* Leaderboard Button */}
+          <div className="flex justify-center mt-10">
+            <Link
+              href="/timezone/leaderboard"
+              className="group relative inline-flex items-center gap-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white px-8 py-4 rounded-2xl shadow-xl shadow-amber-500/20 transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/40 hover:-translate-y-1 font-black uppercase tracking-widest"
+            >
+              <Trophy className="text-amber-100 group-hover:scale-110 transition-transform duration-300" size={24} />
+              <span>Lihat Leaderboard TimeZone</span>
+              <div className="absolute -inset-1 bg-gradient-to-r from-amber-400 to-amber-600 blur opacity-30 group-hover:opacity-60 transition duration-300 rounded-2xl -z-10" />
+            </Link>
+          </div>
         </div>
       </section>
 
