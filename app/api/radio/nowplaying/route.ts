@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
 export const revalidate = 0; // Disable cache for this route, always fetch fresh data
 
 export async function GET() {
