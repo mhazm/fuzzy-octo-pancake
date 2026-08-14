@@ -7,25 +7,29 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import Link from "next/link";
 import { ArrowLeft, MonitorPlay } from "lucide-react";
 
-
-
-
-
-export async function generateMetadata(props: { params: Promise<{ postId: string }> }): Promise<Metadata> {
+export async function generateMetadata(props: {
+  params: Promise<{ postId: string }>;
+}): Promise<Metadata> {
   const { postId } = await props.params;
 
   try {
     const client = await clientPromise;
     const db = client.db();
-    const post = await db.collection("gallery_posts").findOne({ _id: new ObjectId(postId) });
+    const post = await db
+      .collection("gallery_posts")
+      .findOne({ _id: new ObjectId(postId) });
 
     if (!post) {
       return { title: "Postingan tidak ditemukan" };
     }
 
-    const user = await db.collection("users").findOne({ discordId: post.userId });
-    const title = user?.name ? `Postingan Truk dari ${user.name}` : "Galeri Truk Nismara";
-    const desc = post.caption || "Lihat koleksi foto perjalanan dan armada kebanggaan di Nismara Transport.";
+    const user = await db
+      .collection("users")
+      .findOne({ discordId: post.userId });
+    const title = user?.name ? `Postingan dari ${user.name}` : "Galeri Nismara";
+    const desc =
+      post.caption ||
+      "Lihat koleksi foto perjalanan dan armada kebanggaan di Nismara Transport.";
 
     return {
       title,
@@ -48,11 +52,14 @@ export async function generateMetadata(props: { params: Promise<{ postId: string
   }
 }
 
-export default async function PostPage(props: { params: Promise<{ postId: string }> }) {
+export default async function PostPage(props: {
+  params: Promise<{ postId: string }>;
+}) {
   const { postId } = await props.params;
   const session = await getServerSession(authOptions);
   const loggedInDiscordId = session?.user?.id || session?.user?.discordId || "";
-  const isManager = session?.user?.role === "manager" || session?.user?.role === "admin";
+  const isManager =
+    session?.user?.role === "manager" || session?.user?.role === "admin";
 
   let post = null;
   let profileUser = null;
@@ -62,43 +69,72 @@ export default async function PostPage(props: { params: Promise<{ postId: string
   try {
     const client = await clientPromise;
     const db = client.db();
-    
+
     if (loggedInDiscordId) {
-      const me = await db.collection("users").findOne({ discordId: loggedInDiscordId });
+      const me = await db
+        .collection("users")
+        .findOne({ discordId: loggedInDiscordId });
       loggedInUserTruckyId = me?.truckyId || null;
     }
 
-    post = await db.collection("gallery_posts").findOne({ _id: new ObjectId(postId) });
-    
+    post = await db
+      .collection("gallery_posts")
+      .findOne({ _id: new ObjectId(postId) });
+
     if (post) {
-      profileUser = await db.collection("users").findOne({ discordId: post.userId });
-      
-      const comments = await db.collection("gallery_comments")
+      profileUser = await db
+        .collection("users")
+        .findOne({ discordId: post.userId });
+
+      const comments = await db
+        .collection("gallery_comments")
         .find({ postId: new ObjectId(postId) })
         .sort({ createdAt: 1 })
         .toArray();
-        
-      const userIds = [...new Set(comments.map(c => c.userId))];
-        const users = await db.collection("users")
+
+      const userIds = [...new Set(comments.map((c) => c.userId))];
+      const users = await db
+        .collection("users")
         .find({ discordId: { $in: userIds } })
-        .project({ discordId: 1, name: 1, image: 1, avatarUrl: 1, truckyId: 1, truckyRank: 1, nismaraplus: 1, isBooster: 1, discordRole: 1, role: 1 })
+        .project({
+          discordId: 1,
+          name: 1,
+          image: 1,
+          avatarUrl: 1,
+          truckyId: 1,
+          truckyRank: 1,
+          nismaraplus: 1,
+          isBooster: 1,
+          discordRole: 1,
+          role: 1,
+        })
         .toArray();
 
-      const userMap = users.reduce((acc, user) => {
-        acc[user.discordId] = {
-          ...user,
-          avatarUrl: user.image || user.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || "User")}&background=random`,
-          isNismaraPlus: user.nismaraplus?.status === true,
-          isBooster: user.isBooster === true,
-          isManager: user.discordRole === "manager" || user.discordRole === "admin" || user.role === "manager" || user.role === "admin"
-        };
-        return acc;
-      }, {} as Record<string, any>);
+      const userMap = users.reduce(
+        (acc, user) => {
+          acc[user.discordId] = {
+            ...user,
+            avatarUrl:
+              user.image ||
+              user.avatarUrl ||
+              `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || "User")}&background=random`,
+            isNismaraPlus: user.nismaraplus?.status === true,
+            isBooster: user.isBooster === true,
+            isManager:
+              user.discordRole === "manager" ||
+              user.discordRole === "admin" ||
+              user.role === "manager" ||
+              user.role === "admin",
+          };
+          return acc;
+        },
+        {} as Record<string, any>,
+      );
 
-      enrichedComments = comments.map(c => {
+      enrichedComments = comments.map((c) => {
         const u = userMap[c.userId] || { name: "Unknown", avatarUrl: null };
-        const commentObj = { 
-          ...c, 
+        const commentObj = {
+          ...c,
           user: {
             name: u.name,
             avatarUrl: u.avatarUrl,
@@ -106,8 +142,8 @@ export default async function PostPage(props: { params: Promise<{ postId: string
             isNismaraPlus: u.isNismaraPlus,
             isBooster: u.isBooster,
             isManager: u.isManager,
-            truckyRank: u.truckyRank
-          }  
+            truckyRank: u.truckyRank,
+          },
         };
         // Serialize ObjectId to string for client component
         return JSON.parse(JSON.stringify(commentObj));
@@ -127,9 +163,12 @@ export default async function PostPage(props: { params: Promise<{ postId: string
           <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
             <MonitorPlay className="w-12 h-12 text-muted-foreground/50" />
           </div>
-          <h1 className="text-3xl font-black text-foreground mb-4">Postingan tidak ditemukan</h1>
+          <h1 className="text-3xl font-black text-foreground mb-4">
+            Postingan tidak ditemukan
+          </h1>
           <p className="text-muted-foreground mb-8 text-sm leading-relaxed">
-            Tautan yang Anda ikuti mungkin rusak, atau postingan telah dihapus oleh pemiliknya.
+            Tautan yang Anda ikuti mungkin rusak, atau postingan telah dihapus
+            oleh pemiliknya.
           </p>
           <Link
             href="/"
@@ -144,24 +183,33 @@ export default async function PostPage(props: { params: Promise<{ postId: string
   }
 
   const profileName = profileUser?.name || "Driver Nismara";
-  const profileAvatar = profileUser?.image || profileUser?.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(profileName)}&background=random`;
+  const profileAvatar =
+    profileUser?.image ||
+    profileUser?.avatarUrl ||
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(profileName)}&background=random`;
   const profileTruckyId = profileUser?.truckyId || "";
 
   return (
     <>
-        <PostDetailClient 
-          post={post}
-          initialComments={enrichedComments}
-          loggedInUserId={String(loggedInDiscordId || "")}
-          loggedInUserTruckyId={loggedInUserTruckyId ? String(loggedInUserTruckyId) : null}
-          profileName={profileUser?.name || "Driver"}
-          profileAvatar={profileUser?.image || profileUser?.avatarUrl || "/placeholder-avatar.png"}
-          profileTruckyId={profileUser?.truckyId || ""}
-          profileIsNismaraPlus={profileUser?.nismaraplus?.status === true}
-          profileIsBooster={profileUser?.isBooster === true}
-          profileRole={profileUser?.discordRole || profileUser?.role || "user"}
-          isManager={isManager}
-        />
+      <PostDetailClient
+        post={post}
+        initialComments={enrichedComments}
+        loggedInUserId={String(loggedInDiscordId || "")}
+        loggedInUserTruckyId={
+          loggedInUserTruckyId ? String(loggedInUserTruckyId) : null
+        }
+        profileName={profileUser?.name || "Driver"}
+        profileAvatar={
+          profileUser?.image ||
+          profileUser?.avatarUrl ||
+          "/placeholder-avatar.png"
+        }
+        profileTruckyId={profileUser?.truckyId || ""}
+        profileIsNismaraPlus={profileUser?.nismaraplus?.status === true}
+        profileIsBooster={profileUser?.isBooster === true}
+        profileRole={profileUser?.discordRole || profileUser?.role || "user"}
+        isManager={isManager}
+      />
     </>
   );
 }
