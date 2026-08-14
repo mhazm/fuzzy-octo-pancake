@@ -75,10 +75,18 @@ export async function POST(req: Request) {
     attempt.completedAt = now;
     await attempt.save();
 
+    const client = await clientPromise;
+    const db = client.db();
+    const userDoc = await db.collection("users").findOne({ discordId: session.user.discordId });
+    const targetChannelId = userDoc?.interviewChannelId;
+
     // Check if we should close their interview access
-    if (passed || attempt.attemptNumber >= 2) {
-      const client = await clientPromise;
-      const db = client.db();
+    if (passed) {
+      await db.collection("users").updateOne(
+        { discordId: session.user.discordId },
+        { $unset: { isInterviewing: "", interviewChannelId: "" } }
+      );
+    } else if (attempt.attemptNumber >= 2) {
       await db.collection("users").updateOne(
         { discordId: session.user.discordId },
         { $unset: { isInterviewing: "" } }
@@ -87,48 +95,32 @@ export async function POST(req: Request) {
 
     // -- POST Hasil Ujian ke Discord Channel Interview --
     const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
-    const GUILD_ID = process.env.DISCORD_GUILD_ID;
     const MANAGER_ROLE_ID = process.env.DISCORD_MANAGER_ROLE_ID;
 
-    if (DISCORD_BOT_TOKEN && GUILD_ID) {
-      // Cari channel interview milik user ini
-      const safeUsername = session.user.name?.replace(/[^a-zA-Z0-9]/g, "").toLowerCase() || "intern";
-      const expectedChannelName = `interview-${safeUsername}`;
-      
+    if (DISCORD_BOT_TOKEN && targetChannelId) {
       try {
-        const getChannelsRes = await fetch(`https://discord.com/api/v10/guilds/${GUILD_ID}/channels`, {
-          headers: { "Authorization": `Bot ${DISCORD_BOT_TOKEN}` }
-        });
+        let msgContent = `**HASIL UJIAN KELAYAKAN PROMOSI**\nSopir: <@${session.user.discordId}>\nSkor: **${score}/100**\nStatus: **${passed ? 'LULUS ✅' : 'GAGAL ❌'}**\nPercobaan ke: ${attempt.attemptNumber}/2`;
         
-        if (getChannelsRes.ok) {
-          const channels = await getChannelsRes.json();
-          const targetChannel = channels.find((c: any) => c.name === expectedChannelName);
-
-          if (targetChannel) {
-            let msgContent = `**HASIL UJIAN KELAYAKAN PROMOSI**\nSopir: <@${session.user.discordId}>\nSkor: **${score}/100**\nStatus: **${passed ? 'LULUS ✅' : 'GAGAL ❌'}**\nPercobaan ke: ${attempt.attemptNumber}/2`;
-            
-            if (isTimeout) {
-              msgContent += `\n*Catatan: Sistem mendeteksi overtime (melebihi 15 menit), sehingga beberapa skor dianulir.*`;
-            }
-
-            if (passed) {
-              msgContent += `\n\n<@&${MANAGER_ROLE_ID}> Intern ini telah LULUS ujian! Silakan periksa kembali dan tekan tombol **Luluskan** di Dashboard untuk menaikkan jabatan mereka.`;
-            } else if (attempt.attemptNumber >= 2) {
-              msgContent += `\n\n<@&${MANAGER_ROLE_ID}> Intern ini telah gagal dalam ujian kelayakan sebanyak 2 kali. Mohon berikan bimbingan atau tindak lanjut.`;
-            } else {
-              msgContent += `\n\nSistem mengizinkan Anda untuk mencoba **1 kali lagi**. Silakan pelajari ulang sebelum mencoba kembali.`;
-            }
-
-            await fetch(`https://discord.com/api/v10/channels/${targetChannel.id}/messages`, {
-              method: "POST",
-              headers: {
-                "Authorization": `Bot ${DISCORD_BOT_TOKEN}`,
-                "Content-Type": "application/json"
-              },
-              body: JSON.stringify({ content: msgContent })
-            });
-          }
+        if (isTimeout) {
+          msgContent += `\n*Catatan: Sistem mendeteksi overtime (melebihi 15 menit), sehingga beberapa skor dianulir.*`;
         }
+
+        if (passed) {
+          msgContent += `\n\n<@&${MANAGER_ROLE_ID}> Intern ini telah LULUS ujian! Silakan periksa kembali dan tekan tombol **Luluskan** di Dashboard untuk menaikkan jabatan mereka.`;
+        } else if (attempt.attemptNumber >= 2) {
+          msgContent += `\n\n<@&${MANAGER_ROLE_ID}> Intern ini telah gagal dalam ujian kelayakan sebanyak 2 kali. Mohon berikan bimbingan atau tindak lanjut.`;
+        } else {
+          msgContent += `\n\nSistem mengizinkan Anda untuk mencoba **1 kali lagi**. Silakan pelajari ulang sebelum mencoba kembali.`;
+        }
+
+        await fetch(`https://discord.com/api/v10/channels/${targetChannelId}/messages`, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bot ${DISCORD_BOT_TOKEN}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ content: msgContent })
+        });
       } catch (err) {
         console.error("Gagal mengirim hasil ke Discord:", err);
       }

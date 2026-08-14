@@ -36,7 +36,7 @@ export default function NotificationsClient() {
   const fetchNotifications = async () => {
     try {
       setIsLoading(true);
-      const res = await fetch(`/api/notifications?page=${page}&limit=10`);
+      const res = await fetch(`/api/notifications?page=${page}&limit=10`, { cache: "no-store" });
       if (res.ok) {
         const json = await res.json();
         if (json.success && json.data) {
@@ -54,6 +54,13 @@ export default function NotificationsClient() {
 
   useEffect(() => {
     fetchNotifications();
+
+    const handleUpdate = () => fetchNotifications();
+    window.addEventListener("notifications-updated", handleUpdate);
+    
+    return () => {
+      window.removeEventListener("notifications-updated", handleUpdate);
+    };
   }, [page]);
 
   const handleNotificationClick = async (notif: NotificationData) => {
@@ -65,6 +72,7 @@ export default function NotificationsClient() {
 
       try {
         await fetch(`/api/notifications/${notif._id}/read`, { method: "POST" });
+        window.dispatchEvent(new Event("notifications-updated"));
       } catch (error) {
         console.error("Failed to mark as read:", error);
       }
@@ -77,6 +85,7 @@ export default function NotificationsClient() {
 
     try {
       await fetch("/api/notifications/read-all", { method: "POST" });
+      window.dispatchEvent(new Event("notifications-updated"));
     } catch (error) {
       console.error("Failed to mark all as read:", error);
     }

@@ -5,6 +5,9 @@ import mongoose from "mongoose";
 import Notification from "@/lib/models/Notification";
 
 import dbConnect from "@/lib/mongoose";
+
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);

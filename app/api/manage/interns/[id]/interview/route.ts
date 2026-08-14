@@ -98,10 +98,10 @@ export async function POST(
       },
     );
 
-    // Beri tanda bahwa user sedang dalam masa ujian kelayakan
+    // Beri tanda bahwa user sedang dalam masa ujian kelayakan dan simpan channel ID
     await db
       .collection("users")
-      .updateOne({ discordId }, { $set: { isInterviewing: true } });
+      .updateOne({ discordId }, { $set: { isInterviewing: true, interviewChannelId: channelData.id } });
 
     return NextResponse.json({
       success: true,

@@ -25,7 +25,7 @@ export default function NotificationBell() {
 
   const fetchNotifications = async () => {
     try {
-      const res = await fetch("/api/notifications");
+      const res = await fetch("/api/notifications", { cache: "no-store" });
       if (res.ok) {
         const json = await res.json();
         if (json.success && json.data) {
@@ -38,13 +38,20 @@ export default function NotificationBell() {
     }
   };
 
-  // Initial fetch
+  // Initial fetch and event listener
   useEffect(() => {
     fetchNotifications();
     
     // Polling every 60 seconds (lightweight)
     const interval = setInterval(fetchNotifications, 60000);
-    return () => clearInterval(interval);
+    
+    const handleUpdate = () => fetchNotifications();
+    window.addEventListener("notifications-updated", handleUpdate);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("notifications-updated", handleUpdate);
+    };
   }, []);
 
   // Close dropdown on click outside
@@ -68,6 +75,7 @@ export default function NotificationBell() {
           prev.map((n) => n._id === notif._id ? { ...n, isRead: true } : n)
         );
         setUnreadCount((prev) => Math.max(0, prev - 1));
+        window.dispatchEvent(new Event("notifications-updated"));
       } catch (error) {
         console.error("Failed to mark notification as read", error);
       }

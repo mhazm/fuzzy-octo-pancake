@@ -39,7 +39,7 @@ export default async function UserDataHub() {
       name: "Manage Intern",
       desc: "Tinjau semua sopir intern.",
       icon: User2,
-      href: "/dashboard/manage/data/interns",
+      href: "/dashboard/manage/data/intern",
       color: "text-accent-indigo",
       bg: "bg-accent-indigo/10",
       border: "border-accent-indigo/20",

@@ -3,6 +3,8 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
 import MarketManagerClient from "./MarketManagerClient";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Kelola Market Mod",
 };

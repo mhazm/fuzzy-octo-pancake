@@ -11,7 +11,7 @@ export const metadata = {
   title: "Manage Users",
 };
 
-
+export const dynamic = "force-dynamic";
 
 export default async function ManageUsersPage() {
   const session = await getServerSession(authOptions);

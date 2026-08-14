@@ -11,7 +11,7 @@ export const metadata = {
   title: "Manage Users Detail",
 };
 
-
+export const dynamic = "force-dynamic";
 
 export default async function AdminUserDetailPage({
   params,

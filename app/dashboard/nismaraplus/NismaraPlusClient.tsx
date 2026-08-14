@@ -57,7 +57,7 @@ export default function NismaraPlusClient() {
                 )}
 
                 <p className="text-sm font-bold text-foreground">
-                  {plan.months} {plan.months === 12 ? "Tahun" : "Bulan"}
+                  {plan.months === 12 ? "1 Tahun" : `${plan.months} Bulan`}
                 </p>
                 <div className="mt-2">
                   <span className="text-lg font-black text-foreground">

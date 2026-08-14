@@ -103,7 +103,7 @@ export async function createPurchaseTicket(months: number) {
           embeds: [
             {
               title: "✨ Permintaan Aktivasi Nismara+",
-              description: `Halo **${username}**, terima kasih telah memilih untuk mendukung operasional Nismara Transport!\n\nSembari sistem otomatisasi payment gateway kami (Midtrans) dirilis, silakan lakukan pembayaran manual sesuai dengan rincian paket yang Anda pilih di bawah ini:`,
+              description: `Halo **${username}**, terima kasih telah memilih untuk mendukung operasional Nismara Transport!\n\nSilakan lakukan pembayaran sesuai dengan rincian paket yang Anda pilih di bawah ini:`,
               color: 10181046,
               fields: [
                 {
@@ -117,9 +117,9 @@ export async function createPurchaseTicket(months: number) {
                   inline: true,
                 },
                 {
-                  name: "🏦 Metode Pembayaran Manual",
+                  name: "🏦 Metode Pembayaran",
                   value:
-                    "• **Bank BCA:** 123456789 a/n Nismara Transport\n• **E-Wallet Dana/Gopay:** 08123456789",
+                    "• **Bank BSI:** 7340742898 a/n Ihsan Afdhal\n• **Bank BRI:** 7334 0102 6111 532 a/n Ihsan Afdhal\n• **Gopay/Dana:** 089603703792 a/n Ihsan Afdhal ",
                   inline: false,
                 },
                 {

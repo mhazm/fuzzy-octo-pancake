@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import QuizAttempt from "@/lib/models/QuizAttempt";
 import dbConnect from "@/lib/mongoose";
+import clientPromise from "@/lib/mongodb";
 
 export async function POST(
   req: Request,
@@ -25,6 +26,14 @@ export async function POST(
 
     // Hapus semua riwayat ujian untuk intern ini
     await QuizAttempt.deleteMany({ discordId });
+
+    // Berikan kembali akses ujian ke user
+    const client = await clientPromise;
+    const db = client.db();
+    await db.collection("users").updateOne(
+      { discordId },
+      { $set: { isInterviewing: true } }
+    );
 
     return NextResponse.json({
       success: true,
