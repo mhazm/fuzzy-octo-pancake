@@ -49,6 +49,12 @@ export async function GET(request: Request) {
       currentPrice: currentPriceData?.price || 0,
       lastUpdate: currentPriceData?.timestamp || new Date(),
       chartData
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, s-maxage=0',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      }
     });
   } catch (error: any) {
     console.error("Error fetching system fuel data:", error);

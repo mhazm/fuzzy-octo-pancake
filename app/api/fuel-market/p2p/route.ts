@@ -26,7 +26,13 @@ export async function GET(request: Request) {
     
     const listings = await FuelMarketListing.find(query).sort({ pricePerLiter: 1, createdAt: -1 }).populate("sellerId", "name discordId image nismaraplus isBooster discordRole").lean();
 
-    return NextResponse.json({ success: true, listings });
+    return NextResponse.json({ success: true, listings }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, s-maxage=0',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      }
+    });
   } catch (error: any) {
     console.error("Error fetching P2P fuel listings:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
