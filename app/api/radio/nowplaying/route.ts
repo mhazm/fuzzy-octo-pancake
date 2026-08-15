@@ -61,12 +61,23 @@ export async function GET() {
         : []
     };
 
-    return NextResponse.json(nowPlaying);
+    return NextResponse.json(nowPlaying, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, s-maxage=0',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      }
+    });
   } catch (error) {
     console.error('Error fetching AzuraCast data:', error);
     return NextResponse.json(
       { error: 'Failed to fetch radio data' },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'Cache-Control': 'no-store, no-cache',
+        }
+      }
     );
   }
 }
