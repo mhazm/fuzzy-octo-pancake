@@ -32,6 +32,9 @@ import {
   Sparkles,
   FileText,
   Shield,
+  User2,
+  Sparkle,
+  TruckIcon,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -472,14 +475,65 @@ export default function NavbarClient({ session }: { session: any }) {
                         className="cursor-pointer rounded-lg hover:bg-red-500/10 focus:bg-red-500/10"
                         render={
                           <Link
-                            href="/dashboard/manage"
+                            href="/dashboard/manage/tickets"
                             className="flex items-center w-full"
                           />
                         }
                       >
-                        <Shield className="mr-3 h-4 w-4 text-red-400" />
+                        <FileText className="mr-3 h-4 w-4 text-red-400" />
                         <span className="font-medium text-red-400">
-                          Manager Hub
+                          Manage Tiket
+                        </span>
+                      </DropdownMenuItem>
+                    )}
+                    {(session.user?.role === "manager" ||
+                      session.user?.role === "admin") && (
+                      <DropdownMenuItem
+                        className="cursor-pointer rounded-lg hover:bg-red-500/10 focus:bg-red-500/10"
+                        render={
+                          <Link
+                            href="/dashboard/manage/fleet"
+                            className="flex items-center w-full"
+                          />
+                        }
+                      >
+                        <Truck className="mr-3 h-4 w-4 text-red-400" />
+                        <span className="font-medium text-red-400">
+                          Manage Fleet
+                        </span>
+                      </DropdownMenuItem>
+                    )}
+                    {(session.user?.role === "manager" ||
+                      session.user?.role === "admin") && (
+                      <DropdownMenuItem
+                        className="cursor-pointer rounded-lg hover:bg-red-500/10 focus:bg-red-500/10"
+                        render={
+                          <Link
+                            href="/dashboard/manage/events"
+                            className="flex items-center w-full"
+                          />
+                        }
+                      >
+                        <Sparkle className="mr-3 h-4 w-4 text-red-400" />
+                        <span className="font-medium text-red-400">
+                          Manage Events
+                        </span>
+                      </DropdownMenuItem>
+                    )}
+                    {(session.user?.role === "manager" ||
+                      session.user?.role === "admin") && (
+                      <DropdownMenuItem
+                        className="cursor-pointer rounded-lg hover:bg-red-500/10 focus:bg-red-500/10"
+                        render={
+                          <Link
+                            href="/dashboard/manage/data"
+                            className="flex items-center w-full"
+                          />
+                        }
+                      >
+                        <User2 className="mr-3 h-4 w-4 text-red-400" />
+                        <span className="font-medium text-red-400">
+                          Manage Data
                         </span>
                       </DropdownMenuItem>
                     )}

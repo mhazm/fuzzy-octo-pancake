@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useSession } from "next-auth/react";
 import {
   LayoutDashboard,
   Truck,
@@ -26,13 +25,13 @@ const menuItems = [
   { name: "Driver Guide", href: "/dashboard/driver-guide", icon: BookOpen },
   { name: "Garage", href: "/dashboard/garage", icon: Truck },
   { name: "Job History", href: "/dashboard/jobs", icon: Briefcase },
-  { name: "Nismara Coin", href: "/dashboard/currency", icon: Coins },
-  { name: "Transactions", href: "/dashboard/transactions", icon: ReceiptText },
-  { name: "Points Penalty", href: "/dashboard/points", icon: TriangleAlert },
+  { name: "Wallet", href: "/dashboard/currency", icon: Coins },
+  { name: "Penalty Points", href: "/dashboard/points", icon: TriangleAlert },
   { name: "Tickets", href: "/dashboard/ticket", icon: FileText },
   { name: "Insurance", href: "/dashboard/insurance", icon: Shield },
   { name: "My Market", href: "/dashboard/my-market", icon: Briefcase },
   { name: "My Library", href: "/dashboard/library", icon: FileText },
+  { name: "Transactions", href: "/dashboard/transactions", icon: ReceiptText },
   { name: "Profile Settings", href: "/dashboard/settings", icon: Settings },
 ];
 
@@ -60,11 +59,10 @@ const managementItems = [
   },
 ];
 
-export default function DashboardSidebar() {
+export default function DashboardSidebar({ userRole }: { userRole?: string }) {
   const pathname = usePathname();
-  const { data: session } = useSession();
 
-  const isManager = session?.user?.role === "manager";
+  const isManager = userRole === "manager" || userRole === "admin";
 
   return (
     <aside className="w-full lg:w-64 shrink-0 border-b lg:border-b-0 lg:border-r border-border/10 bg-transparent lg:h-[calc(100vh-4rem)] lg:sticky top-16 z-40">
