@@ -9,6 +9,7 @@ import Link from "next/link";
 import UserBadges from "@/components/icons/UserBadges";
 import { Modal } from "@/components/ui/Modal";
 import { showAlert, showConfirm } from "@/lib/dialog";
+import EditPostDialog from "./EditPostDialog";
 
 
 interface Comment {
@@ -59,6 +60,7 @@ export default function GalleryModal({
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showEditPostModal, setShowEditPostModal] = useState(false);
 
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editCommentText, setEditCommentText] = useState("");
@@ -355,14 +357,25 @@ export default function GalleryModal({
           </div>
           
           {(loggedInUserId === post.userId || isManager) && (
-            <button 
-              onClick={() => setShowDeleteModal(true)}
-              disabled={isDeleting}
-              className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-colors disabled:opacity-50 ml-auto shrink-0"
-              title="Hapus Postingan"
-            >
-              {isDeleting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
-            </button>
+            <div className="flex gap-2 ml-auto shrink-0">
+              {loggedInUserId === post.userId && (
+                <button 
+                  onClick={() => setShowEditPostModal(true)}
+                  className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl transition-colors"
+                  title="Edit Postingan"
+                >
+                  <Pencil className="w-5 h-5" />
+                </button>
+              )}
+              <button 
+                onClick={() => setShowDeleteModal(true)}
+                disabled={isDeleting}
+                className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-colors disabled:opacity-50"
+                title="Hapus Postingan"
+              >
+                {isDeleting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
+              </button>
+            </div>
           )}
         </div>
 
@@ -757,6 +770,20 @@ export default function GalleryModal({
           </div>
         </div>
       </Modal>
+
+      {/* Edit Post Modal */}
+      {showEditPostModal && (
+        <EditPostDialog
+          post={post}
+          onClose={() => setShowEditPostModal(false)}
+          onSuccess={(updatedPost) => {
+            setShowEditPostModal(false);
+            if (onPostUpdate) {
+              onPostUpdate(updatedPost);
+            }
+          }}
+        />
+      )}
 
     </div>,
     document.body

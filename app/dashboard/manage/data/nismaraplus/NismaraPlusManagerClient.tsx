@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Search, UserPlus, Crown, MoreVertical, X, Calendar, ShieldOff, Loader2 } from "lucide-react";
-import { searchUsers, grantOrExtendNismaraPlus, revokeNismaraPlus } from "./actions";
+import { Search, UserPlus, Crown, MoreVertical, X, Calendar, ShieldOff, Loader2, ListChecks, Users, ExternalLink, CheckCircle, XCircle } from "lucide-react";
+import { searchUsers, grantOrExtendNismaraPlus, revokeNismaraPlus, fetchPendingOrders, confirmOrder, rejectOrder } from "./actions";
 import { showAlert, showConfirm } from "@/lib/dialog";
 
 
@@ -23,6 +23,10 @@ export default function NismaraPlusManagerClient({ initialUsers }: { initialUser
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<User[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  
+  const [activeTab, setActiveTab] = useState<"members" | "orders">("members");
+  const [pendingOrders, setPendingOrders] = useState<any[]>([]);
+  const [isLoadingOrders, setIsLoadingOrders] = useState(false);
   
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedDuration, setSelectedDuration] = useState<number>(1);
@@ -101,6 +105,47 @@ export default function NismaraPlusManagerClient({ initialUsers }: { initialUser
     setIsProcessing(false);
   };
 
+  const loadPendingOrders = async () => {
+    setIsLoadingOrders(true);
+    const res = await fetchPendingOrders();
+    if (res.success) {
+      setPendingOrders(res.data);
+    }
+    setIsLoadingOrders(false);
+  };
+
+  useEffect(() => {
+    if (activeTab === "orders") {
+      loadPendingOrders();
+    }
+  }, [activeTab]);
+
+  const handleConfirmOrder = async (orderId: string) => {
+    if (!await showConfirm("Konfirmasi pembayaran dan aktifkan paket user?")) return;
+    setIsProcessing(true);
+    const res = await confirmOrder(orderId);
+    if (res.success) {
+      await showAlert(res.message);
+      loadPendingOrders();
+    } else {
+      await showAlert(res.message);
+    }
+    setIsProcessing(false);
+  };
+
+  const handleRejectOrder = async (orderId: string) => {
+    if (!await showConfirm("Tolak pesanan ini?")) return;
+    setIsProcessing(true);
+    const res = await rejectOrder(orderId);
+    if (res.success) {
+      await showAlert(res.message);
+      loadPendingOrders();
+    } else {
+      await showAlert(res.message);
+    }
+    setIsProcessing(false);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-card border border-border p-5 rounded-2xl shadow-sm">
@@ -118,6 +163,22 @@ export default function NismaraPlusManagerClient({ initialUsers }: { initialUser
         </button>
       </div>
 
+      <div className="flex space-x-2 border-b border-border">
+        <button
+          onClick={() => setActiveTab("members")}
+          className={`flex items-center gap-2 px-4 py-2 font-bold text-sm border-b-2 transition-colors ${activeTab === "members" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+        >
+          <Users size={18} /> Data Member
+        </button>
+        <button
+          onClick={() => setActiveTab("orders")}
+          className={`flex items-center gap-2 px-4 py-2 font-bold text-sm border-b-2 transition-colors ${activeTab === "orders" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+        >
+          <ListChecks size={18} /> Order Masuk {pendingOrders.length > 0 && <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">{pendingOrders.length}</span>}
+        </button>
+      </div>
+
+      {activeTab === "members" ? (
       <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
@@ -171,6 +232,71 @@ export default function NismaraPlusManagerClient({ initialUsers }: { initialUser
           </table>
         </div>
       </div>
+      ) : (
+      <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-muted/50 text-muted-foreground text-xs uppercase font-semibold">
+              <tr>
+                <th className="px-6 py-4">Pembeli</th>
+                <th className="px-6 py-4">Paket</th>
+                <th className="px-6 py-4">Total</th>
+                <th className="px-6 py-4">Tanggal Order</th>
+                <th className="px-6 py-4 text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {isLoadingOrders ? (
+                <tr><td colSpan={5} className="px-6 py-8 text-center"><Loader2 className="animate-spin inline mr-2" size={16} /> Memuat...</td></tr>
+              ) : pendingOrders.length === 0 ? (
+                <tr><td colSpan={5} className="px-6 py-8 text-center text-muted-foreground">Tidak ada pesanan pending saat ini.</td></tr>
+              ) : (
+                pendingOrders.map((order) => (
+                  <tr key={order._id} className="hover:bg-muted/20 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col">
+                        <span className="font-bold">{order.userId?.name || "Unknown"}</span>
+                        <span className="text-xs text-muted-foreground font-mono">{order.discordId}</span>
+                        {order.channelId && (
+                          <a href={`https://discord.com/channels/${process.env.NEXT_PUBLIC_DISCORD_GUILD_ID}/${order.channelId}`} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline flex items-center gap-1 mt-1">
+                            <ExternalLink size={10} /> Kunjungi Tiket
+                          </a>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 font-bold">
+                      {order.durationMonths} Bulan {order.type === "extend" ? <span className="text-[10px] bg-blue-500/10 text-blue-500 px-1.5 py-0.5 rounded ml-1">Extend</span> : <span className="text-[10px] bg-green-500/10 text-green-500 px-1.5 py-0.5 rounded ml-1">Baru</span>}
+                    </td>
+                    <td className="px-6 py-4 font-mono text-emerald-500 font-bold">
+                      Rp {order.amountIDR.toLocaleString("id-ID")}
+                    </td>
+                    <td className="px-6 py-4 text-xs text-muted-foreground">
+                      {new Date(order.createdAt).toLocaleString("id-ID", { timeZone: 'Asia/Jakarta' })} WIB
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-center gap-2">
+                        <button 
+                          onClick={() => handleConfirmOrder(order._id)}
+                          disabled={isProcessing}
+                          className="p-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded-lg transition"
+                          title="Konfirmasi"
+                        ><CheckCircle size={18} /></button>
+                        <button 
+                          onClick={() => handleRejectOrder(order._id)}
+                          disabled={isProcessing}
+                          className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg transition"
+                          title="Tolak"
+                        ><XCircle size={18} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      )}
 
       {/* MODAL TAMBAH MEMBER */}
       {isAddModalOpen && (

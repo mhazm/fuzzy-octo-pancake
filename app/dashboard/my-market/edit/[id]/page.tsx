@@ -27,8 +27,8 @@ export default function EditMarketItem() {
     categories: [] as string[],
     isPublished: true,
   });
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [existingImage, setExistingImage] = useState("");
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
 
   const categoriesList = [
     { id: "vehicle", label: "Vehicle" },
@@ -68,7 +68,7 @@ export default function EditMarketItem() {
         categories: data.categories || [],
         isPublished: data.isPublished !== false,
       });
-      setExistingImage(data.image_url || "");
+      setExistingImages(data.images?.length > 0 ? data.images : (data.image_url ? [data.image_url] : []));
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -87,28 +87,45 @@ export default function EditMarketItem() {
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (!file.type.startsWith("image/")) {
-        setError("Format tidak didukung! Harap unggah gambar.");
-        return;
-      }
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
-      const isNismaraPlus = (session?.user as any)?.nismaraplus?.status === true;
-
-      if (!isNismaraPlus && file.type === "image/gif") {
-        setError("Hanya member Nismara+ yang diizinkan mengunggah GIF.");
-        return;
-      }
-
-      const maxSizeMB = isNismaraPlus ? 5 : 3;
-      if (file.size > maxSizeMB * 1024 * 1024) {
-        setError(`Ukuran gambar maksimal ${maxSizeMB}MB`);
-        return;
-      }
-      setImageFile(file);
-      setError("");
+    if (existingImages.length + imageFiles.length + files.length > 3) {
+      setError("Maksimal hanya 3 gambar preview yang diizinkan (termasuk gambar yang sudah ada).");
+      return;
     }
+
+    const isNismaraPlus = (session?.user as any)?.nismaraplus?.status === true;
+    const maxSizeMB = isNismaraPlus ? 5 : 3;
+    const newValidFiles: File[] = [];
+
+    for (const file of files) {
+      if (!file.type.startsWith("image/")) {
+        setError(`File ${file.name} bukan gambar.`);
+        return;
+      }
+      if (!isNismaraPlus && file.type === "image/gif") {
+        setError(`File ${file.name} adalah GIF. Hanya member Nismara+ yang diizinkan mengunggah GIF.`);
+        return;
+      }
+      if (file.size > maxSizeMB * 1024 * 1024) {
+        setError(`Ukuran gambar ${file.name} melebihi maksimal ${maxSizeMB}MB`);
+        return;
+      }
+      newValidFiles.push(file);
+    }
+
+    setImageFiles((prev) => [...prev, ...newValidFiles]);
+    setError("");
+    e.target.value = ""; // reset input
+  };
+
+  const removeExistingImage = (index: number) => {
+    setExistingImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const removeNewImage = (index: number) => {
+    setImageFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -121,17 +138,22 @@ export default function EditMarketItem() {
         throw new Error("Pilih setidaknya satu kategori");
       }
 
-      let image_url = existingImage;
+      let finalImageUrls = [...existingImages];
 
-      // Upload image to R2 if selected new one
-      if (imageFile) {
-        const compressedImage = await compressImageToWebP(imageFile, 1, 1920);
+      // Upload image to R2 if selected new ones
+      for (const file of imageFiles) {
+        let fileToUpload = file;
+        
+        // Kompresi jika bukan GIF
+        if (file.type !== "image/gif") {
+          fileToUpload = await compressImageToWebP(file, 1, 1920);
+        }
         
         const reqData = {
-          fileName: compressedImage.name,
-          fileType: compressedImage.type,
+          fileName: fileToUpload.name,
+          fileType: fileToUpload.type,
           folder: "market",
-          fileSize: compressedImage.size,
+          fileSize: fileToUpload.size,
         };
         
         const presignRes = await fetch("/api/upload", {
@@ -145,24 +167,28 @@ export default function EditMarketItem() {
           // Upload file directly to R2
           const s3Res = await fetch(signedUrl, {
             method: "PUT",
-            headers: { "Content-Type": compressedImage.type },
-            body: compressedImage,
+            headers: { "Content-Type": fileToUpload.type },
+            body: fileToUpload,
           });
 
           if (s3Res.ok) {
-            image_url = publicUrl;
+            finalImageUrls.push(publicUrl);
           } else {
-            console.warn("Upload ke R2 gagal");
+            console.warn(`Upload ke R2 gagal untuk file ${file.name}`);
           }
         } else {
-          console.warn("Gagal mendapatkan presigned URL dari /api/upload");
+          console.warn(`Gagal mendapatkan presigned URL untuk file ${file.name}`);
         }
       }
 
       const res = await fetch(`/api/market/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...formData, image_url }),
+        body: JSON.stringify({ 
+          ...formData, 
+          images: finalImageUrls,
+          image_url: finalImageUrls[0] || ""
+        }),
       });
 
       const data = await res.json();
@@ -308,31 +334,54 @@ export default function EditMarketItem() {
         </div>
 
         <div>
-          <label className="block text-sm font-bold text-gray-300 mb-2">Thumbnail / Gambar Mod</label>
-          <div className="border-2 border-dashed border-border/50 rounded-2xl p-6 text-center hover:border-accent-lilac/50 transition-colors">
-            <input
-              type="file"
-              accept="image/*"
-              id="image-upload"
-              className="hidden"
-              onChange={handleImageChange}
-            />
-            <label htmlFor="image-upload" className="cursor-pointer flex flex-col items-center">
-              <Upload className="w-10 h-10 text-gray-500 mb-2" />
-              <span className="text-accent-lilac font-bold mb-1">Ganti Gambar</span>
-              <span className="text-gray-500 text-xs mb-4">PNG, JPG up to 3MB (Nismara+ 5MB & GIF)</span>
-              
-              {imageFile ? (
-                <span className="text-green-400 text-sm bg-green-400/10 px-3 py-1 rounded-full">
-                  Terpilih: {imageFile.name}
-                </span>
-              ) : existingImage ? (
-                <div className="mt-2 text-sm text-gray-400">
-                  <img src={existingImage} alt="Current" className="w-32 h-20 object-cover rounded-lg mx-auto mb-2 opacity-50" />
-                  Gambar saat ini
-                </div>
-              ) : null}
-            </label>
+          <label className="block text-sm font-bold text-gray-300 mb-2">Gambar Preview (Maksimal 3) <span className="text-red-500">*</span></label>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {existingImages.map((url, idx) => (
+              <div key={`exist-${idx}`} className="relative aspect-video rounded-xl overflow-hidden border border-border/50 group">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={url} alt={`Existing Preview ${idx + 1}`} className="w-full h-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => removeExistingImage(idx)}
+                  className="absolute top-2 right-2 bg-red-500/80 hover:bg-red-500 text-white p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <span className="sr-only">Hapus</span>
+                  &times;
+                </button>
+              </div>
+            ))}
+            {imageFiles.map((file, idx) => (
+              <div key={`new-${idx}`} className="relative aspect-video rounded-xl overflow-hidden border border-border/50 group">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={URL.createObjectURL(file)} alt={`New Preview ${idx + 1}`} className="w-full h-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => removeNewImage(idx)}
+                  className="absolute top-2 right-2 bg-red-500/80 hover:bg-red-500 text-white p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <span className="sr-only">Hapus</span>
+                  &times;
+                </button>
+              </div>
+            ))}
+            
+            {(existingImages.length + imageFiles.length) < 3 && (
+              <div className="border-2 border-dashed border-border/50 rounded-xl flex flex-col items-center justify-center p-6 text-center hover:border-accent-lilac/50 transition-colors aspect-video">
+                <input
+                  type="file"
+                  accept="image/*"
+                  id="image-upload"
+                  className="hidden"
+                  multiple
+                  onChange={handleImageChange}
+                />
+                <label htmlFor="image-upload" className="cursor-pointer flex flex-col items-center w-full h-full justify-center">
+                  <Upload className="w-8 h-8 text-gray-500 mb-2" />
+                  <span className="text-accent-lilac font-bold mb-1 text-sm">Tambah Gambar</span>
+                  <span className="text-gray-500 text-[10px]">PNG, JPG (Max 3MB)</span>
+                </label>
+              </div>
+            )}
           </div>
         </div>
 

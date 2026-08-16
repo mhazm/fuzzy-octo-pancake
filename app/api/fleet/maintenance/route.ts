@@ -9,7 +9,7 @@ import Garage from "@/lib/models/Garage";
 import "@/lib/models/FleetStore";
 import "@/lib/models/User";
 import "@/lib/models/FleetBrand";
-import { getCurrencyData } from "@/app/dashboard/currency/actions";
+import { getCurrencyDataLogic } from "@/lib/currency";
 
 import dbConnect from "@/lib/mongoose";
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
@@ -157,7 +157,7 @@ export async function POST(request: Request) {
     }
 
     // Check balance
-    const currencyData = await getCurrencyData();
+    const currencyData = await getCurrencyDataLogic();
     if (currencyData.balance < totalPrice) {
       return NextResponse.json(
         { error: "Saldo NC tidak mencukupi untuk servis ini" },

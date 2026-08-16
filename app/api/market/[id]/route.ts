@@ -116,12 +116,31 @@ export async function PUT(
     if (data.game_version !== undefined) item.game_version = data.game_version;
     if (data.download_url) item.download_url = data.download_url;
 
-    if (data.image_url !== undefined && data.image_url !== item.image_url) {
-      if (item.image_url) {
-        // Hapus file lama di storage R2 agar tidak memenuhi kapasitas
+    if (data.images !== undefined) {
+      // Cari gambar yang dihapus
+      const oldImages = item.images || [];
+      const newImages = data.images || [];
+      const removedImages = oldImages.filter((img: string) => !newImages.includes(img));
+      
+      for (const imgUrl of removedImages) {
+        if (imgUrl) await deleteFileFromR2(imgUrl);
+      }
+
+      item.images = newImages;
+      if (newImages.length > 0) {
+        item.image_url = newImages[0];
+      } else if (data.image_url) {
+        item.image_url = data.image_url;
+        item.images = [data.image_url];
+      }
+    } else if (data.image_url !== undefined && data.image_url !== item.image_url) {
+      if (item.image_url && (!item.images || !item.images.includes(item.image_url))) {
         await deleteFileFromR2(item.image_url);
       }
       item.image_url = data.image_url;
+      if (!item.images || item.images.length === 0) {
+        item.images = [data.image_url];
+      }
     }
 
     // Jika harga berubah, masuk kembali ke antrean approval
@@ -287,8 +306,9 @@ export async function DELETE(
     }).lean();
 
     // Hapus gambar mod dari R2
-    if (dbItem.image_url) {
-      await deleteFileFromR2(dbItem.image_url);
+    const imagesToDelete = dbItem.images && dbItem.images.length > 0 ? dbItem.images : (dbItem.image_url ? [dbItem.image_url] : []);
+    for (const imgUrl of imagesToDelete) {
+      if (imgUrl) await deleteFileFromR2(imgUrl);
     }
 
     // Hapus (Takedown) dari database

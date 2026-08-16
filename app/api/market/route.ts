@@ -101,20 +101,32 @@ export async function POST(request: Request) {
       );
     }
 
-    const newItem = await MarketItem.create({
-      sellerId: session.user.discordId as string,
+    let finalImageUrl = data.image_url;
+    let finalImages = data.images || [];
+
+    if (finalImages.length > 0 && !finalImageUrl) {
+      finalImageUrl = finalImages[0];
+    } else if (finalImageUrl && finalImages.length === 0) {
+      finalImages = [finalImageUrl];
+    }
+
+    const newItem = new MarketItem({
       title: data.title,
       slug: data.slug,
       description: data.description,
-      price: Number(data.price) || 0,
-      categories: data.categories || [],
-      game_id: Number(data.game_id),
-      game_version: data.game_version || "",
+      price: data.price || 0,
+      categories: data.categories,
+      game_id: data.game_id,
+      game_version: data.game_version,
       download_url: data.download_url,
-      image_url: data.image_url || "",
+      image_url: finalImageUrl,
+      images: finalImages,
+      sellerId: session.user.discordId,
       isPublished: false,
       status: "pending",
     });
+    
+    await newItem.save();
 
     // Create Discord Channel for Approval
     try {

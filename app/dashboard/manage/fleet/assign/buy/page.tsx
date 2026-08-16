@@ -67,8 +67,8 @@ export default function BuyFleetPage() {
   const fetchData = async () => {
     try {
       const [resBrands, resStores, resUsers] = await Promise.all([
-        fetch("/api/fleet/brand"),
-        fetch("/api/fleet/store"),
+        fetch("/api/fleet/brand", { cache: "no-store" }),
+        fetch("/api/fleet/store", { cache: "no-store" }),
         fetch("/api/users")
       ]);
       const dataBrands = await resBrands.json();

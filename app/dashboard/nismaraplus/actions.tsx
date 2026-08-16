@@ -3,6 +3,10 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
+import NismaraPlusOrder from "@/lib/models/NismaraPlusOrder";
+import Transaction from "@/lib/models/Transaction";
+import mongoose from "mongoose";
+import dbConnect from "@/lib/mongoose";
 
 export async function createPurchaseTicket(months: number) {
   try {
@@ -11,7 +15,19 @@ export async function createPurchaseTicket(months: number) {
       return { success: false, message: "Anda belum login." };
     }
 
-    // Validasi input bulan (mencegah manipulasi dari luar)
+    await dbConnect();
+    
+    // Cek pesanan pending
+    const existingOrder = await NismaraPlusOrder.findOne({
+      discordId: session.user.discordId,
+      status: "pending"
+    });
+    
+    if (existingOrder) {
+      return { success: false, message: "Anda masih memiliki pesanan Nismara+ yang sedang diproses. Mohon selesaikan di tiket sebelumnya." };
+    }
+
+    // Validasi input bulan
     const validMonths = [1, 3, 6, 12];
     if (!validMonths.includes(months)) {
       return { success: false, message: "Pilihan paket tidak valid." };
@@ -136,6 +152,34 @@ export async function createPurchaseTicket(months: number) {
         }),
       },
     );
+    
+    // Simpan ke database
+    const userObj = await mongoose.model("User").findOne({ discordId });
+    if (userObj) {
+      const isExtend = userObj.nismaraplus?.status === true;
+      const createdOrder = await NismaraPlusOrder.create({
+        discordId,
+        userId: userObj._id,
+        durationMonths: months,
+        amountIDR: totalPrice,
+        type: isExtend ? "extend" : "new",
+        channelId: createdChannelId,
+        status: "pending",
+      });
+
+      const trxId = "NP" + Math.random().toString(36).substring(2, 8).toUpperCase() + Date.now().toString().slice(-4);
+      await Transaction.create({
+        trxId,
+        discordId,
+        userId: userObj._id,
+        title: `Pembelian Nismara+ (${months} Bulan)`,
+        category: "nismaraplus",
+        amount: totalPrice,
+        currency: "IDR",
+        status: "pending",
+        metadata: { orderId: createdOrder._id, durationMonths: months }
+      });
+    }
 
     return {
       success: true,

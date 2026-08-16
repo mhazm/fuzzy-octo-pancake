@@ -106,3 +106,69 @@ export async function DELETE(
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ postId: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.discordId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const resolvedParams = await params;
+    const { postId } = resolvedParams;
+    
+    if (!postId || !ObjectId.isValid(postId)) {
+      return NextResponse.json({ error: "Post ID tidak valid" }, { status: 400 });
+    }
+
+    const { caption, tags } = await request.json();
+
+    const client = await clientPromise;
+    const db = client.db();
+
+    // 1. Cari Postingan
+    const post = await db.collection("gallery_posts").findOne({ _id: new ObjectId(postId) });
+    if (!post) {
+      return NextResponse.json({ error: "Postingan tidak ditemukan" }, { status: 404 });
+    }
+
+    // 2. Validasi Kepemilikan (Atau Manager)
+    const isOwner = post.userId === session.user.discordId; // _userId_ not discordId because Gallery saves it as userId
+    const isManager = session.user.role === "manager" || session.user.role === "admin";
+    
+    if (!isOwner && !isManager) {
+      return NextResponse.json({ error: "Anda tidak memiliki izin untuk mengedit postingan ini" }, { status: 403 });
+    }
+
+    // 3. Parse tags
+    let parsedTags: string[] = [];
+    if (typeof tags === "string" && tags.trim().length > 0) {
+      parsedTags = tags.split(/[\s,]+/)
+        .map(t => t.trim().toLowerCase().replace(/^#+/, ""))
+        .filter(t => t.length > 0)
+        .slice(0, 10); // max 10 tags
+    } else if (Array.isArray(tags)) {
+      parsedTags = tags.map(t => t.trim().toLowerCase().replace(/^#+/, "")).filter(t => t.length > 0).slice(0, 10);
+    }
+
+    // 4. Update
+    await db.collection("gallery_posts").updateOne(
+      { _id: new ObjectId(postId) },
+      { 
+        $set: { 
+          caption: caption || "",
+          tags: parsedTags,
+          updatedAt: new Date()
+        } 
+      }
+    );
+
+    return NextResponse.json({ success: true, message: "Postingan berhasil diperbarui" });
+  } catch (error: any) {
+    console.error("Gallery Edit Error:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}

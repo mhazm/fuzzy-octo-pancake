@@ -55,8 +55,8 @@ export default function FleetStoreManager() {
   const fetchData = async () => {
     try {
       const [resStores, resBrands] = await Promise.all([
-        fetch("/api/fleet/store"),
-        fetch("/api/fleet/brand")
+        fetch("/api/fleet/store", { cache: "no-store" }),
+        fetch("/api/fleet/brand", { cache: "no-store" }),
       ]);
       const dataStores = await resStores.json();
       const dataBrands = await resBrands.json();

@@ -4,7 +4,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import LottoPeriod from "@/lib/models/LottoPeriod";
 import LottoTicket from "@/lib/models/LottoTicket";
-import { getCurrencyData } from "@/app/dashboard/currency/actions";
+import { getCurrencyDataLogic } from "@/lib/currency";
 import { checkRateLimit } from "@/lib/rateLimit";
 
 const GUILD_ID = "863959415702028318";
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
     // Check user balance
     let currencyData;
     try {
-      currencyData = await getCurrencyData();
+      currencyData = await getCurrencyDataLogic();
     } catch (err) {
       return NextResponse.json(
         { error: "Failed to fetch currency" },

@@ -4,6 +4,9 @@ import FleetStore from "@/lib/models/FleetStore";
 import "@/lib/models/FleetBrand"; 
 
 import dbConnect from "@/lib/mongoose";
+
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     await dbConnect();
@@ -11,7 +14,7 @@ export async function GET() {
     const stores = await FleetStore.find({}).populate("brand").sort({ game_id: 1, type: 1, name: 1 }).lean();
     return NextResponse.json(stores, {
       headers: {
-        "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=7200",
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
       },
     });
   } catch (error) {

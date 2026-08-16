@@ -3,6 +3,9 @@ import mongoose from "mongoose";
 import FleetBrand from "@/lib/models/FleetBrand";
 
 import dbConnect from "@/lib/mongoose";
+
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     await dbConnect();
@@ -10,7 +13,7 @@ export async function GET() {
     const brands = await FleetBrand.find({}).sort({ name: 1 }).lean();
     return NextResponse.json(brands, {
       headers: {
-        "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=7200",
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
       },
     });
   } catch (error) {

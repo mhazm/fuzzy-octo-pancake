@@ -5,6 +5,8 @@ import clientPromise from "@/lib/mongodb";
 import mongoose from "mongoose";
 import Ticket from "@/lib/models/Ticket";
 
+export const dynamic = "force-dynamic";
+
 import dbConnect from "@/lib/mongoose";
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const GUILD_ID = process.env.DISCORD_GUILD_ID;

@@ -24,7 +24,8 @@ const marketItemSchema = new mongoose.Schema(
     game_id: { type: Number, required: true }, // 1 = ETS2, 2 = ATS
     game_version: { type: String }, // e.g. "1.50"
     download_url: { type: String, required: true }, // Link eksternal
-    image_url: { type: String }, // Link R2
+    image_url: { type: String }, // Link R2 (Legacy/Main image)
+    images: [{ type: String }], // Array of R2 Links (up to 3)
     isPublished: { type: Boolean, default: false }, // Will be true when approved
     status: {
       type: String,

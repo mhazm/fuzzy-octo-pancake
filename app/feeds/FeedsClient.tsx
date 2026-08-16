@@ -8,6 +8,7 @@ import { formatDistanceToNow } from "date-fns";
 import { id } from "date-fns/locale";
 import GalleryModal from "@/components/gallery/GalleryModal";
 import UploadPostDialog from "@/components/gallery/UploadPostDialog";
+import { showAlert } from "@/lib/dialog";
 
 export default function FeedsClient({
   initialPosts,
@@ -39,6 +40,7 @@ export default function FeedsClient({
   // State for modal
   const [selectedPost, setSelectedPost] = useState<any | null>(null);
   const [showUpload, setShowUpload] = useState(false);
+  const [showToast, setShowToast] = useState(false);
 
   const loadMore = async () => {
     if (loadingMore || !hasMore) return;
@@ -87,6 +89,17 @@ export default function FeedsClient({
     } catch (error) {
       console.error("Gagal menyukai postingan", error);
       // Revert optimism if failed (optional, let's keep it simple for now)
+    }
+  };
+
+  const handleShare = async (postId: string) => {
+    const url = `${window.location.origin}/p/${postId}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } catch (err) {
+      await showAlert("Gagal menyalin tautan.");
     }
   };
 
@@ -236,7 +249,10 @@ export default function FeedsClient({
                     >
                       <MessageCircle className="w-7 h-7 text-foreground group-hover:text-muted-foreground" />
                     </button>
-                    <button className="group flex items-center gap-1.5 transition-transform active:scale-95 ml-auto">
+                    <button 
+                      onClick={() => handleShare(post._id)}
+                      className="group flex items-center gap-1.5 transition-transform active:scale-95 ml-auto"
+                    >
                       <Share2 className="w-6 h-6 text-foreground group-hover:text-muted-foreground" />
                     </button>
                   </div>
@@ -365,6 +381,14 @@ export default function FeedsClient({
             setShowUpload(false);
           }}
         />
+      )}
+
+      {/* Custom Toast Notification */}
+      {showToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] bg-primary text-primary-foreground px-6 py-3 rounded-full shadow-2xl font-bold flex items-center gap-2 animate-in slide-in-from-bottom-5 fade-in duration-300">
+          <Share2 className="w-4 h-4" />
+          Tautan disalin ke clipboard!
+        </div>
       )}
     </div>
   );

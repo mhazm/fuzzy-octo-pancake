@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { getCurrencyData } from "@/app/dashboard/currency/actions";
+import { getCurrencyDataLogic } from "@/lib/currency";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { redis } from "@/lib/redis";
 
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     // Hitung estimasi saldo dengan Redis
     let currencyData;
     try {
-      currencyData = await getCurrencyData();
+      currencyData = await getCurrencyDataLogic();
     } catch (err) {
       return NextResponse.json(
         { error: "Failed to fetch currency" },

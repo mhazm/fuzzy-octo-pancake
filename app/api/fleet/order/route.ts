@@ -5,7 +5,7 @@ import clientPromise from "@/lib/mongodb";
 import mongoose from "mongoose";
 import FleetOrder from "@/lib/models/FleetOrder";
 import FleetStore from "@/lib/models/FleetStore";
-import { getCurrencyData } from "@/app/dashboard/currency/actions";
+import { getCurrencyDataLogic } from "@/lib/currency";
 
 import dbConnect from "@/lib/mongoose";
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
@@ -76,7 +76,7 @@ export async function POST(request: Request) {
       basePrice + taxFee - nismaraPlusDiscount - boosterDiscount + adminFee + upgradeFee;
 
     // Check balance
-    const currencyData = await getCurrencyData();
+    const currencyData = await getCurrencyDataLogic();
     if (currencyData.balance < totalPrice) {
       return NextResponse.json(
         { error: "Saldo NC tidak mencukupi" },
@@ -229,7 +229,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Fleet Order Error:", error);
     return NextResponse.json(
-      { error: "Terjadi kesalahan internal" },
+      { error: error instanceof Error ? error.message : "Terjadi kesalahan internal" },
       { status: 500 },
     );
   }

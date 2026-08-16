@@ -1,6 +1,6 @@
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DriverAccessBlocker from "@/components/DriverAccessBlocker";
-import Script from "next/script";
+
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
@@ -23,11 +23,7 @@ export default async function DashboardLayout({
     return (
       <>
         <DriverAccessBlocker session={session as any} />
-        <Script
-          src="https://app.sandbox.midtrans.com/snap/snap.js"
-          data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY}
-          strategy="afterInteractive"
-        />
+
       </>
     );
   }
@@ -42,11 +38,7 @@ export default async function DashboardLayout({
         <div className="flex-1 w-full overflow-x-hidden">{children}</div>
       </div>
 
-      <Script
-        src="https://app.sandbox.midtrans.com/snap/snap.js"
-        data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY}
-        strategy="afterInteractive"
-      />
+
     </>
   );
 }

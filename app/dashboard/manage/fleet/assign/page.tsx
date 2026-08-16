@@ -73,8 +73,8 @@ export default function FleetAssignManager() {
   const fetchData = async () => {
     try {
       const [resFleets, resStores, resUsers] = await Promise.all([
-        fetch("/api/fleet/assign"),
-        fetch("/api/fleet/store"),
+        fetch("/api/fleet/assign", { cache: "no-store" }),
+        fetch("/api/fleet/store", { cache: "no-store" }),
         fetch("/api/users"),
       ]);
       const dataFleets = await resFleets.json();

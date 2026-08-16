@@ -22,7 +22,11 @@ export async function GET() {
       .sort({ createdAt: -1 })
       .lean();
 
-    return NextResponse.json(fleets);
+    return NextResponse.json(fleets, {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
+      },
+    });
   } catch (error) {
     console.error("GET Fleet Assign Error:", error);
     return NextResponse.json(

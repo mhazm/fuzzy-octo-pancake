@@ -50,6 +50,7 @@ Nismara Logistics is a web platform for a virtual trucking community (VTC). It i
   - `type`: Either `"earn"` or `"spend"`.
   - `reason`: A string describing the transaction (e.g. `"Membeli Mod Market: Scania"`).
   - `createdAt`: `new Date()`.
+- **Transaction History (`transactions` collection):** This is the user-facing shopping and order history (e.g. Fleet purchases, Maintenance, Market Mod buys). It is separate from `currencyhistories` which tracks raw NC mutations. When processing a user purchase, you **MUST** insert a document here with fields such as `trxId`, `discordId`, `userId`, `title`, `category` (fleet/maintenance/nismaraplus/market), `amount`, `currency` (NC/IDR), and `metadata`. Avoid creating duplicate history pages; all user purchases should be directed to the unified `/dashboard/transactions` page.
 - **Penalty Points (`points` collection):** "Points" in this project strictly means **Penalty Points (Hukuman)**, not reward points. Balances are stored in `totalPoints`. Like currencies, queries **MUST** include `userId` and `guildId`. Use `$inc: { totalPoints: amount }` to modify. **CRITICAL:** Penalty points can NEVER be negative (minimum 0). Always check current balance and clamp deductions if necessary.
 - **Penalty History (`pointhistories` collection):** Every time penalty points are modified, a log must be inserted containing:
   - `userId` (discordId of the penalized user) and `guildId`.

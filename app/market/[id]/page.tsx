@@ -19,6 +19,7 @@ export default function MarketItemDetail() {
   const [isPurchased, setIsPurchased] = useState(false);
   const [buyLoading, setBuyLoading] = useState(false);
   const [error, setError] = useState("");
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [showFullImage, setShowFullImage] = useState(false);
   const [reviews, setReviews] = useState<any[]>([]);
   const [totalBuyers, setTotalBuyers] = useState(0);
@@ -109,7 +110,7 @@ export default function MarketItemDetail() {
       const res = await fetch("/api/market/library");
       const library = await res.json();
       if (Array.isArray(library)) {
-        const owned = library.some((p: any) => p.marketItemId && p.marketItemId._id === id);
+        const owned = library.some((p: any) => p.marketItemId && (p.marketItemId._id === id || p.marketItemId.slug === id));
         setIsPurchased(owned);
       }
     } catch (err) {
@@ -247,6 +248,7 @@ export default function MarketItemDetail() {
   }
 
   const isSeller = session?.user?.discordId === item.sellerId;
+  const allImages = item.images?.length > 0 ? item.images : (item.image_url ? [item.image_url] : []);
 
   return (
     <main className="max-w-5xl mx-auto px-4 py-12 min-h-screen">
@@ -262,15 +264,33 @@ export default function MarketItemDetail() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-12">
         {/* Gambar */}
-        <div 
-          className="rounded-2xl overflow-hidden bg-black/50 border border-border/50 aspect-video md:aspect-square relative cursor-pointer hover:opacity-90 transition-opacity"
-          onClick={() => item.image_url && setShowFullImage(true)}
-        >
-          {item.image_url ? (
-            <img src={item.image_url} alt={item.title} className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-gray-600">
-              <Box className="w-20 h-20" />
+        <div className="flex flex-col gap-4">
+          <div 
+            className="rounded-2xl overflow-hidden bg-black/50 border border-border/50 aspect-video md:aspect-square relative cursor-pointer hover:opacity-90 transition-opacity"
+            onClick={() => allImages.length > 0 && setShowFullImage(true)}
+          >
+            {allImages.length > 0 ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={allImages[activeImageIndex]} alt={item.title} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-gray-600">
+                <Box className="w-20 h-20" />
+              </div>
+            )}
+          </div>
+          
+          {allImages.length > 1 && (
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-primary/50 scrollbar-track-transparent">
+              {allImages.map((img: string, idx: number) => (
+                <button
+                  key={idx}
+                  onClick={() => setActiveImageIndex(idx)}
+                  className={`relative flex-shrink-0 w-20 h-20 md:w-24 md:h-24 rounded-xl overflow-hidden border-2 transition-all ${activeImageIndex === idx ? 'border-primary' : 'border-transparent opacity-50 hover:opacity-100'}`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={img} alt={`${item.title} preview ${idx + 1}`} className="w-full h-full object-cover" />
+                </button>
+              ))}
             </div>
           )}
         </div>
@@ -541,8 +561,9 @@ export default function MarketItemDetail() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 cursor-pointer"
           onClick={() => setShowFullImage(false)}
         >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img 
-            src={item.image_url} 
+            src={allImages[activeImageIndex]} 
             alt={item.title} 
             className="max-w-full max-h-[90vh] object-contain rounded-xl" 
           />

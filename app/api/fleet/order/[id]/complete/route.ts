@@ -5,6 +5,7 @@ import clientPromise from "@/lib/mongodb";
 import mongoose from "mongoose";
 import FleetOrder from "@/lib/models/FleetOrder";
 import FleetStore from "@/lib/models/FleetStore";
+import Transaction from "@/lib/models/Transaction";
 import Fleet from "@/lib/models/Fleet";
 import User from "@/lib/models/User";
 import Garage from "@/lib/models/Garage";
@@ -111,6 +112,21 @@ export async function POST(
       type: "spend",
       reason: `Pembelian Fleet: ${order.fleetStoreId.name}`,
       createdAt: new Date(),
+    });
+
+    await Transaction.create({
+      trxId: `TRX-${crypto.randomBytes(4).toString("hex").toUpperCase()}`,
+      discordId: buyer.discordId,
+      userId: buyer._id,
+      title: `Pembelian Fleet: ${order.fleetStoreId.name}`,
+      category: "fleet",
+      amount: order.totalPrice,
+      currency: "NC",
+      status: "success",
+      metadata: {
+        orderId: order._id,
+        fleetStoreId: order.fleetStoreId._id
+      }
     });
 
     // 3. Add admin fee to manager

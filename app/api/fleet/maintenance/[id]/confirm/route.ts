@@ -8,7 +8,9 @@ import Fleet from "@/lib/models/Fleet";
 import "@/lib/models/FleetStore";
 import "@/lib/models/User";
 import "@/lib/models/FleetBrand";
+import Transaction from "@/lib/models/Transaction";
 import { sendPersonalNotification } from "@/lib/services/NotificationService";
+import crypto from "crypto";
 
 import dbConnect from "@/lib/mongoose";
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
@@ -67,6 +69,24 @@ export async function POST(
       reason: `Servis Armada (Order ID: ${order._id})`,
       createdAt: new Date(),
     });
+
+    const userObj = await mongoose.model("User").findOne({ discordId: order.discordId });
+    if (userObj) {
+      await Transaction.create({
+        trxId: `TRX-${crypto.randomBytes(4).toString("hex").toUpperCase()}`,
+        discordId: order.discordId,
+        userId: userObj._id,
+        title: order.type === "replace" ? "Penggantian Komponen Fleet" : "Servis Rutin Fleet",
+        category: "maintenance",
+        amount: order.totalPrice,
+        currency: "NC",
+        status: "success",
+        metadata: {
+          orderId: order._id,
+          fleetId: order.fleetId
+        }
+      });
+    }
 
     // 3. Add admin fee to manager
     await db.collection("currencies").updateOne(

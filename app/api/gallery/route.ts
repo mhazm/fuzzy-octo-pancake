@@ -153,10 +153,10 @@ export async function POST(request: Request) {
       }
     }
 
-    // Parse tags: split by comma, lowercase, trim, remove #, filter empty
+    // Parse tags: split by comma or spaces, lowercase, trim, remove #, filter empty
     let parsedTags: string[] = [];
     if (typeof tags === "string" && tags.trim().length > 0) {
-      parsedTags = tags.split(",")
+      parsedTags = tags.split(/[\s,]+/)
         .map(t => t.trim().toLowerCase().replace(/^#+/, ""))
         .filter(t => t.length > 0)
         .slice(0, 10); // max 10 tags

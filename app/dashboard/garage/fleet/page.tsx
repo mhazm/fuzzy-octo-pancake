@@ -85,7 +85,7 @@ export default async function FleetDashboardPage() {
 
         <div className="flex flex-col sm:flex-row gap-3">
           <Link
-            href="/dashboard/garage/fleet/order"
+            href="/dashboard/transactions"
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-card border border-border hover:bg-muted text-sm font-bold uppercase tracking-wider transition-all"
           >
             <History size={16} /> Riwayat Pesanan

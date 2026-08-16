@@ -202,10 +202,11 @@ export default function UploadPostDialog({
                   type="text"
                   value={tagsInput}
                   onChange={(e) => setTagsInput(e.target.value)}
-                  placeholder="scania, mabar, konvoi (pisahkan dengan koma)"
+                  placeholder="Contoh: ets2 scania convoy (pisahkan dengan spasi)"
                   className="w-full bg-background border border-border/50 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                   maxLength={100}
                 />
+                <p className="text-[10px] text-muted-foreground mt-2">Maksimal 10 tags. Gunakan spasi atau koma untuk memisahkan antar tag.</p>
               </div>
             </div>
           )}

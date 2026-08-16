@@ -20,6 +20,8 @@ import {
 import DriverAccessBlocker from "@/components/DriverAccessBlocker";
 import NismaraPlusClient from "./NismaraPlusClient";
 import NismaraPlusClaimClient from "./NismaraPlusClaimClient";
+import NismaraPlusOrder from "@/lib/models/NismaraPlusOrder";
+import dbConnect from "@/lib/mongoose";
 
 export const metadata = {
   title: "Nismaraplus",
@@ -127,6 +129,9 @@ export default async function NismaraPlusPage() {
     ? new Date(nismaraplus.expiredAt) < now
     : true;
   const isActive = nismaraplus.status && !isExpired;
+
+  await dbConnect();
+  const pendingOrder = await NismaraPlusOrder.findOne({ discordId, status: "pending" });
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-8">
@@ -357,7 +362,7 @@ export default async function NismaraPlusPage() {
               </ul>
 
               {/* Komponen interaktif yang menampilkan paket dan tombol */}
-              <NismaraPlusClient />
+              <NismaraPlusClient initialPendingOrder={pendingOrder ? JSON.parse(JSON.stringify(pendingOrder)) : null} />
             </div>
           </div>
         </div>

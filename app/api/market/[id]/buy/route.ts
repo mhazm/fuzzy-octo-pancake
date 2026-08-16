@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import MarketItem from "@/lib/models/MarketItem";
 import MarketPurchase from "@/lib/models/MarketPurchase";
+import Transaction from "@/lib/models/Transaction";
 import { getServerSession } from "next-auth";
+import crypto from "crypto";
 import { authOptions } from "../../../auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
 import { checkRateLimit } from "@/lib/rateLimit";
@@ -113,6 +115,23 @@ export async function POST(
         reason: `Membeli Mod Market: ${item.title}`,
         createdAt: new Date(),
       });
+
+      const userObj = await mongoose.model("User").findOne({ discordId: buyerId });
+      if (userObj) {
+        await Transaction.create({
+          trxId: `TRX-${crypto.randomBytes(4).toString("hex").toUpperCase()}`,
+          discordId: buyerId,
+          userId: userObj._id,
+          title: `Market: ${item.title}`,
+          category: "market",
+          amount: price,
+          currency: "NC",
+          status: "success",
+          metadata: {
+            itemId: item._id
+          }
+        });
+      }
 
       // Catat history penjual (pemasukan bersih)
       await db.collection("currencyhistories").insertOne({
