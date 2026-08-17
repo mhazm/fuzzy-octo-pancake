@@ -2,8 +2,9 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Ticket, Coins, ShieldAlert, Calendar, Image as ImageIcon, CheckCircle, Loader2 } from "lucide-react";
+import { Ticket, Coins, ShieldAlert, Calendar, Image as ImageIcon, CheckCircle, Loader2, X } from "lucide-react";
 import Link from "next/link";
+import { compressImageToWebP } from "@/lib/imageUtils";
 
 export default function CreateCouponPage() {
   const router = useRouter();
@@ -11,22 +12,59 @@ export default function CreateCouponPage() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
 
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
+  
+  // Format current date + 7 days for default datetime-local value
+  const defaultDate = new Date();
+  defaultDate.setDate(defaultDate.getDate() + 7);
+  const defaultDateString = defaultDate.toISOString().slice(0, 16);
+
   const [formData, setFormData] = useState({
     nameCoupon: "",
     codeCoupon: "",
     type: "NC", // 'NC' or 'PENALTY_TICKET'
     minAmount: 0,
     maxAmount: 0,
-    durationDays: 7,
-    imageUrl: "",
+    endDate: defaultDateString,
   });
+
+  const uploadToR2 = async (file: File, folder: string) => {
+    const res = await fetch("/api/upload", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fileName: file.name,
+        fileType: file.type,
+        folder,
+      }),
+    });
+    const { signedUrl, publicUrl } = await res.json();
+    await fetch(signedUrl, {
+      method: "PUT",
+      body: file,
+      headers: { "Content-Type": file.type },
+    });
+    return publicUrl;
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name.includes("Amount") || name === "durationDays" ? Number(value) : value,
+      [name]: name.includes("Amount") ? Number(value) : value,
     }));
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 3 * 1024 * 1024) {
+        setError("Maksimal ukuran gambar adalah 3MB");
+        return;
+      }
+      setBannerFile(file);
+      setError("");
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -41,12 +79,23 @@ export default function CreateCouponPage() {
     }
 
     try {
+      let finalImageUrl = "";
+      if (bannerFile) {
+        const compressed = await compressImageToWebP(bannerFile);
+        finalImageUrl = await uploadToR2(compressed, "coupons");
+      }
+
+      const payload = {
+        ...formData,
+        imageUrl: finalImageUrl,
+      };
+
       const res = await fetch("/api/manage/coupons/create", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
@@ -129,10 +178,10 @@ export default function CreateCouponPage() {
               type="text"
               name="codeCoupon"
               required
-              placeholder="Contoh: RAMADHAN2026"
+              placeholder="Contoh: Ramadhan2026"
               value={formData.codeCoupon}
               onChange={handleChange}
-              className="w-full px-4 py-3 bg-background border border-border/50 rounded-xl focus:ring-2 focus:ring-primary outline-none uppercase"
+              className="w-full px-4 py-3 bg-background border border-border/50 rounded-xl focus:ring-2 focus:ring-primary outline-none"
             />
           </div>
 
@@ -210,32 +259,44 @@ export default function CreateCouponPage() {
           {/* Duration */}
           <div className="space-y-2">
             <label className="text-sm font-bold text-foreground flex items-center gap-2">
-              <Calendar size={16} /> Durasi (Hari)
+              <Calendar size={16} /> Waktu Kedaluwarsa
             </label>
             <input
-              type="number"
-              name="durationDays"
+              type="datetime-local"
+              name="endDate"
               required
-              min={1}
-              value={formData.durationDays || ""}
+              value={formData.endDate}
               onChange={handleChange}
               className="w-full px-4 py-3 bg-background border border-border/50 rounded-xl focus:ring-2 focus:ring-primary outline-none"
             />
           </div>
 
-          {/* Image URL */}
-          <div className="space-y-2">
+          {/* Image Banner */}
+          <div className="space-y-2 md:col-span-2">
             <label className="text-sm font-bold text-foreground flex items-center gap-2">
-              <ImageIcon size={16} /> URL Banner Kupon (Opsional)
+              <ImageIcon size={16} /> Upload Banner Kupon (Opsional)
             </label>
-            <input
-              type="url"
-              name="imageUrl"
-              placeholder="https://example.com/image.png"
-              value={formData.imageUrl}
-              onChange={handleChange}
-              className="w-full px-4 py-3 bg-background border border-border/50 rounded-xl focus:ring-2 focus:ring-primary outline-none"
-            />
+            {bannerFile ? (
+              <div className="relative w-full max-w-sm rounded-xl overflow-hidden border border-border/50 bg-background group">
+                <img src={URL.createObjectURL(bannerFile)} alt="Preview" className="w-full h-48 object-cover" />
+                <button
+                  type="button"
+                  onClick={() => setBannerFile(null)}
+                  className="absolute top-2 right-2 p-2 bg-black/50 hover:bg-red-500 rounded-full text-white backdrop-blur-sm transition-colors opacity-0 group-hover:opacity-100"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            ) : (
+              <label className="flex flex-col items-center justify-center w-full max-w-sm h-48 bg-background border-2 border-dashed border-border/50 rounded-xl hover:bg-muted/50 cursor-pointer transition-colors group">
+                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                  <ImageIcon className="w-10 h-10 text-muted-foreground group-hover:text-primary mb-3 transition-colors" />
+                  <p className="mb-2 text-sm text-foreground font-medium">Klik untuk upload gambar banner</p>
+                  <p className="text-xs text-muted-foreground">PNG, JPG (Max 3MB)</p>
+                </div>
+                <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
+              </label>
+            )}
           </div>
         </div>
 

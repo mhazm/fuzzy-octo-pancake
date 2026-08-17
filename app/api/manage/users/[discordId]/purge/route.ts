@@ -112,13 +112,13 @@ export async function DELETE(
         ),
     );
 
-    // Hapus footprint user dari array driverClaims di couponhistories
+    // Hapus footprint user dari array driverClaims di coupons
     deletePromises.push(
       db
-        .collection("couponhistories")
+        .collection("coupons")
         .updateMany(
-          { "driverClaims.driverId": discordId },
-          { $pull: { driverClaims: { driverId: discordId } as any } },
+          { "driverClaims.discordId": discordId },
+          { $pull: { driverClaims: { discordId: discordId } as any } },
         ),
     );
 

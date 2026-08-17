@@ -21,6 +21,7 @@ interface Coupon {
   guildId: string;
   nameCoupon: string;
   codeCoupon: string;
+  type?: "NC" | "PENALTY_TICKET";
   minAmount: number;
   maxAmount: number;
   totalNcClaimed: number;
@@ -42,17 +43,17 @@ async function getCouponsData(): Promise<{
     const client = await clientPromise;
     const db = client.db(); // Menggunakan database default dari MONGODB_URI
 
-    // Fetch active coupons
+    // Fetch active coupons (isActive: true or not set)
     const activeRaw = await db
       .collection("coupons")
-      .find({})
+      .find({ isActive: { $ne: false } })
       .sort({ startDate: -1 })
       .toArray();
 
-    // Fetch history coupons
+    // Fetch history coupons (isActive: false)
     const historyRaw = await db
-      .collection("couponhistories")
-      .find({})
+      .collection("coupons")
+      .find({ isActive: false })
       .sort({ endDate: -1 })
       .toArray();
 
@@ -67,6 +68,7 @@ async function getCouponsData(): Promise<{
       guildId: doc.guildId,
       nameCoupon: doc.nameCoupon,
       codeCoupon: doc.codeCoupon,
+      type: doc.type,
       minAmount: doc.minAmount,
       maxAmount: doc.maxAmount,
       totalNcClaimed: doc.totalNcClaimed || 0,
@@ -84,6 +86,7 @@ async function getCouponsData(): Promise<{
       guildId: doc.guildId,
       nameCoupon: doc.nameCoupon,
       codeCoupon: doc.codeCoupon,
+      type: doc.type,
       minAmount: doc.minAmount,
       maxAmount: doc.maxAmount,
       totalNcClaimed: doc.totalNcClaimed || 0,

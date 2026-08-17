@@ -22,7 +22,7 @@ async function sendDiscordCouponMessage(coupon: any) {
 
   const embed = {
     title: "🎟️ KUPON BARU TERSEDIA!",
-    description: `Kupon baru telah diterbitkan! Segera klaim sebelum kedaluwarsa.\n\n**Kode Kupon:** \`${coupon.codeCoupon}\`\n**Tipe Hadiah:** ${isNC ? "Nismara Coin" : "Tiket Hapus Penalti"}\n**Total Hadiah:** ${rewardText}\n**Durasi:** ${coupon.durationDays} Hari\n\n[🔗 Klik di sini untuk Klaim Kupon!](https://transport.nismara.web.id/coupons)`,
+    description: `Kupon baru telah diterbitkan! Segera klaim sebelum kedaluwarsa.\n\n**Kode Kupon:** \`${coupon.codeCoupon}\`\n**Tipe Hadiah:** ${isNC ? "Nismara Coin" : "Tiket Hapus Penalti"}\n**Total Hadiah:** ${rewardText}\n**Durasi:** ${coupon.durationDays} Hari\n\n[🔗 Klik di sini untuk Klaim Kupon!](https://transport.nismara.web.id/coupons/${coupon.codeCoupon})`,
     color: isNC ? 0xfacc15 : 0xef4444, // Yellow for NC, Red for Penalty
     image: coupon.imageUrl ? { url: coupon.imageUrl } : undefined,
     timestamp: new Date().toISOString(),
@@ -30,6 +30,14 @@ async function sendDiscordCouponMessage(coupon: any) {
       text: "Nismara Transport - Event System",
     },
   };
+
+  const driverRoleId = process.env.DISCORD_DRIVER_ROLE_ID;
+  const internRoleId = process.env.DISCORD_INTERN_ROLE_ID;
+  
+  const mentions = [
+    driverRoleId ? `<@&${driverRoleId}>` : "",
+    internRoleId ? `<@&${internRoleId}>` : ""
+  ].filter(Boolean).join(" ");
 
   try {
     const res = await fetch(
@@ -41,6 +49,7 @@ async function sendDiscordCouponMessage(coupon: any) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          content: mentions || undefined,
           embeds: [embed],
         }),
       },
@@ -85,7 +94,7 @@ export async function POST(request: Request) {
       type,
       minAmount,
       maxAmount,
-      durationDays,
+      endDate: endDateString,
       imageUrl,
     } = body;
 
@@ -95,7 +104,7 @@ export async function POST(request: Request) {
       !type ||
       typeof minAmount !== "number" ||
       typeof maxAmount !== "number" ||
-      !durationDays
+      !endDateString
     ) {
       return NextResponse.json({ error: "Invalid data" }, { status: 400 });
     }
@@ -103,15 +112,28 @@ export async function POST(request: Request) {
     const client = await clientPromise;
     const db = client.db();
 
+    // Check unique codeCoupon (case-insensitive)
+    const existingCoupon = await db.collection("coupons").findOne({
+      codeCoupon: { $regex: new RegExp(`^${codeCoupon}$`, "i") },
+    });
+
+    if (existingCoupon) {
+      return NextResponse.json(
+        { error: "Kode Kupon sudah digunakan, harap gunakan kode lain." },
+        { status: 400 }
+      );
+    }
+
     const startDate = new Date();
-    const endDate = new Date(
-      startDate.getTime() + durationDays * 24 * 60 * 60 * 1000,
-    );
+    const endDate = new Date(endDateString);
+    
+    // Calculate durationDays for the Discord embed
+    const durationDays = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)));
 
     const newCoupon = {
       guildId: "863959415702028318",
       nameCoupon,
-      codeCoupon: codeCoupon.toUpperCase(),
+      codeCoupon, // Use exact casing provided by user
       type, // 'NC' | 'PENALTY_TICKET'
       minAmount,
       maxAmount,
@@ -141,7 +163,7 @@ export async function POST(request: Request) {
         title: "🎟️ Kupon Baru Tersedia!",
         message: `Kupon ${nameCoupon} telah terbit. Hadiah berupa ${isNC ? "Nismara Coin" : "Tiket Penghapusan Penalti"}. Segera klaim sebelum kehabisan!`,
         type: "info",
-        link: "/coupons",
+        link: `/coupons/${codeCoupon}`,
         isRead: false,
       });
 

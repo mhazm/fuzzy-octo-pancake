@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
-import { Copy, Check, TicketPercent, Coins, ShieldAlert, Loader2 } from "lucide-react";
+import React from "react";
+import Link from "next/link";
+import { Coins, ShieldAlert, ArrowRight } from "lucide-react";
 import { useSession } from "next-auth/react";
 
 interface Coupon {
@@ -33,64 +34,11 @@ const formatDate = (dateString: string | Date) => {
 };
 
 export default function CouponClientCard({ coupon }: { coupon: Coupon }) {
-  const [copied, setCopied] = useState(false);
-  const [isClaiming, setIsClaiming] = useState(false);
-  const [claimStatus, setClaimStatus] = useState<"idle" | "success" | "error">("idle");
-  const [claimMessage, setClaimMessage] = useState("");
-
   const { data: session } = useSession();
-  const currentUserId = session?.user?.discordId ? String(session.user.discordId) : null;
   const isDriver = session?.user?.isDriver;
 
-  const hasClaimed = currentUserId && coupon.driverClaims?.some((c: any) => c.discordId === currentUserId);
   const isExpired = new Date() > new Date(coupon.endDate) || !coupon.isActive;
   
-  const handleCopy = () => {
-    navigator.clipboard.writeText(coupon.codeCoupon);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleClaim = async () => {
-    if (!currentUserId) {
-      setClaimStatus("error");
-      setClaimMessage("Harap login terlebih dahulu.");
-      return;
-    }
-    
-    if (!isDriver) {
-      setClaimStatus("error");
-      setClaimMessage("Hanya Pengemudi (Driver) Nismara yang bisa mengeklaim kupon.");
-      return;
-    }
-    
-    setIsClaiming(true);
-    setClaimStatus("idle");
-    setClaimMessage("");
-
-    try {
-      const res = await fetch("/api/coupons/claim", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ codeCoupon: coupon.codeCoupon }),
-      });
-      const data = await res.json();
-      
-      if (res.ok && data.success) {
-        setClaimStatus("success");
-        setClaimMessage(`Berhasil mendapatkan: ${data.rewardText}`);
-      } else {
-        setClaimStatus("error");
-        setClaimMessage(data.error || "Gagal klaim kupon.");
-      }
-    } catch (error) {
-      setClaimStatus("error");
-      setClaimMessage("Terjadi kesalahan jaringan.");
-    } finally {
-      setIsClaiming(false);
-    }
-  };
-
   const isNC = !coupon.type || coupon.type === "NC";
 
   return (
@@ -116,12 +64,12 @@ export default function CouponClientCard({ coupon }: { coupon: Coupon }) {
 
       {/* Konten Kupon */}
       <div className="p-6 flex-1 flex flex-col relative z-10 -mt-6">
-        <div className="flex justify-between items-start mb-4">
+        <div className="flex justify-between items-start mb-6">
           <h3 className="text-xl font-bold text-foreground line-clamp-1 group-hover:text-primary transition-colors">
             {coupon.nameCoupon}
           </h3>
           <span
-            className={`px-3 py-1 text-xs font-bold rounded-full backdrop-blur-sm border ${
+            className={`px-3 py-1 text-xs font-bold rounded-full backdrop-blur-sm border flex-shrink-0 ${
               coupon.isActive && !isExpired
                 ? "bg-green-500/10 text-green-500 border-green-500/30" 
                 : "bg-muted text-foreground/50 border-border"
@@ -129,20 +77,6 @@ export default function CouponClientCard({ coupon }: { coupon: Coupon }) {
           >
             {coupon.isActive && !isExpired ? "Aktif" : "Selesai"}
           </span>
-        </div>
-
-        <div className="bg-background/50 rounded-xl p-3 mb-5 text-center border border-dashed border-primary/30 group-hover:border-primary/60 transition-colors">
-          <p className="text-xs text-muted-foreground mb-1 uppercase tracking-widest font-bold">Kode Kupon</p>
-          <div className="flex items-center justify-center gap-2">
-            <span className="text-xl font-black text-primary tracking-[0.2em]">{coupon.codeCoupon}</span>
-            <button
-              onClick={handleCopy}
-              className="p-1.5 hover:bg-primary/20 rounded-md transition-colors text-primary"
-              title="Salin Kode"
-            >
-              {copied ? <Check size={16} /> : <Copy size={16} />}
-            </button>
-          </div>
         </div>
 
         <div className="space-y-3 mb-6 flex-1">
@@ -167,39 +101,18 @@ export default function CouponClientCard({ coupon }: { coupon: Coupon }) {
           </div>
         </div>
 
-        {claimStatus === "success" && (
-          <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20 text-green-500 text-sm font-bold rounded-xl text-center">
-            {claimMessage}
+        {isDriver ? (
+          <Link
+            href={`/coupons/${coupon.codeCoupon}`}
+            className="w-full py-3 rounded-xl font-bold uppercase tracking-widest transition-all flex justify-center items-center gap-2 bg-primary text-white hover:bg-primary/80 shadow-lg shadow-primary/20"
+          >
+            Lihat Detail Kupon <ArrowRight size={18} />
+          </Link>
+        ) : (
+          <div className="w-full py-3 rounded-xl font-bold uppercase tracking-widest text-center bg-muted text-muted-foreground border border-border">
+            Hanya Untuk Driver
           </div>
         )}
-        
-        {claimStatus === "error" && (
-          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-bold rounded-xl text-center">
-            {claimMessage}
-          </div>
-        )}
-
-        <button
-          onClick={handleClaim}
-          disabled={isExpired || hasClaimed || isClaiming || claimStatus === "success"}
-          className={`w-full py-3 rounded-xl font-bold uppercase tracking-widest transition-all flex justify-center items-center gap-2 ${
-            claimStatus === "success" || hasClaimed
-              ? "bg-green-500/20 text-green-500 border border-green-500/30 cursor-not-allowed"
-              : isExpired
-              ? "bg-muted text-muted-foreground cursor-not-allowed"
-              : "bg-primary text-white hover:bg-primary/80 shadow-lg shadow-primary/20"
-          }`}
-        >
-          {isClaiming ? (
-            <><Loader2 className="animate-spin" size={18} /> Memproses...</>
-          ) : claimStatus === "success" || hasClaimed ? (
-            <><Check size={18} /> Diklaim</>
-          ) : isExpired ? (
-            "Kedaluwarsa"
-          ) : (
-            <><TicketPercent size={18} /> Klaim Kupon</>
-          )}
-        </button>
       </div>
     </div>
   );

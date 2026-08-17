@@ -4,6 +4,8 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -34,7 +36,7 @@ export async function POST(request: Request) {
 
     // Find the coupon first to get min/max amount and validate expiration
     const coupon = await db.collection("coupons").findOne({
-      codeCoupon: codeCoupon.toUpperCase(),
+      codeCoupon: { $regex: new RegExp(`^${codeCoupon}$`, "i") },
       isActive: true,
     });
 
