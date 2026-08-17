@@ -274,7 +274,7 @@ export async function confirmOrder(orderId: string) {
     // 4. Discord Bot Integration (Grant Role & Send Message)
     const botToken = process.env.DISCORD_BOT_TOKEN;
     const guildId = process.env.DISCORD_GUILD_ID;
-    const plusRoleId = process.env.DISCORD_PLUS_ROLE_ID;
+    const plusRoleId = process.env.DISCORD_NISMARAPLUS_ROLE_ID;
 
     if (botToken && guildId) {
       // a. Grant Role Nismara+ (Cek jika belum punya)
