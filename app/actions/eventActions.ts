@@ -7,13 +7,18 @@ export async function createNCEventAction(formData: any) {
   const client = await clientPromise;
   const db = client.db();
 
-  const { nameEvent, multiplier, imageUrl, endAt, setBy, guildId } = formData;
+  const { nameEvent, slug, type, gameId, multiplier, imageUrl, endAt, setBy, guildId } = formData;
 
   await db.collection("ncevents").insertOne({
     guildId,
+    slug,
     nameEvent,
     multiplier: Number(multiplier),
     imageUrl: imageUrl || null,
+    type: type || "all",
+    gameId: gameId || "all",
+    participants: [],
+    isActive: true,
     setBy, // Discord ID Manager
     setAt: new Date(),
     endAt: new Date(endAt),

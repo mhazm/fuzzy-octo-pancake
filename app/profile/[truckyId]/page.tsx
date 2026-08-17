@@ -260,6 +260,7 @@ export default async function PublicProfilePage(props: {
                       role={user.discordRole}
                       isBooster={user.isBooster === true}
                       isNismaraPlus={user.nismaraplus?.status === true}
+                      nismaraPlusStartedAt={user.nismaraplus?.startedAt}
                       truckyRank={user.truckyRank}
                       className="w-7 h-7 md:w-9 md:h-9"
                     />

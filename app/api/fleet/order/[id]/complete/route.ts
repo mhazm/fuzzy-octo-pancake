@@ -167,7 +167,6 @@ export async function POST(
     });
 
     // 4.5 Update Garage
-    const OPERATIONAL_COST_PER_SLOT = 250;
     let garage = await Garage.findOne({ discordId: buyer.discordId });
 
     if (!garage) {
@@ -194,8 +193,17 @@ export async function POST(
       }
     }
 
-    garage.operational_cost =
-      garage.fleetSlot === 1 ? 0 : garage.fleetSlot * OPERATIONAL_COST_PER_SLOT;
+    let newFleetOpCost = 0;
+    if (garage.fleetSlot > 1) {
+      for (let i = 2; i <= garage.fleetSlot; i++) {
+        const tier = Math.floor((i - 1) / 3);
+        newFleetOpCost += 250 + (tier * 250);
+      }
+    }
+    garage.fleet_operational_cost = newFleetOpCost;
+    
+    const fuelCost = garage.fuel_operational_cost || 0;
+    garage.operational_cost = garage.fleet_operational_cost + fuelCost;
     await garage.save();
 
     // 5. Update Order status

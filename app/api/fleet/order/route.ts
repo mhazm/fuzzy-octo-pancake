@@ -62,7 +62,14 @@ export async function POST(request: Request) {
     if (requiresGarageUpgrade && garage) {
       const deficit = Math.max(0, (garage.fleetSlotUsed || 0) - garage.fleetSlot);
       upgradeSlotCount = deficit + 1;
-      upgradeFee = upgradeSlotCount * 1000;
+      
+      const currentSlot = garage.fleetSlot;
+      const targetSlot = currentSlot + upgradeSlotCount;
+      
+      for (let i = currentSlot + 1; i <= targetSlot; i++) {
+        const tier = Math.floor((i - 1) / 3);
+        upgradeFee += 1000 + (tier * 500);
+      }
     } else if (requiresGarageUpgrade) {
       upgradeSlotCount = 1;
       upgradeFee = 1000;

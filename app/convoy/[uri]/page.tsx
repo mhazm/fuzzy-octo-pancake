@@ -231,6 +231,7 @@ export default async function ConvoyDetailPage({
                         role={usersMap.get(convoy.roadCaptain)?.discordRole} 
                         isBooster={usersMap.get(convoy.roadCaptain)?.isBooster === true} 
                         isNismaraPlus={usersMap.get(convoy.roadCaptain)?.nismaraplus?.status === true} 
+                        nismaraPlusStartedAt={usersMap.get(convoy.roadCaptain)?.nismaraplus?.startedAt}
                         truckyRank={usersMap.get(convoy.roadCaptain)?.truckyRank}
                         className="w-4 h-4" 
                       />
@@ -279,6 +280,7 @@ export default async function ConvoyDetailPage({
                         role={usersMap.get(convoy.setBy)?.discordRole} 
                         isBooster={usersMap.get(convoy.setBy)?.isBooster === true} 
                         isNismaraPlus={usersMap.get(convoy.setBy)?.nismaraplus?.status === true} 
+                        nismaraPlusStartedAt={usersMap.get(convoy.setBy)?.nismaraplus?.startedAt}
                         truckyRank={usersMap.get(convoy.setBy)?.truckyRank}
                         className="w-4 h-4" 
                       />
@@ -466,7 +468,7 @@ export default async function ConvoyDetailPage({
 
       {/* SEKSI DAFTAR ATTENDEES (SAYA INGIN HADIR) */}
       {interestedIds.length > 0 && (
-        <div className="glass-panel p-6 md:p-8 rounded-[2rem] border-border/50 bg-card/20 shadow-xl mt-8">
+        <div className="relative z-10 hover:z-50 glass-panel p-6 md:p-8 rounded-[2rem] border-border/50 bg-card/20 shadow-xl mt-8 transition-all">
           <h2 className="text-lg font-black text-foreground mb-6 flex items-center gap-2 border-b border-border/40 pb-4">
             <CalendarHeart className="text-emerald-500 w-5 h-5" /> Daftar Hadir
           </h2>
@@ -484,7 +486,7 @@ export default async function ConvoyDetailPage({
                       : "#"
                   }
                   key={idx}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl border ${isRoadCaptain ? "bg-emerald-500/10 border-emerald-500/30" : "bg-black/20 border-white/5"} hover:border-primary transition-colors`}
+                  className={`relative z-0 hover:z-50 flex items-center gap-2 px-4 py-2 rounded-xl border ${isRoadCaptain ? "bg-emerald-500/10 border-emerald-500/30" : "bg-black/20 border-white/5"} hover:border-primary transition-colors`}
                 >
                   {userDetail?.image ? (
                     <img
@@ -505,6 +507,7 @@ export default async function ConvoyDetailPage({
                     role={userDetail?.discordRole} 
                     isBooster={userDetail?.isBooster === true} 
                     isNismaraPlus={userDetail?.nismaraplus?.status === true} 
+                    nismaraPlusStartedAt={userDetail?.nismaraplus?.startedAt}
                     truckyRank={userDetail?.truckyRank}
                     className="w-3 h-3 ml-0.5" 
                   />
@@ -520,7 +523,7 @@ export default async function ConvoyDetailPage({
 
       {/* SEKSI DAFTAR PARTISIPAN BARU */}
       {partisipanRaw.length > 0 && (
-        <div className="glass-panel p-6 md:p-8 rounded-[2rem] border-border/50 bg-card/20 shadow-xl mt-8">
+        <div className="relative z-0 hover:z-50 glass-panel p-6 md:p-8 rounded-[2rem] border-border/50 bg-card/20 shadow-xl mt-8 transition-all">
           <h2 className="text-lg font-black text-foreground mb-6 flex items-center gap-2 border-b border-border/40 pb-4">
             <Users className="text-accent-sky w-5 h-5" /> Barisan Pengemudi
           </h2>
@@ -532,7 +535,7 @@ export default async function ConvoyDetailPage({
               return (
                 <div
                   key={idx}
-                  className="flex items-center gap-4 bg-black/20 border border-white/5 p-4 rounded-2xl group"
+                  className="relative z-0 hover:z-50 flex items-center gap-4 bg-black/20 border border-white/5 p-4 rounded-2xl group"
                 >
                   {/* Avatar sebagai Link */}
                   <Link
@@ -565,6 +568,7 @@ export default async function ConvoyDetailPage({
                         role={userDetail?.discordRole} 
                         isBooster={userDetail?.isBooster === true} 
                         isNismaraPlus={userDetail?.nismaraplus?.status === true} 
+                        nismaraPlusStartedAt={userDetail?.nismaraplus?.startedAt}
                         truckyRank={userDetail?.truckyRank}
                         className="w-3.5 h-3.5 shrink-0" 
                       />

@@ -11,13 +11,23 @@ interface CreateSurveyInput {
   title: string;
   uri: string;
   description: string;
-  rewardNC: number;
+  imageUrl?: string;
+  targetSegment: "all" | "nismara_plus" | "intern";
+  rewardType: "NONE" | "NC" | "PENALTY_TICKET";
+  rewardAmount: number;
   expiresInDays: number;
   questions: {
+    id?: string;
     questionText: string;
     type: "text" | "radio" | "checkbox";
     options: { value: string }[];
     required: boolean;
+    conditionLogic?: "AND" | "OR";
+    conditions?: {
+      dependentQuestionId: string;
+      operator: "equals" | "not_equals" | "contains";
+      value: string;
+    }[];
   }[];
 }
 
@@ -50,12 +60,15 @@ export async function createSurveyAction(data: CreateSurveyInput) {
     const formattedQuestions = data.questions.map((q) => {
       const isChoiceType = q.type === "radio" || q.type === "checkbox";
       return {
+        id: q.id || crypto.randomUUID(),
         questionText: q.questionText,
         type: q.type,
         options: isChoiceType
           ? q.options.map((o) => o.value.trim()).filter(Boolean)
           : [],
         required: q.required,
+        conditionLogic: q.conditionLogic || "AND",
+        conditions: q.conditions || [],
       };
     });
 
@@ -69,7 +82,10 @@ export async function createSurveyAction(data: CreateSurveyInput) {
       title: data.title.trim(),
       uri: data.uri.trim(),
       description: data.description.trim(),
-      rewardNC: data.rewardNC,
+      imageUrl: data.imageUrl,
+      targetSegment: data.targetSegment,
+      rewardType: data.rewardType,
+      rewardAmount: data.rewardAmount,
       expiresAt: expirationDate,
       questions: formattedQuestions,
       createdBy: discordId,
@@ -95,13 +111,23 @@ interface UpdateSurveyInput {
   title: string;
   uri: string;
   description: string;
-  rewardNC: number;
+  imageUrl?: string;
+  targetSegment: "all" | "nismara_plus" | "intern";
+  rewardType: "NONE" | "NC" | "PENALTY_TICKET";
+  rewardAmount: number;
   active: boolean; // Tambahan agar manager bisa open/close survey secara manual
   questions: {
+    id?: string;
     questionText: string;
     type: "text" | "radio" | "checkbox";
     options: { value: string }[];
     required: boolean;
+    conditionLogic?: "AND" | "OR";
+    conditions?: {
+      dependentQuestionId: string;
+      operator: "equals" | "not_equals" | "contains";
+      value: string;
+    }[];
   }[];
 }
 
@@ -126,12 +152,15 @@ export async function updateSurveyAction(data: UpdateSurveyInput) {
     const formattedQuestions = data.questions.map((q) => {
       const isChoiceType = q.type === "radio" || q.type === "checkbox";
       return {
+        id: q.id || crypto.randomUUID(),
         questionText: q.questionText,
         type: q.type,
         options: isChoiceType
           ? q.options.map((o) => o.value.trim()).filter(Boolean)
           : [],
         required: q.required,
+        conditionLogic: q.conditionLogic || "AND",
+        conditions: q.conditions || [],
       };
     });
 
@@ -147,7 +176,10 @@ export async function updateSurveyAction(data: UpdateSurveyInput) {
           title: data.title.trim(),
           uri: data.uri.trim(),
           description: data.description.trim(),
-          rewardNC: data.rewardNC,
+          imageUrl: data.imageUrl,
+          targetSegment: data.targetSegment,
+          rewardType: data.rewardType,
+          rewardAmount: data.rewardAmount,
           active: data.active,
           questions: formattedQuestions,
           updatedAt: new Date(),

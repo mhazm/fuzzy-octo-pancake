@@ -8,6 +8,9 @@ import {
   AlertCircle,
   Coins,
   Clock,
+  Star,
+  Users,
+  Ticket,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,12 +21,35 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import DriverSurveyForm from "./DriverSurveyForm";
+import Image from "next/image";
+import { Metadata } from "next";
 
-export const metadata = {
-  title: "Surveys Detail",
-};
+export async function generateMetadata({ params }: any): Promise<Metadata> {
+  const resolvedParams = await params;
+  const client = await clientPromise;
+  const db = client.db();
+  const survey = await db
+    .collection("surveys")
+    .findOne({ uri: resolvedParams.uri });
+  if (!survey) return { title: "Survey Not Found" };
 
+  const metadata: Metadata = {
+    title: survey.title,
+    description: survey.description,
+  };
 
+  if (survey.imageUrl) {
+    metadata.openGraph = {
+      images: [survey.imageUrl],
+    };
+    metadata.twitter = {
+      card: "summary_large_image",
+      images: [survey.imageUrl],
+    };
+  }
+
+  return metadata;
+}
 
 export const dynamic = "force-dynamic";
 
@@ -63,6 +89,11 @@ export default async function DriverSurveyDetailPage({
     .collection("surveys")
     .findOne({ uri: resolvedParams.uri });
 
+  const { ObjectId } = require("mongodb");
+  const userInDb = await db
+    .collection("users")
+    .findOne({ _id: new ObjectId((session.user as any)._id) });
+
   if (!survey) {
     return (
       <div className="max-w-2xl mx-auto py-20 px-4 text-center space-y-4">
@@ -95,6 +126,21 @@ export default async function DriverSurveyDetailPage({
     surveyUri: resolvedParams.uri,
     discordId: discordId,
   });
+
+  // CEK ELIGIBILITY SEGMENT
+  let isNotEligible = false;
+  let eligibilityMessage = "";
+  if (survey.targetSegment === "nismara_plus") {
+    if (!userInDb?.nismaraplus?.status) {
+      isNotEligible = true;
+      eligibilityMessage = "Survey ini khusus untuk pengguna Nismara+ aktif.";
+    }
+  } else if (survey.targetSegment === "intern") {
+    if (userInDb?.truckyRole !== "Magang") {
+      isNotEligible = true;
+      eligibilityMessage = "Survey ini khusus untuk Driver Intern (Magang).";
+    }
+  }
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4 space-y-6">
@@ -129,6 +175,26 @@ export default async function DriverSurveyDetailPage({
             </p>
           </CardContent>
         </Card>
+      ) : isNotEligible ? (
+        /* KONDISI 2: JIKA USER TIDAK ELIGIBLE */
+        <Card className="border-border bg-card text-center py-12 shadow-sm">
+          <CardContent className="space-y-4 flex flex-col items-center">
+            <AlertCircle className="w-14 h-14 text-destructive mx-auto" />
+            <h2 className="text-2xl font-bold text-foreground">
+              Akses Ditolak
+            </h2>
+            <p className="text-muted-foreground max-w-md">
+              {eligibilityMessage}
+            </p>
+            <div className="pt-2">
+              <Link href="/dashboard">
+                <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+                  Kembali ke Dashboard
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
       ) : existingResponse ? (
         /* KONDISI 2: JIKA USER SUDAH MENGISI SEBELUMNYA */
         <Card className="border-border bg-card text-center py-12 shadow-sm">
@@ -153,18 +219,68 @@ export default async function DriverSurveyDetailPage({
         </Card>
       ) : (
         /* KONDISI 3: TAMPILKAN FORMULIR SURVEY UNTUK DIISI */
-        <Card className="border-border bg-card text-card-foreground shadow-sm">
-          <CardHeader className="space-y-3 pb-6 border-b border-border">
-            <div className="flex justify-between items-start gap-4">
-              <CardTitle className="text-2xl text-foreground">
+        <Card className="border-border bg-card text-card-foreground shadow-sm overflow-hidden">
+          {survey.imageUrl && (
+            <div className="relative w-full h-48 md:h-64 lg:h-72">
+              <Image
+                src={survey.imageUrl}
+                alt={survey.title}
+                fill
+                className="object-cover"
+                priority
+              />
+            </div>
+          )}
+          <CardHeader className="space-y-3 pb-6 border-b border-border relative">
+            <div className="flex flex-col items-start gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                {survey.targetSegment === "nismara_plus" && (
+                  <span className="flex items-center gap-1 text-[10px] md:text-xs font-bold px-2.5 py-1 rounded-sm uppercase tracking-wider bg-accent-amber/15 text-accent-amber border border-accent-amber/20">
+                    <Star className="w-3.5 h-3.5" />
+                    Nismara+
+                  </span>
+                )}
+                {survey.targetSegment === "intern" && (
+                  <span className="flex items-center gap-1 text-[10px] md:text-xs font-bold px-2.5 py-1 rounded-sm uppercase tracking-wider bg-muted text-muted-foreground border border-border">
+                    <Users className="w-3.5 h-3.5" />
+                    Driver Intern
+                  </span>
+                )}
+
+                {(() => {
+                  const rewardType = survey.rewardType || "NC";
+                  const rewardAmount =
+                    survey.rewardAmount !== undefined
+                      ? survey.rewardAmount
+                      : survey.rewardNC || 0;
+
+                  if (rewardAmount > 0 && rewardType !== "NONE") {
+                    return (
+                      <div
+                        className={`flex items-center gap-1 text-[10px] md:text-xs font-bold px-2.5 py-1 rounded-sm uppercase tracking-wider border ${
+                          rewardType === "NC"
+                            ? "bg-accent-lilac/15 text-accent-lilac border-accent-lilac/20"
+                            : "bg-accent-emerald/15 text-accent-emerald border-accent-emerald/20"
+                        }`}
+                      >
+                        {rewardType === "NC" ? (
+                          <Coins className="w-3.5 h-3.5" />
+                        ) : (
+                          <Ticket className="w-3.5 h-3.5" />
+                        )}
+                        <span>
+                          +{rewardAmount}{" "}
+                          {rewardType === "NC" ? "NC" : "Penalti"}
+                        </span>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+              </div>
+              <CardTitle className="text-2xl md:text-3xl text-foreground font-black tracking-tight leading-tight">
                 {survey.title}
               </CardTitle>
-              {survey.rewardNC > 0 && (
-                <div className="flex items-center gap-1.5 bg-accent-lilac/10 text-accent-lilac px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap">
-                  <Coins className="w-4 h-4" />
-                  <span>+{survey.rewardNC} NC</span>
-                </div>
-              )}
             </div>
             <CardDescription className="text-muted-foreground whitespace-pre-line leading-relaxed">
               {survey.description}

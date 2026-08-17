@@ -87,6 +87,12 @@ export async function POST(request: Request) {
       { $inc: { totalNC: baseCost } }
     );
 
+    // 3b. Kurangi status Listed dari garasi penjual karena sudah laku
+    await db.collection("garages").updateOne(
+      { discordId: listing.sellerDiscordId },
+      { $inc: { fuelListed: -listing.amount } }
+    );
+
     // 4. Ubah status listing
     listing.status = "sold";
     await listing.save();

@@ -74,6 +74,7 @@ export default async function TransactionsPage() {
                 isManager={session.user.role === "manager" || session.user.role === "admin"} 
                 isBooster={session.user.isBooster} 
                 isNismaraPlus={session.user.nismaraplus?.status} 
+                nismaraPlusStartedAt={session.user.nismaraplus?.startedAt}
                 truckyRank={(session.user as any).truckyRank} 
               />
             </div>

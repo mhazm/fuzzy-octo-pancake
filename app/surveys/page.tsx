@@ -8,7 +8,13 @@ import {
   AlertCircle,
   ArrowRight,
   CheckCircle2,
+  Users,
+  ShieldAlert,
+  Star,
+  Ticket,
+  Clock,
 } from "lucide-react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
 
@@ -60,6 +66,21 @@ export default async function SurveysIndexPage() {
       .toArray();
     userResponses = responses.map((r) => r.surveyUri);
   }
+
+  // Ambil jumlah responden untuk setiap survey aktif
+  const surveyUris = surveys.map((s) => s.uri);
+  const responseCounts = await db
+    .collection("survey_responses")
+    .aggregate([
+      { $match: { surveyUri: { $in: surveyUris } } },
+      { $group: { _id: "$surveyUri", count: { $sum: 1 } } }
+    ])
+    .toArray();
+
+  const countMap = responseCounts.reduce((acc, curr) => {
+    acc[curr._id] = curr.count;
+    return acc;
+  }, {} as Record<string, number>);
 
   return (
     <main className="min-h-screen py-16 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
@@ -116,68 +137,119 @@ export default async function SurveysIndexPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {surveys.map((survey) => {
             const hasAnswered = userResponses.includes(survey.uri);
-            const isReward = survey.rewardNC > 0;
+            const rewardType = survey.rewardType || (survey.rewardNC > 0 ? "NC" : "NONE");
+            const rewardAmount = survey.rewardAmount || survey.rewardNC || 0;
+            const respondentCount = countMap[survey.uri] || 0;
+            
+            // Format Sisa Waktu
+            const msLeft = survey.expiresAt.getTime() - now.getTime();
+            const daysLeft = Math.ceil(msLeft / (1000 * 3600 * 24));
 
             return (
               <Card
                 key={survey._id.toString()}
                 className={`bg-card/50 backdrop-blur-md rounded-2xl shadow-xl border overflow-hidden flex flex-col transition-all duration-300 group ${
                   hasAnswered
-                    ? "opacity-60 border-border"
+                    ? "opacity-70 border-border"
                     : "border-border hover:scale-[1.02] hover:shadow-primary/20 hover:border-primary/50"
                 }`}
               >
-                <CardHeader className="pb-4 flex-none bg-muted/30 border-b border-border/50">
-                  <div className="flex justify-between items-start gap-4">
+                {survey.imageUrl && (
+                  <div className="relative w-full h-32 md:h-40 shrink-0">
+                    <Image
+                      src={survey.imageUrl}
+                      alt={survey.title}
+                      fill
+                      className="object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent" />
+                  </div>
+                )}
+                
+                <CardHeader className="pb-3 flex-none relative z-10 pt-4">
+                  <div className="flex flex-col gap-2 mb-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {/* Segment Badge */}
+                      {survey.targetSegment === "nismara_plus" && (
+                        <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-sm uppercase tracking-wider bg-accent-amber/15 text-accent-amber border border-accent-amber/20">
+                          <Star className="w-3 h-3" />
+                          Nismara+
+                        </span>
+                      )}
+                      {survey.targetSegment === "intern" && (
+                        <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-sm uppercase tracking-wider bg-muted text-muted-foreground border border-border">
+                          <Users className="w-3 h-3" />
+                          Driver Intern
+                        </span>
+                      )}
+
+                      {/* Reward Badge */}
+                      {rewardType === "NC" && !hasAnswered && (
+                        <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-sm uppercase tracking-wider bg-accent-lilac/15 text-accent-lilac border border-accent-lilac/20">
+                          <Coins className="w-3 h-3" />
+                          +{rewardAmount} NC
+                        </span>
+                      )}
+                      {rewardType === "PENALTY_TICKET" && !hasAnswered && (
+                        <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-sm uppercase tracking-wider bg-accent-emerald/15 text-accent-emerald border border-accent-emerald/20">
+                          <Ticket className="w-3 h-3" />
+                          -{rewardAmount} Penalti
+                        </span>
+                      )}
+
+                      {/* Selesai Badge */}
+                      {hasAnswered && (
+                        <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-sm uppercase tracking-wider bg-green-500/10 text-green-500 border border-green-500/20">
+                          <CheckCircle2 className="w-3 h-3" />
+                          Selesai
+                        </span>
+                      )}
+                    </div>
+
                     <CardTitle className="text-xl font-bold text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors">
                       {survey.title}
                     </CardTitle>
-                    {isReward && !hasAnswered && (
-                      <span className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider whitespace-nowrap bg-accent-lilac/15 text-accent-lilac border border-accent-lilac/20">
-                        <Coins className="w-3.5 h-3.5" />
-                        +{survey.rewardNC} NC
-                      </span>
-                    )}
-                    {hasAnswered && (
-                      <span className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider whitespace-nowrap bg-green-500/10 text-green-500 border border-green-500/20">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        Selesai
-                      </span>
-                    )}
                   </div>
                 </CardHeader>
 
-                <CardContent className="pt-6 pb-6 flex-1 flex flex-col">
-                  <CardDescription className="text-sm line-clamp-3 text-foreground/70 mb-6 flex-1">
+                <CardContent className="pb-6 flex-1 flex flex-col pt-0">
+                  <CardDescription className="text-sm line-clamp-2 text-foreground/70 mb-4 flex-1">
                     {survey.description}
                   </CardDescription>
 
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-background/50 border border-border/50 text-xs font-medium">
-                    <span className="text-foreground/60 flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4" /> Ditutup
-                    </span>
-                    <span className="text-foreground font-bold">
-                      {new Date(survey.expiresAt).toLocaleDateString("id-ID", {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                      })}
-                    </span>
+                  <div className="flex flex-col gap-2 mt-auto">
+                    <div className="flex items-center justify-between text-xs font-medium px-3 py-2 rounded-md bg-muted/40 border border-border/50">
+                      <span className="text-foreground/60 flex items-center gap-1.5">
+                        <Users className="w-3.5 h-3.5" />
+                        Partisipasi
+                      </span>
+                      <span className="text-foreground font-semibold">
+                        {respondentCount} Driver
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs font-medium px-3 py-2 rounded-md bg-muted/40 border border-border/50">
+                      <span className="text-foreground/60 flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5" />
+                        Sisa Waktu
+                      </span>
+                      <span className="text-foreground font-semibold">
+                        {daysLeft > 0 ? `${daysLeft} Hari lagi` : "Hari ini ditutup"}
+                      </span>
+                    </div>
                   </div>
                 </CardContent>
 
-                <CardFooter className="pt-0 pb-6 px-6">
+                <CardFooter className="pt-0 pb-5 px-5">
                   <Link href={`/surveys/${survey.uri}`} className="w-full">
                     <Button
-                      className={`w-full font-bold rounded-xl h-12 transition-all ${
+                      className={`w-full font-bold rounded-lg h-11 transition-all ${
                         hasAnswered 
                           ? "bg-muted text-foreground/50 border border-border" 
                           : "shadow-lg shadow-primary/20 group-hover:shadow-primary/40"
                       }`}
                       variant={hasAnswered ? "secondary" : "default"}
-                      disabled={hasAnswered}
                     >
-                      {hasAnswered ? "Telah Diisi" : "Isi Survey Sekarang"}
+                      {hasAnswered ? "Lihat Survey" : "Isi Survey Sekarang"}
                       {!hasAnswered && (
                         <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                       )}

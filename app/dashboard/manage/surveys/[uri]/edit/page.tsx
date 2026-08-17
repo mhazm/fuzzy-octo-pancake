@@ -56,12 +56,18 @@ export default async function EditSurveyPage({ params }: any) {
     title: survey.title,
     uri: survey.uri,
     description: survey.description,
-    rewardNC: survey.rewardNC || 0,
+    imageUrl: survey.imageUrl || "",
+    targetSegment: survey.targetSegment || "all",
+    rewardType: survey.rewardType || (survey.rewardNC > 0 ? "NC" : "NONE"),
+    rewardAmount: survey.rewardAmount !== undefined ? survey.rewardAmount : (survey.rewardNC || 0),
     active: survey.active !== undefined ? survey.active : true,
     questions: survey.questions.map((q: any) => ({
+      id: q.id || crypto.randomUUID(),
       questionText: q.questionText,
       type: q.type,
       required: q.required !== undefined ? q.required : true,
+      conditionLogic: q.conditionLogic || "AND",
+      conditions: q.conditions || [],
       // MongoDB menyimpan ["Opsi 1", "Opsi 2"], ubah menjadi [{value: "Opsi 1"}, {value: "Opsi 2"}]
       options: Array.isArray(q.options)
         ? q.options.map((opt: string) => ({ value: opt }))

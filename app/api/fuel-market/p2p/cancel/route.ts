@@ -37,10 +37,10 @@ export async function POST(request: Request) {
     const client = await clientPromise;
     const db = client.db();
 
-    // Kembalikan BBM ke Garasi
+    // Kembalikan BBM ke Garasi (dari Listed ke Stock)
     await db.collection("garages").updateOne(
       { discordId },
-      { $inc: { fuelStock: listing.amount } }
+      { $inc: { fuelStock: listing.amount, fuelListed: -listing.amount } }
     );
 
     // Ubah status listing

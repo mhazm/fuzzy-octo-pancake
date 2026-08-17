@@ -8,6 +8,9 @@ export const metadata = {
   title: "Manage Ncboost",
 };
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 
 
 export default async function ManageEventPage() {
@@ -19,11 +22,11 @@ export default async function ManageEventPage() {
   const guildId = process.env.DISCORD_GUILD_ID;
 
   const [activeEvents, eventHistory] = await Promise.all([
-    db.collection("ncevents").find({ guildId }).toArray(),
+    db.collection("ncevents").find({ guildId, isActive: true }).toArray(),
     db
-      .collection("nceventhistories")
-      .find({ guildId })
-      .sort({ endDate: -1 })
+      .collection("ncevents")
+      .find({ guildId, isActive: false })
+      .sort({ endAt: -1 })
       .toArray(),
   ]);
 

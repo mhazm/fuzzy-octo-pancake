@@ -52,7 +52,7 @@ export default function FuelMarketPage() {
   const fetchSystemMarket = async (range: number) => {
     setChartLoading(true);
     try {
-      const sysRes = await fetch(`/api/fuel-market/system?range=${range}`);
+      const sysRes = await fetch(`/api/fuel-market/system?range=${range}&t=${Date.now()}`);
       const sysData = await sysRes.json();
       if (sysData.success) {
         setSystemPrice(sysData.currentPrice);
@@ -73,14 +73,14 @@ export default function FuelMarketPage() {
       await fetchSystemMarket(chartRange);
 
       // Fetch P2P Listings
-      const p2pRes = await fetch("/api/fuel-market/p2p");
+      const p2pRes = await fetch(`/api/fuel-market/p2p?t=${Date.now()}`);
       const p2pData = await p2pRes.json();
       if (p2pData.success) {
         setListings(p2pData.listings);
       }
 
       // Fetch User Garage Data
-      const garageRes = await fetch("/api/garage/me");
+      const garageRes = await fetch(`/api/garage/me?t=${Date.now()}`);
       const garageData = await garageRes.json();
       if (garageData.success) {
         setGarage(garageData.garage);
@@ -99,7 +99,7 @@ export default function FuelMarketPage() {
   const fetchHistory = async (page: number) => {
     setLoadingHistory(true);
     try {
-      const res = await fetch(`/api/fuel-market/history?page=${page}&limit=10`);
+      const res = await fetch(`/api/fuel-market/history?page=${page}&limit=10&t=${Date.now()}`);
       const data = await res.json();
       if (data.success) {
         setHistory(data.history);
@@ -206,8 +206,73 @@ export default function FuelMarketPage() {
       }
     });
 
-    if (newPrice && Number(newPrice) !== currentPrice) {
-      handleAction("/api/fuel-market/p2p/edit", { listingId, newPrice });
+    if (newPrice) {
+      handleAction("/api/fuel-market/p2p", { listingId, action: "edit", newPrice }, `Yakin ingin mengubah harga menjadi ${newPrice} NC?`);
+    }
+  };
+
+  const calculateOpCost = (startLevel: number, multiplier: number, isUpgrade: boolean) => {
+    let cost = 0;
+    if (isUpgrade) {
+      for (let i = startLevel + 1; i <= startLevel + multiplier; i++) {
+        const tier = Math.floor((i - 1) / 5);
+        cost += (200 + (tier * 100));
+      }
+    } else {
+      for (let i = startLevel; i > startLevel - multiplier; i--) {
+        const tier = Math.floor((i - 1) / 5);
+        cost += (200 + (tier * 100));
+      }
+    }
+    return cost;
+  };
+
+  const handleBulkUpgrade = async (currentLevel: number) => {
+    const { value: multiplierStr } = await Swal.fire({
+      title: "Upgrade Kapasitas Tangki",
+      html: "Berapa level yang ingin diupgrade?<br><span class='text-xs text-muted-foreground'>1 Level = +1.000L Kapasitas, 500 NC Biaya.<br>Biaya operasional bertambah progresif (+200 NC dasar, naik 100 NC tiap 5 level)</span>",
+      input: "number",
+      inputValue: 1,
+      showCancelButton: true,
+      confirmButtonText: "Upgrade",
+      cancelButtonText: "Batal",
+      background: "hsl(var(--card))",
+      color: "hsl(var(--foreground))",
+      inputValidator: (value) => {
+        if (!value || Number(value) < 1) return "Minimal upgrade 1 level!";
+      }
+    });
+
+    if (multiplierStr) {
+      const multiplier = parseInt(multiplierStr);
+      const addedOpCost = calculateOpCost(currentLevel, multiplier, true);
+      handleAction("/api/garage/fuel-upgrade", { multiplier }, `Anda yakin ingin upgrade tangki sebanyak ${multiplier} level? Saldo Anda akan terpotong ${multiplier * 500} NC dan biaya operasional garasi bertambah ${addedOpCost} NC.`);
+    }
+  };
+
+  const handleBulkDowngrade = async (currentLevel: number) => {
+    const maxDowngrade = currentLevel - 1;
+    if (maxDowngrade <= 0) return;
+
+    const { value: multiplierStr } = await Swal.fire({
+      title: "Downgrade Kapasitas Tangki",
+      html: `Berapa level yang ingin didowngrade? (Maks: ${maxDowngrade})<br><span class='text-xs text-muted-foreground'>1 Level = -1.000L Kapasitas, Biaya: 250 NC.<br>Biaya operasional akan berkurang sesuai tier level.</span>`,
+      input: "number",
+      inputValue: 1,
+      showCancelButton: true,
+      confirmButtonText: "Downgrade",
+      cancelButtonText: "Batal",
+      background: "hsl(var(--card))",
+      color: "hsl(var(--foreground))",
+      inputValidator: (value) => {
+        if (!value || Number(value) < 1 || Number(value) > maxDowngrade) return `Masukkan angka antara 1 sampai ${maxDowngrade}!`;
+      }
+    });
+
+    if (multiplierStr) {
+      const multiplier = parseInt(multiplierStr);
+      const reducedOpCost = calculateOpCost(currentLevel, multiplier, false);
+      handleAction("/api/garage/fuel-downgrade", { multiplier }, `Anda yakin ingin downgrade tangki sebanyak ${multiplier} level? Biaya Downgrade sebesar ${multiplier * 250} NC. Biaya operasional garasi akan berkurang ${reducedOpCost} NC. Pastikan kapasitas baru bisa menampung stok BBM saat ini.`);
     }
   };
 
@@ -509,6 +574,7 @@ export default function FuelMarketPage() {
                                       role={item.sellerId?.discordRole} 
                                       isBooster={item.sellerId?.isBooster} 
                                       isNismaraPlus={item.sellerId?.nismaraplus?.status} 
+                                      nismaraPlusStartedAt={item.sellerId?.nismaraplus?.startedAt}
                                       truckyRank={item.sellerId?.truckyRank}
                                       className="w-3.5 h-3.5" 
                                     />
@@ -649,13 +715,33 @@ export default function FuelMarketPage() {
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Kapasitas Terisi</span>
-                          <span className="font-bold">{Math.floor(garage.fuelStock || 0).toLocaleString("id-ID")} / {(garage.fuelCapacity || 2000).toLocaleString("id-ID")} Liter</span>
+                          <span className="font-bold">{Math.floor((garage.fuelStock || 0) + (garage.fuelListed || 0)).toLocaleString("id-ID")} / {(garage.fuelCapacity || 2000).toLocaleString("id-ID")} Liter</span>
                         </div>
-                        <div className="h-4 w-full bg-muted rounded-full overflow-hidden">
+                        <div className="h-4 w-full bg-muted rounded-full overflow-hidden flex">
                           <div 
                             className="h-full bg-primary transition-all" 
+                            title={`Tersedia: ${Math.floor(garage.fuelStock || 0).toLocaleString("id-ID")} L`}
                             style={{ width: `${Math.min(((garage.fuelStock || 0) / (garage.fuelCapacity || 2000)) * 100, 100)}%` }}
                           />
+                          {(garage.fuelListed || 0) > 0 && (
+                            <div 
+                              className="h-full bg-amber-500 transition-all" 
+                              title={`Di Market: ${Math.floor(garage.fuelListed || 0).toLocaleString("id-ID")} L`}
+                              style={{ width: `${Math.min(((garage.fuelListed || 0) / (garage.fuelCapacity || 2000)) * 100, 100)}%` }}
+                            />
+                          )}
+                        </div>
+                        <div className="flex gap-4 text-xs">
+                          <div className="flex items-center gap-1.5 text-muted-foreground">
+                             <div className="w-2 h-2 rounded-full bg-primary" />
+                             <span>Tersedia: {Math.floor(garage.fuelStock || 0).toLocaleString("id-ID")} L</span>
+                          </div>
+                          {(garage.fuelListed || 0) > 0 && (
+                            <div className="flex items-center gap-1.5 text-muted-foreground">
+                               <div className="w-2 h-2 rounded-full bg-amber-500" />
+                               <span>Di Market: {Math.floor(garage.fuelListed || 0).toLocaleString("id-ID")} L</span>
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -674,13 +760,13 @@ export default function FuelMarketPage() {
                         <div>
                           <h4 className="font-bold text-sm mb-2">Upgrade Kapasitas (+1.000L)</h4>
                           <p className="text-xs text-muted-foreground mb-4">
-                            Biaya 500 NC dan akan menambah Operational Cost garasi sebesar 200 NC per siklus penagihan.
+                            Biaya 500 NC/level. Menambah Operational Cost garasi secara progresif berdasarkan tier level (mulai 200 NC, naik 100 NC tiap 5 level).
                           </p>
                           <Button 
                             variant="secondary" 
                             className="w-full"
                             disabled={actionLoading}
-                            onClick={() => handleAction("/api/garage/fuel-upgrade", {}, "Anda yakin ingin melakukan upgrade tangki BBM (+1.000L)? Saldo Anda akan terpotong 500 NC dan biaya operasional garasi akan bertambah 200 NC.")}
+                            onClick={() => handleBulkUpgrade(garage.fuelTankLevel || 1)}
                           >
                             {actionLoading ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : <ArrowUpCircle className="w-4 h-4 mr-2" />}
                             Upgrade Tangki (500 NC)
@@ -691,13 +777,13 @@ export default function FuelMarketPage() {
                           <div className="pt-4 border-t">
                             <h4 className="font-bold text-sm mb-2 text-destructive">Downgrade Kapasitas (-1.000L)</h4>
                             <p className="text-xs text-muted-foreground mb-4">
-                              Gratis. Mengurangi Operational Cost garasi sebesar 200 NC per siklus penagihan. Saldo 500 NC upgrade sebelumnya tidak di-refund.
+                              Biaya 250 NC/level. Mengurangi Operational Cost garasi sesuai progresif tier level Anda. Saldo NC upgrade sebelumnya tidak di-refund.
                             </p>
                             <Button 
                               variant="destructive" 
                               className="w-full"
                               disabled={actionLoading}
-                              onClick={() => handleAction("/api/garage/fuel-downgrade", {}, "Anda yakin ingin melakukan downgrade tangki BBM (-1.000L)? Biaya operasional garasi akan berkurang 200 NC. Pastikan stok bensin Anda tidak melebihi kapasitas baru, atau akan ditolak sistem.")}
+                              onClick={() => handleBulkDowngrade(garage.fuelTankLevel || 1)}
                             >
                               {actionLoading ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : <ArrowDownCircle className="w-4 h-4 mr-2" />}
                               Downgrade Tangki

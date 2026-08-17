@@ -60,7 +60,13 @@ export default function BuyFleetWizard({
     needsUpgrade = true;
     const deficit = garage.fleetSlotUsed - garage.fleetSlot;
     upgradeSlotCount = deficit + 1;
-    upgradeFee = upgradeSlotCount * 1000;
+    
+    const currentSlot = garage.fleetSlot;
+    const targetSlot = currentSlot + upgradeSlotCount;
+    for (let i = currentSlot + 1; i <= targetSlot; i++) {
+      const tier = Math.floor((i - 1) / 3);
+      upgradeFee += 1000 + (tier * 500);
+    }
   }
 
   const totalPrice =

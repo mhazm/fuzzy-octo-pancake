@@ -9,11 +9,13 @@ import {
   XCircle, 
   Settings, 
   ExternalLink,
-  CheckCheck
+  CheckCheck,
+  Trash2
 } from "lucide-react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { id } from "date-fns/locale";
+import { showConfirm, showAlert } from "@/lib/dialog";
 
 interface NotificationData {
   _id: string;
@@ -91,6 +93,28 @@ export default function NotificationsClient() {
     }
   };
 
+  const deleteAllNotifications = async () => {
+    const confirmed = await showConfirm(
+      "Apakah Anda yakin ingin menghapus semua notifikasi? Tindakan ini tidak dapat dibatalkan.",
+      "Hapus Semua Notifikasi"
+    );
+
+    if (!confirmed) return;
+
+    // Optimistic update
+    setNotifications([]);
+    setTotalItems(0);
+
+    try {
+      await fetch("/api/notifications/delete-all", { method: "POST" });
+      window.dispatchEvent(new Event("notifications-updated"));
+      await showAlert("Semua notifikasi telah dihapus.", "Berhasil");
+    } catch (error) {
+      console.error("Failed to delete all notifications:", error);
+      await showAlert("Gagal menghapus notifikasi.", "Error");
+    }
+  };
+
   const toggleExpand = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     const newSet = new Set(expandedIds);
@@ -141,15 +165,27 @@ export default function NotificationsClient() {
           </p>
         </div>
         
-        {unreadCount > 0 && (
-          <button 
-            onClick={markAllAsRead}
-            className="flex items-center gap-2 bg-primary/10 hover:bg-primary/20 text-primary px-4 py-2 rounded-xl font-bold transition-colors"
-          >
-            <CheckCheck size={18} />
-            Tandai Semua Dibaca
-          </button>
-        )}
+        <div className="flex flex-wrap items-center gap-3">
+          {unreadCount > 0 && (
+            <button 
+              onClick={markAllAsRead}
+              className="flex items-center gap-2 bg-primary/10 hover:bg-primary/20 text-primary px-4 py-2 rounded-xl font-bold transition-colors"
+            >
+              <CheckCheck size={18} />
+              Tandai Semua Dibaca
+            </button>
+          )}
+          
+          {totalItems > 0 && (
+            <button 
+              onClick={deleteAllNotifications}
+              className="flex items-center gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 px-4 py-2 rounded-xl font-bold transition-colors"
+            >
+              <Trash2 size={18} />
+              Hapus Semua
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="bg-card rounded-2xl border border-border shadow-lg overflow-hidden">

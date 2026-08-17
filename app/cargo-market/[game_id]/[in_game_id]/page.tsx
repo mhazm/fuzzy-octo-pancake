@@ -388,6 +388,7 @@ export default async function CargoDetailPage({
                                   role={driverUser?.discordRole} 
                                   isBooster={driverUser?.isBooster} 
                                   isNismaraPlus={driverUser?.nismaraplus?.status} 
+                                  nismaraPlusStartedAt={driverUser?.nismaraplus?.startedAt}
                                   truckyRank={driverUser?.truckyRank}
                                   className="w-3.5 h-3.5" 
                                 />

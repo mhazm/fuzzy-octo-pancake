@@ -80,6 +80,7 @@ export default async function GlobalGalleryPage() {
             avatarUrl: { $ifNull: ["$uploader.image", "$uploader.avatarUrl"] },
             truckyId: "$uploader.truckyId",
             isNismaraPlus: "$uploader.nismaraplus.status",
+            nismaraPlusStartedAt: "$uploader.nismaraplus.startedAt",
             isBooster: "$uploader.isBooster",
             role: "$uploader.discordRole"
           },

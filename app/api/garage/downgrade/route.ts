@@ -6,7 +6,8 @@ import Garage from "@/lib/models/Garage";
 import mongoose from "mongoose";
 
 import dbConnect from "@/lib/mongoose";
-const OPERATIONAL_COST_PER_SLOT = 250;
+const DOWNGRADE_COST = 500;
+const GUILD_ID = process.env.GUILD_ID || "863959415702028318";
 
 export async function POST(request: Request) {
   try {
@@ -30,11 +31,43 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Tidak bisa downgrade. Harap jual/keluarkan kendaraan dari slot terlebih dahulu." }, { status: 400 });
     }
 
+    const client = await clientPromise;
+    const db = client.db();
+
+    // Cek saldo
+    const currencyData = await db.collection("currencies").findOne({ userId: session.user.discordId, guildId: GUILD_ID });
+    if (!currencyData || currencyData.totalNC < DOWNGRADE_COST) {
+      return NextResponse.json({ error: `Saldo NC tidak mencukupi untuk downgrade (Butuh ${DOWNGRADE_COST} NC)` }, { status: 400 });
+    }
+
+    // Deduct NC
+    await db.collection("currencies").updateOne(
+      { userId: session.user.discordId, guildId: GUILD_ID },
+      { $inc: { totalNC: -DOWNGRADE_COST } }
+    );
+
+    // Record history
+    await db.collection("currencyhistories").insertOne({
+      userId: session.user.discordId,
+      guildId: GUILD_ID,
+      amount: DOWNGRADE_COST,
+      type: "spend",
+      reason: `Downgrade Kapasitas Garasi ke Slot ${garage.fleetSlot - 1}`,
+      createdAt: new Date(),
+    });
+
     // Downgrade Garage
     garage.fleetSlot -= 1;
     garage.fleetSlotLevel -= 1;
     
-    garage.fleet_operational_cost = garage.fleetSlot === 1 ? 0 : garage.fleetSlot * OPERATIONAL_COST_PER_SLOT;
+    let newFleetOpCost = 0;
+    if (garage.fleetSlot > 1) {
+      for (let i = 2; i <= garage.fleetSlot; i++) {
+        const tier = Math.floor((i - 1) / 3);
+        newFleetOpCost += 250 + (tier * 250);
+      }
+    }
+    garage.fleet_operational_cost = newFleetOpCost;
     
     // Kalkulasi total (Fleet + Fuel)
     const fuelCost = garage.fuel_operational_cost || 0;

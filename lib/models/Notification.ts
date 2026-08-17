@@ -17,6 +17,7 @@ const notificationSchema = new mongoose.Schema(
     },
     link: { type: String }, // Optional link to redirect when clicked
     readBy: [{ type: String }], // Array of Discord IDs who have read this
+    deletedBy: [{ type: String }], // Array of Discord IDs who have deleted this (hidden from them)
     expiresAt: { type: Date } // Optional TTL for auto-delete
   },
   { timestamps: true }

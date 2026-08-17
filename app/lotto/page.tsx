@@ -220,6 +220,7 @@ export default async function LottoPage() {
                           role={p.discordRole} 
                           isBooster={p.isBooster === true} 
                           isNismaraPlus={p.nismaraplus?.status === true} 
+                          nismaraPlusStartedAt={p.nismaraplus?.startedAt}
                           truckyRank={p.truckyRank}
                           className="w-3 h-3" 
                         />

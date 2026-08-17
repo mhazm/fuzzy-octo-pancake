@@ -22,6 +22,7 @@ Nismara Logistics is a web platform for a virtual trucking community (VTC). It i
 - **Cache / High-Performance Store (Redis):** Uses `ioredis` (exported from `@/lib/redis`). Use Redis for high-frequency, temporary, or time-sensitive tasks (like the "Scratchers" mechanic) where MongoDB would be too slow or expensive.
 - **Storage:** Cloudflare R2 (S3-compatible API for all media uploads, combined with WebP compression).
 - **Authentication:** NextAuth (Discord Provider).
+- **Bot Protection:** Cloudflare Turnstile. Use `TurnstileWidget` (client) and `verifyTurnstileToken` (server) — see Section 11.
 - **Deployment:** PM2 / Custom Node Server (via `ecosystem.config.js`).
 
 ## 3. Core Domains & Conventions
@@ -95,3 +96,60 @@ Nismara Logistics is a web platform for a virtual trucking community (VTC). It i
 - **Modal vs Detail Page Consistency:** When building features that exist both on a standalone page (e.g., `PostDetailClient`) and a quick-view modal (e.g., `GalleryModal`), ensure complete feature parity. Actions like Edit, Delete, and Report must be fully synchronized and functional in both contexts with Optimistic UI updates.
 - **Hybrid Session Caching:** The NextAuth `session` callback utilizes a hybrid caching strategy using Redis. Do not perform heavy MongoDB queries or external API calls (Discord, Trucky) directly inside the `session` callback on every request. Always check for a cached profile in Redis (`session:profile:${user.id}`) first. If a cache miss occurs, perform the queries and save the result to Redis with a 15-minute TTL (`900` seconds) before returning the session.
 - **Session Garbage Collection:** The MongoDB `sessions` collection must have a TTL index on the `expires` field (`{ "expires": 1 }, { expireAfterSeconds: 0 }`) to automatically delete expired sessions and prevent database bloat. Do not rely on application-level cron jobs to clean up expired NextAuth sessions.
+- **Radix UI `SelectValue` Gotcha:** In this project's Shadcn/Radix `Select` component, `<SelectValue />` (without children) can render the raw `value` string instead of the selected `SelectItem`'s label text when the dropdown is closed — especially when the `value` prop is set programmatically (e.g., from `defaultValues`). **Always provide explicit label children** to `SelectValue` using a value-to-label mapping object. Example:
+  ```tsx
+  const LABELS = { all: "Semua Driver", nismara_plus: "Nismara+ Aktif" };
+  <SelectValue>{LABELS[field.value] || "Pilih..."}</SelectValue>
+  ```
+  Never rely on `<SelectValue placeholder="..." />` alone to display the correct human-readable text for an already-selected value.
+
+## 11. Cloudflare Turnstile (Bot Protection)
+
+Turnstile is the standard bot-protection mechanism for all public-facing user submission forms (survey answers, etc.). The integration consists of two parts:
+
+### Files
+- **`lib/turnstile.ts`** — Server-side token verifier. Import and call `verifyTurnstileToken(token)` in any Server Action or API Route that needs bot protection.
+- **`components/ui/TurnstileWidget.tsx`** — Client-side React widget. Renders the Cloudflare challenge inside any Client Component form.
+
+### Environment Variables (`.env.local`)
+```
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=   # Public — used by the client widget
+TURNSTILE_SECRET_KEY=             # Secret — used ONLY on the server to verify tokens
+```
+Get keys from [dash.cloudflare.com](https://dash.cloudflare.com) → **Turnstile** → Add Site.
+
+### Client-Side Usage
+```tsx
+import TurnstileWidget from "@/components/ui/TurnstileWidget";
+
+const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+
+// In JSX, place above the submit button:
+<TurnstileWidget
+  onVerify={(token) => setTurnstileToken(token)}
+  onExpire={() => setTurnstileToken(null)}
+  onError={() => setTurnstileToken(null)}
+  theme="auto" // or "light" | "dark"
+/>
+
+// Disable submit until verified:
+<Button type="submit" disabled={!turnstileToken}>Kirim</Button>
+```
+
+### Server-Side Usage (Server Action or API Route)
+```ts
+import { verifyTurnstileToken } from "@/lib/turnstile";
+
+// ALWAYS call this FIRST, before any auth check or DB operation:
+const turnstileResult = await verifyTurnstileToken(data.turnstileToken);
+if (!turnstileResult.success) {
+  return { success: false, error: "Verifikasi keamanan gagal. Coba lagi." };
+}
+```
+
+### Critical Rules
+- **NEVER skip server-side verification.** The client-side token state (`turnstileToken`) is only a UX guard. The real protection is `verifyTurnstileToken()` on the server. A malicious user could bypass the client check and POST directly to the Server Action.
+- **Tokens are single-use.** Each Turnstile token can only be verified once. After a successful verification, the token is consumed. If the submission fails for other reasons (e.g., duplicate response), the widget must be re-solved. The client should call `setTurnstileToken(null)` on error so the widget resets.
+- **Dev mode behavior:** If `TURNSTILE_SECRET_KEY` is not set and `NODE_ENV === "development"`, `verifyTurnstileToken` skips verification and returns `{ success: true }`. This prevents blocking local development. Similarly, `TurnstileWidget` renders a placeholder when `NEXT_PUBLIC_TURNSTILE_SITE_KEY` is absent. **Do NOT use this behavior in production** — always set both keys in the production environment.
+- **Do NOT add Turnstile to admin/manager-only forms** (e.g., survey create/edit, event management). It is only needed for driver-facing public submission forms.
+- **Placement:** Always render `TurnstileWidget` **above** the submit button, after all form questions, so it's the last step before submission.

@@ -16,6 +16,7 @@ import HireMechanicModal from "./HireMechanicModal";
 import { MechanicSpecialty } from "@/lib/constants/mechanics";
 import { Modal } from "@/components/ui/Modal";
 import { showAlert, showConfirm } from "@/lib/dialog";
+import { Input } from "@/components/ui/input";
 
 
 interface GarageClientProps {
@@ -31,8 +32,44 @@ export default function GarageClient({ garage }: GarageClientProps) {
   const [downgradeModalOpen, setDowngradeModalOpen] = useState(false);
   const [fuelUpgradeModalOpen, setFuelUpgradeModalOpen] = useState(false);
   const [fuelDowngradeModalOpen, setFuelDowngradeModalOpen] = useState(false);
+  const [fuelMultiplier, setFuelMultiplier] = useState(1);
 
   const [loadingAction, setLoadingAction] = useState(false);
+  
+  const calculateOpCost = (startLevel: number, multiplier: number, isUpgrade: boolean) => {
+    let cost = 0;
+    if (isUpgrade) {
+      for (let i = startLevel + 1; i <= startLevel + multiplier; i++) {
+        const tier = Math.floor((i - 1) / 5);
+        cost += (200 + (tier * 100));
+      }
+    } else {
+      for (let i = startLevel; i > startLevel - multiplier; i--) {
+        const tier = Math.floor((i - 1) / 5);
+        cost += (200 + (tier * 100));
+      }
+    }
+    return cost;
+  };
+  const calculateFleetOpCost = (targetSlot: number) => {
+    if (targetSlot <= 1) return 0;
+    let cost = 0;
+    for (let i = 2; i <= targetSlot; i++) {
+      const tier = Math.floor((i - 1) / 3);
+      cost += 250 + (tier * 250);
+    }
+    return cost;
+  };
+
+  const calculateFleetUpgradeCost = (currentSlot: number, targetSlot: number) => {
+    let cost = 0;
+    for (let i = currentSlot + 1; i <= targetSlot; i++) {
+      const tier = Math.floor((i - 1) / 3);
+      cost += 1000 + (tier * 500);
+    }
+    return cost;
+  };
+
   const [firing, setFiring] = useState<MechanicSpecialty | null>(null);
 
   const mechanics = garage.mechanics || {};
@@ -80,6 +117,8 @@ export default function GarageClient({ garage }: GarageClientProps) {
     try {
       const res = await fetch("/api/garage/fuel-upgrade", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ multiplier: fuelMultiplier }),
       });
       const data = await res.json();
 
@@ -92,6 +131,7 @@ export default function GarageClient({ garage }: GarageClientProps) {
     } finally {
       setLoadingAction(false);
       setFuelUpgradeModalOpen(false);
+      setFuelMultiplier(1);
     }
   };
 
@@ -100,6 +140,8 @@ export default function GarageClient({ garage }: GarageClientProps) {
     try {
       const res = await fetch("/api/garage/fuel-downgrade", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ multiplier: fuelMultiplier }),
       });
       const data = await res.json();
 
@@ -112,6 +154,7 @@ export default function GarageClient({ garage }: GarageClientProps) {
     } finally {
       setLoadingAction(false);
       setFuelDowngradeModalOpen(false);
+      setFuelMultiplier(1);
     }
   };
 
@@ -184,8 +227,8 @@ export default function GarageClient({ garage }: GarageClientProps) {
   const deficit = Math.max(0, (garage.fleetSlotUsed || 0) - garage.fleetSlot);
   const slotsToAdd = deficit > 0 ? deficit + 1 : 1;
   const newFleetSlot = garage.fleetSlot + slotsToAdd;
-  const upgradeCost = slotsToAdd * 1000;
-  const newOpCost = newFleetSlot * 250;
+  const upgradeCost = calculateFleetUpgradeCost(garage.fleetSlot, newFleetSlot);
+  const newOpCost = calculateFleetOpCost(newFleetSlot);
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-10 pb-10 animate-in fade-in duration-700 relative">
@@ -350,11 +393,15 @@ export default function GarageClient({ garage }: GarageClientProps) {
             </p>
             <div className="flex items-baseline gap-2 mb-2">
               <span className="text-3xl font-black text-accent-sky">
-                {(garage.fuelStock || 0).toLocaleString("id-ID")}
+                {Math.floor((garage.fuelStock || 0) + (garage.fuelListed || 0)).toLocaleString("id-ID")}
               </span>
               <span className="text-muted-foreground font-bold">
                 / {(garage.fuelCapacity || 2000).toLocaleString("id-ID")} L
               </span>
+            </div>
+            <div className="flex flex-col gap-1 text-[10px] uppercase font-bold text-muted-foreground">
+               <div className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-accent-sky" /> Tersedia: {Math.floor(garage.fuelStock || 0).toLocaleString("id-ID")} L</div>
+               {(garage.fuelListed || 0) > 0 && <div className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-amber-500" /> Di Market: {Math.floor(garage.fuelListed || 0).toLocaleString("id-ID")} L</div>}
             </div>
             <div className="flex flex-col mt-3 pt-3 border-t border-border/50 space-y-3">
               <p className="text-[10px] text-muted-foreground uppercase font-medium">
@@ -590,8 +637,8 @@ export default function GarageClient({ garage }: GarageClientProps) {
               <p className="text-xs opacity-90 leading-relaxed">
                 Anda akan mengurangi kapasitas armada dari{" "}
                 <strong>{garage.fleetSlot} Slot</strong> menjadi{" "}
-                <strong>{garage.fleetSlot - 1} Slot</strong>. Tindakan ini tidak
-                memakan biaya, namun <strong>1.000 NC</strong> dari saat Anda
+                <strong>{garage.fleetSlot - 1} Slot</strong>. Tindakan ini membutuhkan
+                biaya sebesar <strong>500 NC</strong>, dan saldo NC dari saat Anda
                 upgrade sebelumnya <strong>tidak akan direfund</strong>.
               </p>
             </div>
@@ -607,12 +654,13 @@ export default function GarageClient({ garage }: GarageClientProps) {
                 Tagihan Operasional (Bulan)
               </span>
               <span className="font-bold text-emerald-500">
-                {(garage.fleetSlot - 1 === 1
-                  ? 0
-                  : (garage.fleetSlot - 1) * 250
-                ).toLocaleString("id-ID")}{" "}
+                {calculateFleetOpCost(garage.fleetSlot - 1).toLocaleString("id-ID")}{" "}
                 NC
               </span>
+            </div>
+            <div className="flex justify-between text-sm items-center py-2 border-b border-border/50">
+              <span className="text-muted-foreground">Biaya Downgrade</span>
+              <span className="font-black text-lg text-red-500">500 NC</span>
             </div>
           </div>
 
@@ -649,42 +697,44 @@ export default function GarageClient({ garage }: GarageClientProps) {
                 Konfirmasi Upgrade Tangki
               </p>
               <p className="text-xs opacity-90 leading-relaxed">
-                Anda akan menambahkan kapasitas tangki BBM menjadi{" "}
-                <strong>
-                  {((garage.fuelCapacity || 2000) + 1000).toLocaleString(
-                    "id-ID",
-                  )}{" "}
-                  Liter
-                </strong>{" "}
-                (Level {(garage.fuelTankLevel || 1) + 1}). Upgrade ini
-                membutuhkan biaya awal sebesar <strong>500 NC</strong>.
+                Setiap 1 Level (+1.000 Liter) membutuhkan biaya 500 NC. 
+                Biaya operasional bertambah secara progresif (mulai +200 NC/bulan, naik tiap kelipatan 5 level).
               </p>
             </div>
           </div>
 
+          <div>
+             <label className="block text-xs font-bold mb-2 text-muted-foreground">Jumlah Level Upgrade (Multiplier)</label>
+             <Input 
+                type="number" 
+                min={1} 
+                value={fuelMultiplier} 
+                onChange={(e) => setFuelMultiplier(Math.max(1, parseInt(e.target.value) || 1))} 
+             />
+          </div>
+
           <div className="space-y-3">
             <div className="flex justify-between text-sm items-center py-2 border-b border-border/50">
-              <span className="text-muted-foreground">Kapasitas Baru</span>
+              <span className="text-muted-foreground">Level / Kapasitas Baru</span>
               <span className="font-bold">
-                {((garage.fuelCapacity || 2000) + 1000).toLocaleString("id-ID")}{" "}
-                L
+                Lvl {(garage.fuelTankLevel || 1) + fuelMultiplier} ( {((garage.fuelCapacity || 2000) + 1000 * fuelMultiplier).toLocaleString("id-ID")} L )
               </span>
             </div>
             <div className="flex justify-between text-sm items-center py-2 border-b border-border/50">
               <span className="text-muted-foreground">
                 Tambahan Ops. Cost / Bulan
               </span>
-              <span className="font-bold text-red-400">+200 NC</span>
+              <span className="font-bold text-red-400">+{calculateOpCost(garage.fuelTankLevel || 1, fuelMultiplier, true)} NC</span>
             </div>
             <div className="flex justify-between text-sm items-center py-2 border-b border-border/50">
-              <span className="text-muted-foreground">Biaya Upgrade</span>
-              <span className="font-black text-lg text-accent-sky">500 NC</span>
+              <span className="text-muted-foreground">Total Biaya Upgrade</span>
+              <span className="font-black text-lg text-accent-sky">{(500 * fuelMultiplier).toLocaleString("id-ID")} NC</span>
             </div>
           </div>
 
           <div className="flex gap-3 pt-2">
             <button
-              onClick={() => setFuelUpgradeModalOpen(false)}
+              onClick={() => { setFuelUpgradeModalOpen(false); setFuelMultiplier(1); }}
               className="flex-1 py-3 rounded-xl font-bold text-sm bg-card border border-border hover:bg-muted transition-colors uppercase tracking-wider"
               disabled={loadingAction}
             >
@@ -715,15 +765,7 @@ export default function GarageClient({ garage }: GarageClientProps) {
                 Konfirmasi Downgrade Tangki
               </p>
               <p className="text-xs opacity-90 leading-relaxed">
-                Anda akan mengurangi kapasitas tangki BBM menjadi{" "}
-                <strong>
-                  {((garage.fuelCapacity || 2000) - 1000).toLocaleString(
-                    "id-ID",
-                  )}{" "}
-                  Liter
-                </strong>{" "}
-                (Level {(garage.fuelTankLevel || 1) - 1}). Tindakan ini tidak
-                memakan biaya, namun <strong>500 NC</strong> dari saat Anda
+                Tindakan ini membutuhkan biaya <strong>250 NC</strong>/level, dan <strong>500 NC</strong> dari saat Anda
                 upgrade sebelumnya <strong>tidak akan direfund</strong>.
               </p>
               <p className="text-xs font-bold mt-2 text-red-400">
@@ -733,25 +775,45 @@ export default function GarageClient({ garage }: GarageClientProps) {
             </div>
           </div>
 
+          <div>
+             <label className="block text-xs font-bold mb-2 text-muted-foreground">Jumlah Level Downgrade (Maks: {Math.max(1, (garage.fuelTankLevel || 1) - 1)})</label>
+             <Input 
+                type="number" 
+                min={1} 
+                max={Math.max(1, (garage.fuelTankLevel || 1) - 1)}
+                value={fuelMultiplier} 
+                onChange={(e) => {
+                  const max = Math.max(1, (garage.fuelTankLevel || 1) - 1);
+                  let val = parseInt(e.target.value) || 1;
+                  if (val > max) val = max;
+                  if (val < 1) val = 1;
+                  setFuelMultiplier(val);
+                }} 
+             />
+          </div>
+
           <div className="space-y-3">
             <div className="flex justify-between text-sm items-center py-2 border-b border-border/50">
-              <span className="text-muted-foreground">Kapasitas Baru</span>
+              <span className="text-muted-foreground">Level / Kapasitas Baru</span>
               <span className="font-bold">
-                {((garage.fuelCapacity || 2000) - 1000).toLocaleString("id-ID")}{" "}
-                L
+                Lvl {(garage.fuelTankLevel || 1) - fuelMultiplier} ( {((garage.fuelCapacity || 2000) - 1000 * fuelMultiplier).toLocaleString("id-ID")} L )
               </span>
             </div>
             <div className="flex justify-between text-sm items-center py-2 border-b border-border/50">
               <span className="text-muted-foreground">
                 Pengurangan Ops. Cost / Bulan
               </span>
-              <span className="font-bold text-emerald-500">-200 NC</span>
+              <span className="font-bold text-emerald-500">-{calculateOpCost(garage.fuelTankLevel || 1, fuelMultiplier, false)} NC</span>
+            </div>
+            <div className="flex justify-between text-sm items-center py-2 border-b border-border/50">
+              <span className="text-muted-foreground">Total Biaya Downgrade</span>
+              <span className="font-black text-lg text-red-500">{(250 * fuelMultiplier).toLocaleString("id-ID")} NC</span>
             </div>
           </div>
 
           <div className="flex gap-3 pt-2">
             <button
-              onClick={() => setFuelDowngradeModalOpen(false)}
+              onClick={() => { setFuelDowngradeModalOpen(false); setFuelMultiplier(1); }}
               className="flex-1 py-3 rounded-xl font-bold text-sm bg-card border border-border hover:bg-muted transition-colors uppercase tracking-wider"
               disabled={loadingAction}
             >

@@ -38,10 +38,17 @@ export async function GET(
       itemWithSeller.sellerName = seller.name;
       itemWithSeller.sellerImage = seller.image;
       itemWithSeller.sellerTruckyId = seller.truckyId;
+      itemWithSeller.sellerIsNismaraPlus = seller.nismaraplus?.status === true;
+      itemWithSeller.sellerNismaraPlusStartedAt = seller.nismaraplus?.startedAt || null;
+      itemWithSeller.sellerIsBooster = seller.isBooster === true;
+      itemWithSeller.sellerRole = seller.discordRole || seller.role;
     } else {
       itemWithSeller.sellerName = "Unknown Seller";
       itemWithSeller.sellerImage = null;
       itemWithSeller.sellerTruckyId = null;
+      itemWithSeller.sellerIsNismaraPlus = false;
+      itemWithSeller.sellerNismaraPlusStartedAt = null;
+      itemWithSeller.sellerIsBooster = false;
     }
 
     return NextResponse.json(itemWithSeller, {

@@ -14,6 +14,7 @@ import {
   Users,
 } from "lucide-react";
 import { getCompanyMembersMap } from "@/lib/trucky";
+import UserBadges from "@/components/icons/UserBadges";
 
 
 
@@ -100,6 +101,11 @@ export default async function ContractDetailPage(props: {
         truckyData?.name ||
         `Driver ${contributor.driverId.slice(-4)}`,
       avatarUrl: mongoUser?.image || truckyData?.avatar_url || null,
+      nismaraplus: mongoUser?.nismaraplus || null,
+      discordRole: mongoUser?.discordRole || null,
+      role: mongoUser?.role || null,
+      serverBooster: mongoUser?.serverBooster || false,
+      truckyRank: truckyData?.role?.name || truckyData?.role || null,
     };
   });
 
@@ -199,6 +205,7 @@ export default async function ContractDetailPage(props: {
                   <Link
                     href={`/profile/${driver.truckyId}`}
                     key={driver.truckyId}
+                    className="relative z-0 hover:z-50"
                   >
                     <div
                       key={driver.driverId}
@@ -236,16 +243,28 @@ export default async function ContractDetailPage(props: {
                             )}
                           </div>
                           {isTop && (
-                            <div className="absolute -top-1 -right-1 bg-yellow-500 rounded-full p-1 shadow-lg">
+                            <div className="absolute -top-1 -right-1 bg-yellow-500 rounded-full p-1 shadow-lg z-10">
                               <Sparkles className="w-3 h-3 text-black" />
                             </div>
                           )}
                         </div>
 
                         <div>
-                          <p className="text-lg font-bold text-white leading-tight">
-                            {driver.driverName}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-lg font-bold text-white leading-tight">
+                              {driver.driverName}
+                            </p>
+                            <div className="flex items-center gap-1">
+                              <UserBadges 
+                                isManager={driver.discordRole === "manager" || driver.role === "admin" || driver.role === "manager"}
+                                isNismaraPlus={driver.nismaraplus?.status}
+                                nismaraPlusStartedAt={driver.nismaraplus?.startedAt}
+                                isBooster={driver.serverBooster}
+                                truckyRank={driver.truckyRank}
+                                className="w-5 h-5"
+                              />
+                            </div>
+                          </div>
                           <p className="text-[10px] text-gray-500 font-mono mt-1">
                             {driver.truckyId
                               ? `Trucky ID: ${driver.truckyId}`

@@ -79,6 +79,7 @@ export default async function DriversPage() {
       rank: truckyRankName || webUser?.truckyRank || "Member",
       rankColor: truckyRankColor || webUser?.truckyRankColor || "#64748b",
       isNismaraPlus: webUser?.nismaraplus?.status === true,
+      nismaraPlusStartedAt: webUser?.nismaraplus?.startedAt,
     };
   });
 

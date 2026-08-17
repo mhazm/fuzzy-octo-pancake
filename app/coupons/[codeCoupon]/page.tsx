@@ -145,6 +145,7 @@ export default async function CouponDetailPage(props: DetailPageProps) {
           avatarUrl: 1,
           truckyId: 1,
           role: 1,
+          discordRole: 1,
           isBooster: 1,
           nismaraplus: 1,
           truckyRank: 1,
@@ -341,9 +342,10 @@ export default async function CouponDetailPage(props: DetailPageProps) {
                           </h4>
                           {claim.user && (
                             <UserBadges
-                              role={claim.user.role}
+                              role={claim.user.discordRole || claim.user.role}
                               isBooster={claim.user.isBooster}
                               isNismaraPlus={claim.user.nismaraplus?.status}
+                              nismaraPlusStartedAt={claim.user.nismaraplus?.startedAt}
                               truckyRank={claim.user.truckyRank}
                               className="w-4 h-4"
                             />

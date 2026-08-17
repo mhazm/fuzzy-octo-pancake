@@ -18,6 +18,7 @@ export interface UserComment {
     avatarUrl: string;
     truckyId?: string;
     isNismaraPlus?: boolean;
+    nismaraPlusStartedAt?: string | null;
     isBooster?: boolean;
     isManager?: boolean;
     truckyRank?: string;

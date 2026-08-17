@@ -16,7 +16,7 @@ interface Comment {
   _id: string;
   text: string;
   createdAt: string;
-  user: { name: string; avatarUrl: string; discordId: string; truckyId?: string; truckyRank?: string; isNismaraPlus?: boolean; isBooster?: boolean; isManager?: boolean };
+  user: { name: string; avatarUrl: string; discordId: string; truckyId?: string; truckyRank?: string; isNismaraPlus?: boolean; nismaraPlusStartedAt?: string | null; isBooster?: boolean; isManager?: boolean };
   likes?: string[];
   parentId?: string;
   replyToUser?: string;
@@ -31,6 +31,7 @@ export default function GalleryModal({
   profileAvatar,
   profileTruckyId,
   profileIsNismaraPlus,
+  profileNismaraPlusStartedAt,
   profileIsBooster,
   profileRole,
   isManager,
@@ -44,6 +45,7 @@ export default function GalleryModal({
   profileAvatar: string;
   profileTruckyId?: string;
   profileIsNismaraPlus?: boolean;
+  profileNismaraPlusStartedAt?: string | null;
   profileIsBooster?: boolean;
   profileRole?: string;
   isManager?: boolean;
@@ -327,6 +329,7 @@ export default function GalleryModal({
                         role={profileRole} 
                         isBooster={profileIsBooster} 
                         isNismaraPlus={profileIsNismaraPlus} 
+                        nismaraPlusStartedAt={profileNismaraPlusStartedAt}
                         truckyRank={undefined /* pass profileRank if available in props */}
                       />
                   </div>
@@ -347,6 +350,7 @@ export default function GalleryModal({
                         role={profileRole} 
                         isBooster={profileIsBooster} 
                         isNismaraPlus={profileIsNismaraPlus} 
+                        nismaraPlusStartedAt={profileNismaraPlusStartedAt}
                         truckyRank={undefined}
                       />
                   </div>
@@ -411,6 +415,7 @@ export default function GalleryModal({
                       role={profileRole} 
                       isBooster={profileIsBooster} 
                       isNismaraPlus={profileIsNismaraPlus} 
+                      nismaraPlusStartedAt={profileNismaraPlusStartedAt}
                       truckyRank={undefined}
                     />
                   </div>
@@ -470,6 +475,7 @@ export default function GalleryModal({
                           isManager={comment.user.isManager} 
                           isBooster={comment.user.isBooster} 
                           isNismaraPlus={comment.user.isNismaraPlus} 
+                          nismaraPlusStartedAt={comment.user.nismaraPlusStartedAt}
                           truckyRank={comment.user.truckyRank}
                           className="w-3.5 h-3.5"
                         />
@@ -574,6 +580,7 @@ export default function GalleryModal({
                                 isManager={reply.user.isManager} 
                                 isBooster={reply.user.isBooster} 
                                 isNismaraPlus={reply.user.isNismaraPlus} 
+                                nismaraPlusStartedAt={reply.user.nismaraPlusStartedAt}
                                 truckyRank={reply.user.truckyRank}
                                 className="w-3 h-3"
                               />

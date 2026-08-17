@@ -4,6 +4,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
 import mongoose from "mongoose";
 import Ticket from "@/lib/models/Ticket";
+import { verifyTurnstileToken } from "@/lib/turnstile";
 
 export const dynamic = "force-dynamic";
 
@@ -163,8 +164,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { categoryId, categoryName, subject, description } =
+    const { categoryId, categoryName, subject, description, turnstileToken } =
       await request.json();
+
+    // 1. Verifikasi Turnstile (bot protection)
+    const turnstileResult = await verifyTurnstileToken(turnstileToken);
+    if (!turnstileResult.success) {
+      return NextResponse.json(
+        { error: "Verifikasi keamanan (Turnstile) gagal. Selesaikan tantangan dan coba lagi." },
+        { status: 400 }
+      );
+    }
+
     if (!categoryId || !categoryName || !subject || !description) {
       return NextResponse.json(
         { error: "Semua field harus diisi" },

@@ -20,6 +20,7 @@ export default function PostDetailClient({
   profileAvatar,
   profileTruckyId,
   profileIsNismaraPlus,
+  profileNismaraPlusStartedAt,
   profileIsBooster,
   profileRole,
   isManager,
@@ -32,6 +33,7 @@ export default function PostDetailClient({
   profileAvatar: string;
   profileTruckyId: string;
   profileIsNismaraPlus?: boolean;
+  profileNismaraPlusStartedAt?: string | null;
   profileIsBooster?: boolean;
   profileRole?: string;
   isManager?: boolean;
@@ -274,6 +276,7 @@ export default function PostDetailClient({
                   role={profileRole} 
                   isBooster={profileIsBooster} 
                   isNismaraPlus={profileIsNismaraPlus} 
+                  nismaraPlusStartedAt={profileNismaraPlusStartedAt}
                   truckyRank={undefined}
                 />
               </div>
@@ -313,6 +316,7 @@ export default function PostDetailClient({
                     role={profileRole} 
                     isBooster={profileIsBooster} 
                     isNismaraPlus={profileIsNismaraPlus} 
+                    nismaraPlusStartedAt={profileNismaraPlusStartedAt}
                     truckyRank={undefined}
                   />
                 </div>
@@ -362,6 +366,7 @@ export default function PostDetailClient({
                       isManager={comment.user.isManager} 
                       isBooster={comment.user.isBooster} 
                       isNismaraPlus={comment.user.isNismaraPlus} 
+                      nismaraPlusStartedAt={comment.user.nismaraPlusStartedAt}
                       truckyRank={comment.user.truckyRank}
                     />
                   </div>
@@ -462,6 +467,7 @@ export default function PostDetailClient({
                             isManager={reply.user.isManager} 
                             isBooster={reply.user.isBooster} 
                             isNismaraPlus={reply.user.isNismaraPlus} 
+                            nismaraPlusStartedAt={reply.user.nismaraPlusStartedAt}
                             truckyRank={reply.user.truckyRank}
                             className="w-3.5 h-3.5"
                           />

@@ -7,6 +7,7 @@ import {
   BarChart3,
   Edit,
 } from "lucide-react";
+import DeleteSurveyButton from "./DeleteSurveyButton";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -166,6 +167,7 @@ export default async function SurveysDashboardPage() {
                     <Edit className="w-4 h-4" />
                   </Button>
                 </Link>
+                <DeleteSurveyButton uri={survey.uri} title={survey.title} />
               </CardFooter>
             </Card>
           ))}

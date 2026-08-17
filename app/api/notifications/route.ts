@@ -29,7 +29,8 @@ export async function GET(request: Request) {
       $or: [
         { recipient: discordId },
         { recipient: "global" }
-      ]
+      ],
+      deletedBy: { $ne: discordId }
     };
 
     const [notifications, total] = await Promise.all([

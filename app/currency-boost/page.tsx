@@ -1,20 +1,26 @@
 import clientPromise from "@/lib/mongodb";
 import { Calendar, Clock, User, Zap, History, Sparkles } from "lucide-react";
+import Link from "next/link";
 
-export const revalidate = 300;
+export const metadata = {
+  title: "Boost & Bonus - Nismara Logistics",
+};
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function EventsPage() {
   const client = await clientPromise;
   const db = client.db();
 
   // 1. Ambil Event Aktif (Collection: ncevents)
-  const activeEvents = await db.collection("ncevents").find({}).toArray();
+  const activeEvents = await db.collection("ncevents").find({ isActive: true }).toArray();
 
-  // 2. Ambil Riwayat Event (Collection: nceventhistories)
+  // 2. Ambil Riwayat Event (Collection: ncevents, isActive: false)
   const historyEvents = await db
-    .collection("nceventhistories")
-    .find({})
-    .sort({ endDate: -1 })
+    .collection("ncevents")
+    .find({ isActive: false })
+    .sort({ endAt: -1 })
     .limit(6)
     .toArray();
 
@@ -65,9 +71,10 @@ export default async function EventsPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {activeEvents.map((event) => (
-                <div
+                <Link
+                  href={`/currency-boost/${event.slug}`}
                   key={event._id.toString()}
-                  className="group relative glass-panel rounded-3xl overflow-hidden border-primary/30 hover:border-primary transition-all duration-500 shadow-2xl"
+                  className="group relative glass-panel block rounded-3xl overflow-hidden border-primary/30 hover:border-primary transition-all duration-500 shadow-2xl"
                 >
                   {/* Event Image */}
                   <div className="relative h-64 w-full overflow-hidden">
@@ -104,7 +111,7 @@ export default async function EventsPage() {
                       </div>
                     </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}
@@ -123,9 +130,10 @@ export default async function EventsPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {historyEvents.map((event) => (
-              <div
+              <Link
+                href={`/currency-boost/${event.slug}`}
                 key={event._id.toString()}
-                className="glass-panel rounded-2xl overflow-hidden group hover:-translate-y-1 transition-all duration-300"
+                className="glass-panel block rounded-2xl overflow-hidden group hover:-translate-y-1 transition-all duration-300"
               >
                 <div className="relative h-40">
                   <div className="absolute inset-0 bg-black/40 grayscale group-hover:grayscale-0 transition-all" />
@@ -145,14 +153,14 @@ export default async function EventsPage() {
                   <div className="flex items-center justify-between text-[11px] text-gray-500">
                     <span className="flex items-center gap-1">
                       <Calendar className="w-3 h-3" />{" "}
-                      {formatDate(event.endDate)}
+                      {formatDate(event.realEndAt || event.endAt)}
                     </span>
                     <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10">
                       {event.multiplier}x Multiplier
                     </span>
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </section>

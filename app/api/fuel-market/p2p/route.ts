@@ -78,10 +78,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Stock BBM di tangki Anda tidak mencukupi" }, { status: 400 });
     }
 
-    // Potong BBM dari tangki
+    // Potong BBM dari tangki aktif, pindahkan ke status Listed
     await db.collection("garages").updateOne(
       { discordId },
-      { $inc: { fuelStock: -amount } }
+      { $inc: { fuelStock: -amount, fuelListed: amount } }
     );
 
     // Buat Listing

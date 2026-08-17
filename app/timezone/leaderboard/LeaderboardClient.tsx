@@ -16,6 +16,7 @@ type LeaderboardEntry = {
     name: string;
     avatarUrl: string;
     isNismaraPlus: boolean;
+    nismaraPlusStartedAt?: string | null;
     isManager: boolean;
     truckyRank?: string;
   };
@@ -206,6 +207,7 @@ export default function LeaderboardClient() {
                         <div className="flex-shrink-0 flex items-center">
                           <UserBadges
                             isNismaraPlus={entry.user.isNismaraPlus}
+                            nismaraPlusStartedAt={entry.user.nismaraPlusStartedAt}
                             isManager={entry.user.isManager}
                             role={entry.user.isManager ? "manager" : "user"}
                             truckyRank={entry.user.truckyRank}

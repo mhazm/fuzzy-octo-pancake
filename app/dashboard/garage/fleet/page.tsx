@@ -160,14 +160,14 @@ export default async function FleetDashboardPage() {
 
               <div className="p-6">
                 <div className="flex justify-between items-center mb-1">
-                  <h2 className="text-xl font-black uppercase italic tracking-wider">
-                    {fleet.modelInfo?.name || "Unknown Model"}
+                  <h2 className="text-xl font-black uppercase tracking-wider">
+                    {fleet.brandInfo?.name} {fleet.modelInfo?.name || "Unknown Model"}
                   </h2>
                   <span className="text-xs font-bold text-primary opacity-0 group-hover:opacity-100 transition-opacity">
                     DETAIL &rarr;
                   </span>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium mb-6">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
                   <span>
                     Plat:{" "}
                     <strong className="text-foreground">
@@ -181,32 +181,6 @@ export default async function FleetDashboardPage() {
                       {fleet.odometer?.toLocaleString("id-ID")} km
                     </strong>
                   </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-background/50 border border-border/50 rounded-xl p-4">
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mb-1">
-                      Kesehatan Mesin
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <Activity className="text-primary w-4 h-4" />
-                      <span className="font-bold">
-                        {100 - (fleet.wear?.unfix_engine || 0)}%
-                      </span>
-                    </div>
-                  </div>
-                  <div className="bg-background/50 border border-border/50 rounded-xl p-4">
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mb-1">
-                      Ban & Transmisi
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <AlertCircle className="text-accent-sky w-4 h-4" />
-                      <span className="font-bold">
-                        {100 - (fleet.wear?.unfix_tires || 0)}% /{" "}
-                        {100 - (fleet.wear?.unfix_transmission || 0)}%
-                      </span>
-                    </div>
-                  </div>
                 </div>
               </div>
             </Link>

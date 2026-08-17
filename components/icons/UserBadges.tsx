@@ -9,6 +9,7 @@ interface UserBadgesProps {
   isManager?: boolean;
   isBooster?: boolean;
   isNismaraPlus?: boolean;
+  nismaraPlusStartedAt?: string | Date | null;
   truckyRank?: string;
   className?: string;
 }
@@ -18,6 +19,7 @@ export default function UserBadges({
   isManager,
   isBooster,
   isNismaraPlus,
+  nismaraPlusStartedAt,
   truckyRank,
   className,
 }: UserBadgesProps) {
@@ -26,7 +28,7 @@ export default function UserBadges({
     <>
       {isManagerRole && <ManagerBadge className={className} />}
       {isBooster && <ServerBoosterBadge className={className} />}
-      {isNismaraPlus && <NismaraPlusBadge className={className} />}
+      {isNismaraPlus && <NismaraPlusBadge startedAt={nismaraPlusStartedAt} className={className} />}
       {truckyRank === "Legendary Driver" && (
         <LegendaryBadge className={className} />
       )}

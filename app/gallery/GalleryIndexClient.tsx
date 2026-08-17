@@ -137,6 +137,7 @@ export default function GalleryIndexClient({
                         role={post.user.role} 
                         isBooster={post.user.isBooster} 
                         isNismaraPlus={post.user.isNismaraPlus} 
+                        nismaraPlusStartedAt={post.user.nismaraPlusStartedAt}
                         truckyRank={post.user.truckyRank}
                       />
                     </div>
@@ -179,6 +180,7 @@ export default function GalleryIndexClient({
           profileAvatar={selectedPost.user?.avatarUrl || "/placeholder-avatar.png"}
           profileTruckyId={selectedPost.user?.truckyId}
           profileIsNismaraPlus={selectedPost.user?.isNismaraPlus}
+          profileNismaraPlusStartedAt={selectedPost.user?.nismaraPlusStartedAt}
           profileIsBooster={selectedPost.user?.isBooster}
           profileRole={selectedPost.user?.role}
           isManager={isManager}

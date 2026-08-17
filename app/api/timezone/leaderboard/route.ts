@@ -91,6 +91,7 @@ export async function GET(req: Request) {
         name: u.name || "Unknown Driver",
         avatarUrl: u.image || u.avatarUrl || `https://ui-avatars.com/api/?name=Driver&background=random`,
         isNismaraPlus: u.nismaraplus?.status === true,
+        nismaraPlusStartedAt: u.nismaraplus?.startedAt,
         isManager: u.role === "manager" || u.role === "admin" || u.discordRole === "manager" || u.discordRole === "admin",
         truckyRank: u.truckyRank
       };

@@ -118,7 +118,8 @@ export default async function PostPage(props: {
               user.image ||
               user.avatarUrl ||
               `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || "User")}&background=random`,
-            isNismaraPlus: user.nismaraplus?.status === true,
+            isNismaraPlus: user?.nismaraplus?.status === true,
+            nismaraPlusStartedAt: user?.nismaraplus?.startedAt ? new Date(user.nismaraplus.startedAt).toISOString() : null,
             isBooster: user.isBooster === true,
             isManager:
               user.discordRole === "manager" ||
@@ -140,6 +141,7 @@ export default async function PostPage(props: {
             avatarUrl: u.avatarUrl,
             truckyId: u.truckyId,
             isNismaraPlus: u.isNismaraPlus,
+            nismaraPlusStartedAt: u.nismaraPlusStartedAt,
             isBooster: u.isBooster,
             isManager: u.isManager,
             truckyRank: u.truckyRank,
@@ -206,6 +208,7 @@ export default async function PostPage(props: {
         }
         profileTruckyId={profileUser?.truckyId || ""}
         profileIsNismaraPlus={profileUser?.nismaraplus?.status === true}
+        profileNismaraPlusStartedAt={profileUser?.nismaraplus?.startedAt ? new Date(profileUser.nismaraplus.startedAt).toISOString() : null}
         profileIsBooster={profileUser?.isBooster === true}
         profileRole={profileUser?.discordRole || profileUser?.role || "user"}
         isManager={isManager}

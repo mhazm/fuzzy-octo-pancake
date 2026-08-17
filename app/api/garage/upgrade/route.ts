@@ -36,7 +36,15 @@ export async function POST(request: Request) {
 
     const deficit = Math.max(0, (garage.fleetSlotUsed || 0) - garage.fleetSlot);
     const slotsToAdd = deficit > 0 ? deficit + 1 : 1;
-    const totalCost = slotsToAdd * UPGRADE_COST;
+    
+    let totalCost = 0;
+    const currentSlot = garage.fleetSlot;
+    const targetSlot = currentSlot + slotsToAdd;
+    
+    for (let i = currentSlot + 1; i <= targetSlot; i++) {
+      const tier = Math.floor((i - 1) / 3);
+      totalCost += 1000 + (tier * 500);
+    }
 
     // Check balance
     const currencyData = await db.collection("currencies").findOne({ userId: session.user.discordId, guildId: GUILD_ID });
@@ -66,7 +74,15 @@ export async function POST(request: Request) {
     // Upgrade Garage
     garage.fleetSlot += slotsToAdd;
     garage.fleetSlotLevel += slotsToAdd;
-    garage.fleet_operational_cost = garage.fleetSlot === 1 ? 0 : garage.fleetSlot * OPERATIONAL_COST_PER_SLOT;
+    
+    let newFleetOpCost = 0;
+    if (garage.fleetSlot > 1) {
+      for (let i = 2; i <= garage.fleetSlot; i++) {
+        const tier = Math.floor((i - 1) / 3);
+        newFleetOpCost += 250 + (tier * 250);
+      }
+    }
+    garage.fleet_operational_cost = newFleetOpCost;
     
     // Kalkulasi total (Fleet + Fuel)
     const fuelCost = garage.fuel_operational_cost || 0;

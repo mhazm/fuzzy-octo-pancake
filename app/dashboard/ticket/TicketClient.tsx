@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { Ticket, Plus, Star, CheckCircle, XCircle, AlertCircle, MessageSquare, ChevronLeft, ChevronRight } from "lucide-react";
 import { showAlert } from "@/lib/dialog";
+import TurnstileWidget from "@/components/ui/TurnstileWidget";
 
 
 export default function TicketPage() {
@@ -25,6 +26,7 @@ export default function TicketPage() {
   const [subject, setSubject] = useState("");
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   // Dynamic Fields
   const [dynamicJobId, setDynamicJobId] = useState("");
@@ -117,6 +119,13 @@ export default function TicketPage() {
 
   const handleSubmitTicket = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validasi Turnstile
+    if (!turnstileToken) {
+      await showAlert("⚠️ Selesaikan verifikasi keamanan (Turnstile) terlebih dahulu.");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const categoryName = categories.find((c) => c._id === categoryId)?.name || "Lainnya";
@@ -137,7 +146,7 @@ export default function TicketPage() {
       const res = await fetch("/api/tickets", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ categoryId, categoryName, subject: finalSubject, description })
+        body: JSON.stringify({ categoryId, categoryName, subject: finalSubject, description, turnstileToken })
       });
       const data = await res.json();
       if (data.success) {
@@ -148,8 +157,13 @@ export default function TicketPage() {
         setDynamicJobId("");
         setDynamicReportUser("");
         setDescription("");
+        setTurnstileToken(null);
         fetchData(1, filterStatus);
       } else {
+        // Reset token so user re-solves if Turnstile failed
+        if (data.error?.includes("Turnstile") || data.error?.includes("verifikasi keamanan")) {
+          setTurnstileToken(null);
+        }
         await showAlert(data.error);
       }
     } catch (error) {
@@ -304,13 +318,33 @@ export default function TicketPage() {
                 required
               />
             </div>
+
+            {/* ── Verifikasi Keamanan ── */}
+            <div className="space-y-2 pt-1">
+              <p className="text-xs text-gray-400">
+                Selesaikan verifikasi keamanan sebelum mengirim tiket:
+              </p>
+              <TurnstileWidget
+                onVerify={(token) => setTurnstileToken(token)}
+                onExpire={() => setTurnstileToken(null)}
+                onError={() => setTurnstileToken(null)}
+                theme="dark"
+              />
+              {turnstileToken && (
+                <p className="text-xs text-green-400 flex items-center gap-1">
+                  ✅ Verifikasi berhasil
+                </p>
+              )}
+            </div>
+
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || !turnstileToken}
               className="px-6 py-3 bg-accent-lilac text-white font-bold rounded-xl hover:bg-accent-lilac/80 transition-colors w-full disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? "Mengirim..." : "Kirim Tiket"}
             </button>
+
           </form>
         </div>
       )}

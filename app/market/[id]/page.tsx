@@ -331,9 +331,17 @@ export default function MarketItemDetail() {
             </div>
             <div>
               <p className="text-xs text-gray-500 mb-0.5 uppercase tracking-wider">Kreator Mod</p>
-              <p className="text-base font-bold text-white group-hover:text-primary transition-colors">
-                {item.sellerName || "Unknown Seller"}
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-base font-bold text-white group-hover:text-primary transition-colors">
+                  {item.sellerName || "Unknown Seller"}
+                </p>
+                <UserBadges 
+                  role={item.sellerRole}
+                  isBooster={item.sellerIsBooster}
+                  isNismaraPlus={item.sellerIsNismaraPlus}
+                  nismaraPlusStartedAt={item.sellerNismaraPlusStartedAt}
+                />
+              </div>
             </div>
           </Link>
 
@@ -527,6 +535,7 @@ export default function MarketItemDetail() {
                           isManager={review.user?.isManager} 
                           isBooster={review.user?.isBooster} 
                           isNismaraPlus={review.user?.isNismaraPlus} 
+                          nismaraPlusStartedAt={review.user?.nismaraPlusStartedAt}
                           truckyRank={review.user?.truckyRank}
                           className="w-4 h-4" 
                         />
