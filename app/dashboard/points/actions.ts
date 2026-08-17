@@ -143,7 +143,7 @@ export async function payPenaltyPoints(pointsToPay: number) {
         .collection("points")
         .updateOne(
           { userId, guildId: GUILD_ID },
-          { $inc: { totalPoints: -pointsToPay } },
+          [{ $set: { totalPoints: { $max: [0, { $subtract: [{ $ifNull: ["$totalPoints", 0] }, pointsToPay] }] } } }]
         ),
       db.collection("pointhistories").insertOne({
         userId,
@@ -304,7 +304,7 @@ export async function validateJobPoints(jobId: string) {
         .collection("points")
         .updateOne(
           { userId, guildId: GUILD_ID },
-          { $inc: { totalPoints: -actualReduction } },
+          [{ $set: { totalPoints: { $max: [0, { $subtract: [{ $ifNull: ["$totalPoints", 0] }, actualReduction] }] } } }]
         ),
       // Catat sejarah poin
       db.collection("pointhistories").insertOne({
@@ -417,7 +417,7 @@ export async function usePenaltyTicket(amountToUse: number) {
 
       // Lakukan pemotongan paralel
       const operations: Promise<any>[] = [
-        db.collection("points").updateOne({ userId, guildId: GUILD_ID }, { $inc: { totalPoints: -amountToUse } }),
+        db.collection("points").updateOne({ userId, guildId: GUILD_ID }, [{ $set: { totalPoints: { $max: [0, { $subtract: [{ $ifNull: ["$totalPoints", 0] }, amountToUse] }] } } }]),
         db.collection("pointhistories").insertOne({
           userId,
           guildId: GUILD_ID,
