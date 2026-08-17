@@ -18,12 +18,16 @@ const PLANS = [
   { months: 12, pricePerMonth: 23000, total: 276000, save: 84000 },
 ];
 
-export default function NismaraPlusClient({ initialPendingOrder }: { initialPendingOrder?: any }) {
+export default function NismaraPlusClient({
+  initialPendingOrder,
+}: {
+  initialPendingOrder?: any;
+}) {
   const [isLoading, setIsLoading] = useState(false);
   const [ticketUrl, setTicketUrl] = useState<string | null>(
-    initialPendingOrder?.channelId 
-      ? `https://discord.com/channels/${process.env.NEXT_PUBLIC_DISCORD_GUILD_ID}/${initialPendingOrder.channelId}` 
-      : null
+    initialPendingOrder?.channelId
+      ? `https://discord.com/channels/${process.env.DISCORD_GUILD_ID}/${initialPendingOrder.channelId}`
+      : null,
   );
   const [selectedMonths, setSelectedMonths] = useState<number>(1);
 

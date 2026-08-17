@@ -7,6 +7,7 @@ import NismaraPlusOrder from "@/lib/models/NismaraPlusOrder";
 import Transaction from "@/lib/models/Transaction";
 import mongoose from "mongoose";
 import dbConnect from "@/lib/mongoose";
+import User from "@/lib/models/User";
 
 export async function createPurchaseTicket(months: number) {
   try {
@@ -16,15 +17,19 @@ export async function createPurchaseTicket(months: number) {
     }
 
     await dbConnect();
-    
+
     // Cek pesanan pending
     const existingOrder = await NismaraPlusOrder.findOne({
       discordId: session.user.discordId,
-      status: "pending"
+      status: "pending",
     });
-    
+
     if (existingOrder) {
-      return { success: false, message: "Anda masih memiliki pesanan Nismara+ yang sedang diproses. Mohon selesaikan di tiket sebelumnya." };
+      return {
+        success: false,
+        message:
+          "Anda masih memiliki pesanan Nismara+ yang sedang diproses. Mohon selesaikan di tiket sebelumnya.",
+      };
     }
 
     // Validasi input bulan
@@ -134,27 +139,25 @@ export async function createPurchaseTicket(months: number) {
                 },
                 {
                   name: "🏦 Metode Pembayaran",
-                  value:
-                    "• **Bank BSI:** 7340742898 a/n Ihsan Afdhal\n• **Bank BRI:** 7334 0102 6111 532 a/n Ihsan Afdhal\n• **Gopay/Dana:** 089603703792 a/n Ihsan Afdhal ",
-                  inline: false,
-                },
-                {
-                  name: "📝 Langkah Selanjutnya",
-                  value:
-                    "Kirimkan foto/screenshot bukti transfer yang valid di channel ini. Manager kami akan memvalidasi data Anda dan mengaktifkan status **Nismara+** Anda.",
+                  value: "",
                   inline: false,
                 },
               ],
-              footer: { text: "Nismara Group Billing System" },
+              image: {
+                url: "https://images.nismara.my.id/Nismara_QR.jpg",
+              },
+              footer: {
+                text: "Silahkan lakukan pembayaran dengan QR diatas. Apabila sudah melakukan pembayaran kamu dapat mengirimkan foto/screenshoot bukti transfer yang valid lalu silahkan tunggu sampai Nismara+ anda diaktifkan.",
+              },
               timestamp: new Date().toISOString(),
             },
           ],
         }),
       },
     );
-    
+
     // Simpan ke database
-    const userObj = await mongoose.model("User").findOne({ discordId });
+    const userObj = await User.findOne({ discordId });
     if (userObj) {
       const isExtend = userObj.nismaraplus?.status === true;
       const createdOrder = await NismaraPlusOrder.create({
@@ -167,7 +170,10 @@ export async function createPurchaseTicket(months: number) {
         status: "pending",
       });
 
-      const trxId = "NP" + Math.random().toString(36).substring(2, 8).toUpperCase() + Date.now().toString().slice(-4);
+      const trxId =
+        "NP" +
+        Math.random().toString(36).substring(2, 8).toUpperCase() +
+        Date.now().toString().slice(-4);
       await Transaction.create({
         trxId,
         discordId,
@@ -177,7 +183,7 @@ export async function createPurchaseTicket(months: number) {
         amount: totalPrice,
         currency: "IDR",
         status: "pending",
-        metadata: { orderId: createdOrder._id, durationMonths: months }
+        metadata: { orderId: createdOrder._id, durationMonths: months },
       });
     }
 
