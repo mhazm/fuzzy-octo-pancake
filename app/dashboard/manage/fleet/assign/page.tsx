@@ -484,11 +484,10 @@ export default function FleetAssignManager() {
                 </label>
                 <select
                   value={formData.game_id}
-                  disabled
                   onChange={(e) =>
                     setFormData({ ...formData, game_id: e.target.value })
                   }
-                  className="w-full bg-white/5 border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-amber-500 transition-all appearance-none cursor-not-allowed disabled:opacity-50"
+                  className="w-full bg-white/5 border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-amber-500 transition-all appearance-none cursor-pointer"
                 >
                   <option value="1" className="bg-card">
                     ETS2
@@ -511,11 +510,27 @@ export default function FleetAssignManager() {
                     </label>
                     <select
                       value={formData.model}
-                      disabled
-                      onChange={(e) =>
-                        setFormData({ ...formData, model: e.target.value })
-                      }
-                      className="w-full bg-white/5 border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-amber-500 transition-all appearance-none cursor-not-allowed disabled:opacity-50"
+                      onChange={(e) => {
+                        const selectedModelId = e.target.value;
+                        const selectedStore = stores.find((s) => s._id === selectedModelId);
+                        
+                        let newFleetName = formData.fleet_name;
+                        let newGameId = formData.game_id;
+                        
+                        if (selectedStore) {
+                          const prefix = formData.fleet_number ? formData.fleet_number.replace(/[^A-Za-z0-9]/g, '') : "NL000";
+                          newFleetName = `${prefix} - ${selectedStore.name}`;
+                          newGameId = selectedStore.game_id.toString();
+                        }
+                        
+                        setFormData({ 
+                          ...formData, 
+                          model: selectedModelId,
+                          fleet_name: newFleetName,
+                          game_id: newGameId
+                        });
+                      }}
+                      className="w-full bg-white/5 border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-amber-500 transition-all appearance-none cursor-pointer"
                     >
                       <option value="" disabled className="bg-card">
                         Pilih Model dari Store
