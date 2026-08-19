@@ -72,20 +72,27 @@ export async function POST(
 
     const userObj = await mongoose.model("User").findOne({ discordId: order.discordId });
     if (userObj) {
-      await Transaction.create({
-        trxId: `TRX-${crypto.randomBytes(4).toString("hex").toUpperCase()}`,
-        discordId: order.discordId,
-        userId: userObj._id,
-        title: order.type === "replace" ? "Penggantian Komponen Fleet" : "Servis Rutin Fleet",
-        category: "maintenance",
-        amount: order.totalPrice,
-        currency: "NC",
-        status: "success",
-        metadata: {
-          orderId: order._id,
-          fleetId: order.fleetId
-        }
-      });
+      const existingTx = await Transaction.findOneAndUpdate(
+        { "metadata.orderId": order._id },
+        { $set: { status: "success" } }
+      );
+
+      if (!existingTx) {
+        await Transaction.create({
+          trxId: `TRX-${crypto.randomBytes(4).toString("hex").toUpperCase()}`,
+          discordId: order.discordId,
+          userId: userObj._id,
+          title: order.type === "replace" ? "Penggantian Komponen Fleet" : "Servis Rutin Fleet",
+          category: "maintenance",
+          amount: order.totalPrice,
+          currency: "NC",
+          status: "success",
+          metadata: {
+            orderId: order._id,
+            fleetId: order.fleetId
+          }
+        });
+      }
     }
 
     // 3. Add admin fee to manager

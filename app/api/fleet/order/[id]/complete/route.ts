@@ -49,20 +49,15 @@ export async function POST(
     const client = await clientPromise;
     const db = client.db();
 
-    const order = await FleetOrder.findById(params.id).populate("fleetStoreId");
+    const order = await FleetOrder.findOneAndUpdate(
+      { _id: params.id, status: "claimed" },
+      { $set: { status: "processing" } },
+      { new: true }
+    ).populate("fleetStoreId");
+
     if (!order) {
       return NextResponse.json(
-        { error: "Order tidak ditemukan" },
-        { status: 404 },
-      );
-    }
-
-    if (order.status !== "claimed") {
-      return NextResponse.json(
-        {
-          error:
-            "Order harus diambil (claimed) terlebih dahulu sebelum diselesaikan",
-        },
+        { error: "Order tidak ditemukan, belum diambil (claimed), atau sudah diproses" },
         { status: 400 },
       );
     }
@@ -114,20 +109,27 @@ export async function POST(
       createdAt: new Date(),
     });
 
-    await Transaction.create({
-      trxId: `TRX-${crypto.randomBytes(4).toString("hex").toUpperCase()}`,
-      discordId: buyer.discordId,
-      userId: buyer._id,
-      title: `Pembelian Fleet: ${order.fleetStoreId.name}`,
-      category: "fleet",
-      amount: order.totalPrice,
-      currency: "NC",
-      status: "success",
-      metadata: {
-        orderId: order._id,
-        fleetStoreId: order.fleetStoreId._id
-      }
-    });
+    const existingTx = await Transaction.findOneAndUpdate(
+      { "metadata.orderId": order._id },
+      { $set: { status: "success" } }
+    );
+
+    if (!existingTx) {
+      await Transaction.create({
+        trxId: `TRX-${crypto.randomBytes(4).toString("hex").toUpperCase()}`,
+        discordId: buyer.discordId,
+        userId: buyer._id,
+        title: `Pembelian Fleet: ${order.fleetStoreId.name}`,
+        category: "fleet",
+        amount: order.totalPrice,
+        currency: "NC",
+        status: "success",
+        metadata: {
+          orderId: order._id,
+          fleetStoreId: order.fleetStoreId._id
+        }
+      });
+    }
 
     // 3. Add admin fee to manager
     await db.collection("currencies").updateOne(
@@ -226,6 +228,18 @@ export async function POST(
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("Fleet Order Complete Error:", error);
+    
+    // Attempt rollback if error occurs
+    try {
+      const params = await context.params;
+      await FleetOrder.updateOne(
+        { _id: params.id, status: "processing" },
+        { $set: { status: "claimed" } }
+      );
+    } catch (e) {
+      console.error("Rollback error:", e);
+    }
+
     return NextResponse.json(
       {
         error:

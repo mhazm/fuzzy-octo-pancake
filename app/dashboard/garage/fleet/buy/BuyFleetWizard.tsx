@@ -60,17 +60,22 @@ export default function BuyFleetWizard({
     needsUpgrade = true;
     const deficit = garage.fleetSlotUsed - garage.fleetSlot;
     upgradeSlotCount = deficit + 1;
-    
+
     const currentSlot = garage.fleetSlot;
     const targetSlot = currentSlot + upgradeSlotCount;
     for (let i = currentSlot + 1; i <= targetSlot; i++) {
       const tier = Math.floor((i - 1) / 3);
-      upgradeFee += 1000 + (tier * 500);
+      upgradeFee += 1000 + tier * 500;
     }
   }
 
   const totalPrice =
-    basePrice + taxFee - nismaraPlusDiscount - boosterDiscount + adminFee + upgradeFee;
+    basePrice +
+    taxFee -
+    nismaraPlusDiscount -
+    boosterDiscount +
+    adminFee +
+    upgradeFee;
   const canAfford = user.balance >= totalPrice;
 
   const handleConfirm = async () => {
@@ -98,7 +103,7 @@ export default function BuyFleetWizard({
         throw new Error(data.error || "Terjadi kesalahan saat membuat pesanan");
       }
 
-      router.push("/dashboard/garage/fleet/order");
+      router.push("/dashboard/transactions");
       router.refresh();
     } catch (err: any) {
       setError(err.message);
@@ -119,7 +124,7 @@ export default function BuyFleetWizard({
             Beli Armada Baru
           </h1>
           <p className="text-muted-foreground font-medium mt-1">
-            Ekspansi perusahaan logistik Anda
+            Ekspansi armada anda
           </p>
         </div>
 

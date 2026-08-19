@@ -5,7 +5,9 @@ import clientPromise from "@/lib/mongodb";
 import mongoose from "mongoose";
 import FleetOrder from "@/lib/models/FleetOrder";
 import FleetStore from "@/lib/models/FleetStore";
+import Transaction from "@/lib/models/Transaction";
 import { getCurrencyDataLogic } from "@/lib/currency";
+import crypto from "crypto";
 
 import dbConnect from "@/lib/mongoose";
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
@@ -230,6 +232,22 @@ export async function POST(request: Request) {
       totalPrice,
       requiresGarageUpgrade,
       upgradeSlotCount,
+    });
+
+    // 4. Create Pending Transaction
+    await Transaction.create({
+      trxId: `TRX-${crypto.randomBytes(4).toString("hex").toUpperCase()}`,
+      discordId: user.discordId,
+      userId: user._id,
+      title: `Pembelian Fleet: ${storeItem.name}`,
+      category: "fleet",
+      amount: totalPrice,
+      currency: "NC",
+      status: "pending",
+      metadata: {
+        orderId: newOrder._id,
+        fleetStoreId: storeItem._id
+      }
     });
 
     return NextResponse.json({ success: true, order: newOrder });
