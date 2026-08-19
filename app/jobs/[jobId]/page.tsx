@@ -5,7 +5,6 @@ import { getTruckyFullJobData, getCompanyMembersMap } from "@/lib/trucky";
 import IncidentLogs from "@/components/IncidentLogs";
 import AppealButton from "./AppealButton";
 import {
-
   ArrowLeft,
   Truck,
   Navigation,
@@ -26,10 +25,6 @@ import {
   Star,
   HelpCircle,
 } from "lucide-react";
-
-
-
-
 
 // Helper Format Waktu (Durasi)
 function formatDuration(seconds: number) {
@@ -86,7 +81,7 @@ export default async function JobDetailPage(props: {
   const { jobId } = await props.params;
   const client = await clientPromise;
   const db = client.db();
-  
+
   const localJob = await db.collection("jobhistories").findOne({
     $or: [{ jobId: jobId }, { jobId: Number(jobId) }],
   });
@@ -640,7 +635,7 @@ export default async function JobDetailPage(props: {
                       Kendaraan
                     </span>
                     <Link
-                      href={`/dashboard/garage/fleet/${internalFleet.id}`}
+                      href={`/dashboard/fleet/${internalFleet.id}`}
                       className="text-primary hover:underline font-medium text-sm flex items-center gap-1 w-fit"
                     >
                       {internalFleet.brandInfo?.name || "-"}{" "}

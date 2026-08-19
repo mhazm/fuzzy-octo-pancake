@@ -23,7 +23,9 @@ export async function POST(
     const query = mongoose.isValidObjectId(ticketId) 
       ? { $or: [{ _id: ticketId }, { ticketId }] }
       : { ticketId };
-    const ticket = await Ticket.findOne(query);
+
+    // Get ticket first to check status
+    let ticket = await Ticket.findOne(query);
     if (!ticket) {
       return NextResponse.json({ error: "Tiket tidak ditemukan" }, { status: 404 });
     }
@@ -36,16 +38,35 @@ export async function POST(
       return NextResponse.json({ error: "Anda sudah mengurus tiket ini" }, { status: 400 });
     }
 
-    // Mencegah manager mengklaim tiket yang dibuat oleh dirinya sendiri
     if (ticket.discordId === session.user.discordId) {
       return NextResponse.json({ error: "Anda tidak dapat mengurus tiket Anda sendiri" }, { status: 403 });
     }
 
     const isRetake = ticket.status === "claimed";
 
-    ticket.managerId = session.user.discordId;
-    ticket.status = "claimed";
-    await ticket.save();
+    // Atomic update to prevent double-claiming
+    const updatedTicket = await Ticket.findOneAndUpdate(
+      { 
+        _id: ticket._id,
+        $or: [
+          { status: "open" },
+          { status: "claimed", managerId: ticket.managerId } // Prevent if someone else JUST retook it
+        ]
+      },
+      { 
+        $set: { 
+          status: "claimed", 
+          managerId: session.user.discordId 
+        } 
+      },
+      { new: true }
+    );
+
+    if (!updatedTicket) {
+      return NextResponse.json({ error: "Tiket sudah diambil alih oleh staff lain" }, { status: 400 });
+    }
+
+    ticket = updatedTicket;
 
     // Notify in Discord channel
     if (DISCORD_BOT_TOKEN && ticket.discordChannelId) {

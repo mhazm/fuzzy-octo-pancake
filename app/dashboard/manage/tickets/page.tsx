@@ -41,8 +41,8 @@ export default function ManageTicketsPage() {
         ...(manager !== "all" && { managerId: manager }),
       });
       const [ticketsRes, catsRes] = await Promise.all([
-        fetch(`/api/manage/tickets?${params}`),
-        fetch("/api/manage/tickets/category")
+        fetch(`/api/manage/tickets?${params}`, { cache: "no-store" }),
+        fetch("/api/manage/tickets/category", { cache: "no-store" })
       ]);
       const ticketsData = await ticketsRes.json();
       const catsData = await catsRes.json();

@@ -56,6 +56,34 @@ export default async function ManagerOrderListPage() {
     .sort({ createdAt: 1 }) // oldest first
     .lean();
 
+  const historyOrdersRaw = await FleetOrder.find({
+    status: { $in: ["completed", "cancelled"] },
+  })
+    .populate({
+      path: "fleetStoreId",
+      populate: {
+        path: "brand",
+        model: "FleetBrand",
+      },
+    })
+    .populate("userId", "name discordId image")
+    .sort({ updatedAt: -1 }) // newest first
+    .limit(50)
+    .lean();
+
+  // Attach manager info for history orders
+  const managerDiscordIds = [...new Set(historyOrdersRaw.map((o: any) => o.managerId).filter(Boolean))];
+  const managers = await db.collection("users").find({ discordId: { $in: managerDiscordIds } }).toArray();
+  const managerMap = managers.reduce((acc, mgr) => {
+    acc[mgr.discordId] = { name: mgr.name, image: mgr.image };
+    return acc;
+  }, {} as Record<string, any>);
+
+  const historyOrders = historyOrdersRaw.map((order: any) => ({
+    ...order,
+    managerInfo: order.managerId ? managerMap[order.managerId] : null,
+  }));
+
   const GUILD_ID = process.env.DISCORD_GUILD_ID;
 
   return (
@@ -73,6 +101,7 @@ export default async function ManagerOrderListPage() {
 
       <OrderListClient
         orders={JSON.parse(JSON.stringify(orders))}
+        historyOrders={JSON.parse(JSON.stringify(historyOrders))}
         managerDiscordId={user.discordId}
         guildId={GUILD_ID || ""}
       />

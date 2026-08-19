@@ -6,6 +6,11 @@ import mongoose from "mongoose";
 import Ticket from "@/lib/models/Ticket";
 
 import dbConnect from "@/lib/mongoose";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
+
 export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
