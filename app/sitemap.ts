@@ -21,6 +21,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     achievements,
     ncEvents,
     coupons,
+    communitygoals,
   ] = await Promise.all([
     db
       .collection("jobs")
@@ -69,6 +70,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     db
       .collection("coupons")
       .find({}, { projection: { codeCoupon: 1, updatedAt: 1 } })
+      .toArray(),
+    db
+      .collection("communitygoals")
+      .find({}, { projection: { slug: 1, updatedAt: 1 } })
       .toArray(),
   ]);
 
@@ -185,7 +190,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.6,
     }));
 
-  // 13. Rute Statis Lengkap
+  // 13. Map Community Goals (/community-goals/[slug])
+  const communityGoalEntries = communitygoals
+    .filter((goal) => goal.slug || goal._id)
+    .map((goal) => ({
+      url: `${baseUrl}/community-goals/${goal.slug || goal._id}`,
+      lastModified: goal.updatedAt || new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.8,
+    }));
+
+  // 14. Rute Statis Lengkap
   const routePaths = [
     "",
     "/jobs",
@@ -213,6 +228,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/market",
     "/surveys",
     "/achievements",
+    "/community-goals",
   ];
 
   const staticRoutes = routePaths.map((path) => ({
@@ -235,5 +251,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...achievementEntries,
     ...ncEventEntries,
     ...couponEntries,
+    ...communityGoalEntries,
   ];
 }
