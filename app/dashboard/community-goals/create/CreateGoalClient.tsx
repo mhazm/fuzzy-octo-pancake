@@ -45,6 +45,18 @@ export default function CreateGoalClient() {
   const [topContribAchFile, setTopContribAchFile] = useState<File | null>(null);
   const [topContribAchPreview, setTopContribAchPreview] = useState<string | null>(null);
 
+  // Goal Banner Image state
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+
+  const handleBannerSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setBannerFile(file);
+      setBannerPreview(URL.createObjectURL(file));
+    }
+  };
+
   const handleAchImageSelect = (file: File, type: "participant" | "topContrib") => {
     const preview = URL.createObjectURL(file);
     if (type === "participant") { setParticipantAchFile(file); setParticipantAchPreview(preview); }
@@ -70,12 +82,12 @@ export default function CreateGoalClient() {
     formData.set("rewardType", rewardType);
 
     // Upload achievement images if any and pass data
-    const uploadAchImage = async (file: File) => {
-      const compressed = await compressImageToWebP(file, 3, 512);
+    const uploadImage = async (file: File, maxDimension: number = 512, folder: string = "achievements") => {
+      const compressed = await compressImageToWebP(file, 3, maxDimension);
       const presignRes = await fetch("/api/upload", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileName: compressed.name, fileType: compressed.type, folder: "achievements", fileSize: compressed.size }),
+        body: JSON.stringify({ fileName: compressed.name, fileType: compressed.type, folder, fileSize: compressed.size }),
       });
       if (!presignRes.ok) return null;
       const { signedUrl, publicUrl } = await presignRes.json();
@@ -83,12 +95,17 @@ export default function CreateGoalClient() {
       return publicUrl as string;
     };
 
+    if (bannerFile) {
+      const imageUrl = await uploadImage(bannerFile, 1280, "community-goals");
+      if (imageUrl) formData.set("imageUrl", imageUrl);
+    }
+
     if (participantAch.enabled) {
-      const imageUrl = participantAchFile ? await uploadAchImage(participantAchFile) : null;
+      const imageUrl = participantAchFile ? await uploadImage(participantAchFile, 512, "achievements") : null;
       formData.set("achParticipant", JSON.stringify({ ...participantAch, imageUrl }));
     }
     if (topContribAch.enabled) {
-      const imageUrl = topContribAchFile ? await uploadAchImage(topContribAchFile) : null;
+      const imageUrl = topContribAchFile ? await uploadImage(topContribAchFile, 512, "achievements") : null;
       formData.set("achTopContrib", JSON.stringify({ ...topContribAch, imageUrl }));
     }
 
@@ -167,14 +184,32 @@ export default function CreateGoalClient() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="imageUrl">URL Banner / Gambar (Opsional)</Label>
-              <Input 
-                id="imageUrl" 
-                name="imageUrl" 
-                placeholder="https://images.nismara.my.id/..." 
-                className="bg-background/50"
-              />
-              <p className="text-xs text-muted-foreground">URL gambar dengan rasio lanskap sangat disarankan.</p>
+              <Label>Banner / Gambar Goal (Opsional)</Label>
+              <p className="text-xs text-muted-foreground mb-2">Unggah gambar dengan rasio lanskap sangat disarankan. Gambar akan otomatis dikompresi (Maks 3MB).</p>
+              <label className={`w-full h-48 sm:h-64 rounded-xl border-2 border-dashed border-border hover:border-primary/50 cursor-pointer flex items-center justify-center overflow-hidden transition-colors relative bg-background/50 group`}>
+                {bannerPreview ? (
+                  <>
+                    <img src={bannerPreview} className="w-full h-full object-cover" alt="Banner Preview" />
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <span className="text-white font-bold text-sm flex items-center gap-2">
+                        <Upload className="w-4 h-4" /> Ganti Gambar
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center text-muted-foreground">
+                    <Upload className="w-8 h-8 mb-2" />
+                    <span className="text-sm font-semibold">Klik untuk memilih gambar</span>
+                  </div>
+                )}
+                <input 
+                  type="file" 
+                  name="imageFile" 
+                  className="hidden" 
+                  accept="image/*" 
+                  onChange={handleBannerSelect} 
+                />
+              </label>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
