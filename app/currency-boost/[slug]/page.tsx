@@ -14,9 +14,9 @@ export async function generateMetadata({ params }: any): Promise<Metadata> {
     .collection("ncevents")
     .findOne({ slug: resolvedParams.slug });
   if (!event) return { title: "Event Not Found" };
-  
+
   const metadata: Metadata = {
-    title: `${event.nameEvent}`,
+    title: `${event.nameEvent} - Nismara Transport`,
     description: `Ikuti event ${event.nameEvent} dan dapatkan bonus multiplier sebesar ${event.multiplier}x!`,
   };
 

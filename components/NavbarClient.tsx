@@ -19,6 +19,7 @@ import {
   Truck,
   Users,
   Trophy,
+  Medal,
   TrendingUp,
   FileSignature,
   ClipboardList,
@@ -35,6 +36,7 @@ import {
   User2,
   Sparkle,
   TruckIcon,
+  Target,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -73,13 +75,19 @@ export default function NavbarClient({ session }: { session: any }) {
   // Note: If you need to close the menu on route change, you would normally use usePathname from next/navigation.
   // We'll keep the state simple for now without breaking existing code.
 
+  const [mounted, setMounted] = useState(false);
+
   useEffect(() => {
-    if (session?.user?.discordId) {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted && session?.user?.discordId) {
       getCurrencyData()
         .then((data) => setCurrency(data.balance))
         .catch((err) => console.error("Gagal mengambil currency:", err));
     }
-  }, [session]);
+  }, [mounted, session]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -92,9 +100,7 @@ export default function NavbarClient({ session }: { session: any }) {
   // Standard top-level items (excluding Home and Events which are custom handled)
   const mainMenuItems = [
     { name: "Convoy", href: "/convoy", icon: Truck },
-    { name: "Feeds", href: "/feeds", icon: Grid3X3 },
     { name: "Market", href: "/market", icon: ShoppingCart },
-    { name: "Leaderboard", href: "/leaderboard", icon: Trophy },
     { name: "TimeZone", href: "/timezone", icon: Gamepad2 },
   ];
 
@@ -105,10 +111,12 @@ export default function NavbarClient({ session }: { session: any }) {
     { name: "Cargo Market", href: "/cargo-market", icon: Package },
     { name: "Fuel Market", href: "/fuel-market", icon: Fuel },
     { name: "Convoy", href: "/convoy", icon: Truck },
-    { name: "Feeds", href: "/feeds", icon: Grid3X3 },
     { name: "Market", href: "/market", icon: ShoppingCart },
+    { name: "Feeds", href: "/feeds", icon: Grid3X3, separator: true },
     { name: "Leaderboard", href: "/leaderboard", icon: Trophy },
-    { name: "TimeZone", href: "/timezone", icon: Gamepad2 },
+    { name: "Achievements", href: "/achievements", icon: Medal },
+    { name: "Community Goals", href: "/community-goals", icon: Target },
+    { name: "TimeZone", href: "/timezone", icon: Gamepad2, separator: true },
     {
       name: "Currency Boost",
       href: "/currency-boost",
@@ -322,6 +330,93 @@ export default function NavbarClient({ session }: { session: any }) {
                               </span>
                               <span className="text-xs text-muted-foreground block">
                                 Explore our limited time offerings
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </NavigationMenuContent>
+                  </NavigationMenuItem>
+
+                  {/* Community Mega Menu */}
+                  <NavigationMenuItem>
+                    <NavigationMenuTrigger className="bg-transparent hover:bg-muted/50 data-[state=open]:bg-muted/50">
+                      <Users className="mr-2 h-4 w-4 text-muted-foreground" />
+                      Community
+                    </NavigationMenuTrigger>
+                    <NavigationMenuContent>
+                      <div className="flex w-[400px] gap-4 p-4 lg:w-[600px]">
+                        <ul className="grid w-full lg:w-2/3 grid-cols-1 lg:grid-cols-2 gap-2">
+                          <li>
+                            <NavigationMenuLink
+                              render={<Link href="/feeds" />}
+                              className="flex h-full w-full flex-col items-start gap-1 p-3"
+                            >
+                              <div className="flex items-center gap-2 font-medium">
+                                <Grid3X3 className="w-4 h-4 text-primary" />
+                                Social Feeds
+                              </div>
+                              <p className="text-xs text-muted-foreground line-clamp-2">
+                                Berbagi momen dan aktivitas berkendara bersama komunitas.
+                              </p>
+                            </NavigationMenuLink>
+                          </li>
+                          <li>
+                            <NavigationMenuLink
+                              render={<Link href="/leaderboard" />}
+                              className="flex h-full w-full flex-col items-start gap-1 p-3"
+                            >
+                              <div className="flex items-center gap-2 font-medium">
+                                <Trophy className="w-4 h-4 text-primary" />
+                                Leaderboard
+                              </div>
+                              <p className="text-xs text-muted-foreground line-clamp-2">
+                                Peringkat driver terbaik berdasarkan jarak, pekerjaan, dan kekayaan.
+                              </p>
+                            </NavigationMenuLink>
+                          </li>
+                          <li>
+                            <NavigationMenuLink
+                              render={<Link href="/achievements" />}
+                              className="flex h-full w-full flex-col items-start gap-1 p-3"
+                            >
+                              <div className="flex items-center gap-2 font-medium">
+                                <Medal className="w-4 h-4 text-primary" />
+                                Achievements
+                              </div>
+                              <p className="text-xs text-muted-foreground line-clamp-2">
+                                Galeri lencana dan pencapaian supir yang mengagumkan.
+                              </p>
+                            </NavigationMenuLink>
+                          </li>
+                          <li>
+                            <NavigationMenuLink
+                              render={<Link href="/community-goals" />}
+                              className="flex h-full w-full flex-col items-start gap-1 p-3"
+                            >
+                              <div className="flex items-center gap-2 font-medium">
+                                <Target className="w-4 h-4 text-primary" />
+                                Community Goals
+                              </div>
+                              <p className="text-xs text-muted-foreground line-clamp-2">
+                                Berpartisipasi dan capai target bersama komunitas.
+                              </p>
+                            </NavigationMenuLink>
+                          </li>
+                        </ul>
+                        <div className="hidden lg:block w-1/3 rounded-lg overflow-hidden relative bg-muted group/image">
+                          <img
+                            src="https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=400&q=80"
+                            alt="Community"
+                            className="object-cover w-full h-full opacity-80 transition-transform duration-500 group-hover/image:scale-110"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent flex items-end p-4">
+                            <div className="space-y-1">
+                              <span className="font-bold text-sm text-foreground block">
+                                Nismara Transport
+                              </span>
+                              <span className="text-xs text-muted-foreground block">
+                                Terhubung dengan para driver
                               </span>
                             </div>
                           </div>

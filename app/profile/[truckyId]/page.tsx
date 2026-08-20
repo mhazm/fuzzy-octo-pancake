@@ -180,12 +180,19 @@ export default async function PublicProfilePage(props: {
   const rankColor = member?.rank?.color || "#7e57c2";
 
   // XP & Level calculations
-  const level = user.level || 1;
+  const xpMultiplier = 500;
   const currentXp = user.xp || 0;
-  const xpForNextLevel = level * 1000;
+  const level = Math.floor(Math.sqrt(currentXp / xpMultiplier)) + 1;
+  
+  const currentLevelBaseXp = Math.pow(level - 1, 2) * xpMultiplier;
+  const nextLevelXp = Math.pow(level, 2) * xpMultiplier;
+  
+  const xpEarnedInLevel = currentXp - currentLevelBaseXp;
+  const xpNeededForCurrentLevel = nextLevelXp - currentLevelBaseXp;
+  
   const xpPercentage = Math.min(
     100,
-    Math.max(0, Math.round((currentXp / xpForNextLevel) * 100)),
+    Math.max(0, Math.round((xpEarnedInLevel / xpNeededForCurrentLevel) * 100)),
   );
 
   // Determine Favorite Game based on latest job or default to ETS2
@@ -407,9 +414,9 @@ export default async function PublicProfilePage(props: {
                     {/* XP Progress */}
                     <div className="mt-6">
                       <div className="flex justify-between text-xs font-bold text-muted-foreground mb-2 uppercase tracking-wider">
-                        <span>Progres XP</span>
+                        <span>Progres XP (Level {level})</span>
                         <span>
-                          {formatNum(currentXp)} / {formatNum(xpForNextLevel)}{" "}
+                          {formatNum(currentXp)} / {formatNum(nextLevelXp)}{" "}
                           XP
                         </span>
                       </div>

@@ -141,7 +141,7 @@ export async function POST(request: Request) {
       if (boost > 0) {
         // e.g. 10 days with 20% boost -> 10 * (1 - 0.20) = 8 days
         const boosted = baseDuration * (1 - boost / 100);
-        return Math.max(1, Math.round(boosted)); // Minimum 1 day
+        return Math.max(0.5, Number(boosted.toFixed(2))); // Minimum 0.5 day (12 jam)
       }
       return baseDuration;
     };

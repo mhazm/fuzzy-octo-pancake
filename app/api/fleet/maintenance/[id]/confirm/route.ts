@@ -111,28 +111,47 @@ export async function POST(
     });
 
     // 4. Assign Slot if available
-    // Count currently in_service
-    const inServiceOrders = await FleetMaintenanceOrder.find({ status: "in_service" });
-    const activeSlots = inServiceOrders.map(o => o.slotNumber);
-    
+    const fleet = await Fleet.findById(order.fleetId);
+    if (!fleet) {
+      return NextResponse.json({ error: "Kendaraan (Fleet) tidak ditemukan" }, { status: 404 });
+    }
+    const gameId = fleet.game_id; // "ets2" or "ats"
+    const isVip = userObj?.nismaraplus?.status === true;
+
+    // Find available slot based on game and VIP status
+    // If VIP, check VIP slots first, then regular
+    // If regular, check only regular slots
     let assignedSlot = null;
-    for (let i = 1; i <= 3; i++) {
-      if (!activeSlots.includes(i)) {
-        assignedSlot = i;
-        break;
-      }
+    let assignedSlotDoc = null;
+
+    if (isVip) {
+      assignedSlotDoc = await mongoose.model("GarageSlot").findOneAndUpdate(
+        { game_id: gameId, type: "vip", status: "available", condition: { $gt: 0 } },
+        { $set: { status: "in_use", currentOrderId: order._id, fleetId: order.fleetId } },
+        { new: true, sort: { slotId: 1 } }
+      );
+    }
+
+    if (!assignedSlotDoc) {
+      assignedSlotDoc = await mongoose.model("GarageSlot").findOneAndUpdate(
+        { game_id: gameId, type: "regular", status: "available", condition: { $gt: 0 } },
+        { $set: { status: "in_use", currentOrderId: order._id, fleetId: order.fleetId } },
+        { new: true, sort: { slotId: 1 } }
+      );
     }
 
     order.managerId = session.user.discordId;
 
-    if (assignedSlot !== null) {
+    if (assignedSlotDoc) {
+      assignedSlot = assignedSlotDoc.slotId;
       // Masuk garasi (in_service)
       order.status = "in_service";
+      // We still store slotNumber/Id as string now
       order.slotNumber = assignedSlot;
       order.maintenanceStartAt = new Date();
       
       const endAt = new Date();
-      endAt.setDate(endAt.getDate() + order.serviceDuration);
+      endAt.setTime(endAt.getTime() + order.serviceDuration * 24 * 60 * 60 * 1000);
       order.maintenanceEndAt = endAt;
 
       // Update fleet status and maintenance dates
@@ -170,8 +189,6 @@ export async function POST(
       // Masuk waiting list
       order.status = "waiting";
       
-      // Update fleet status? Maybe keep it active until it actually enters the garage? 
-      // The requirement says "menunggu terlebih dahulu". If it's waiting, can it be used? Probably shouldn't be used.
       const waitFleet = await Fleet.findByIdAndUpdate(order.fleetId, { status: "onservice" }, { new: true });
 
       // Notifikasi Masuk Waiting List

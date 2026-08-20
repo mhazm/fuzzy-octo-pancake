@@ -4,6 +4,8 @@ const fleetSchema = new mongoose.Schema(
   {
     id: { type: String, required: true },
     fleet_name: { type: String, required: true },
+    customName: { type: String, default: null },
+    customImage: { type: String, default: null },
     game_id: { type: String, required: true },
     fleet_number: { type: String, required: true },
     owner: {

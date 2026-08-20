@@ -16,6 +16,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import FleetMaintenanceClient from "./FleetMaintenanceClient";
 import ToggleDriverClient from "./ToggleDriverClient";
+import FleetNameEditorClient from "./FleetNameEditorClient";
+import FleetImageEditorClient from "./FleetImageEditorClient";
 
 export const metadata = {
   title: "Fleet Detail",
@@ -221,9 +223,12 @@ export default async function FleetDetailPage({
           >
             <ArrowLeft size={16} /> Kembali
           </Link>
-          <h1 className="text-4xl font-black text-foreground tracking-tighter uppercase italic flex items-center gap-3">
-            {fleet.modelInfo?.name}
-          </h1>
+          <FleetNameEditorClient
+            fleetId={fleet.id}
+            currentCustomName={fleet.customName || null}
+            modelName={fleet.modelInfo?.name}
+            isOwner={String(fleet.owner) === String(user._id)}
+          />
           <p className="text-foreground/40 font-bold uppercase text-[10px] tracking-[0.2em]">
             Plat: {fleet.fleet_number} • ID: {fleet.id}
           </p>
@@ -466,27 +471,16 @@ export default async function FleetDetailPage({
 
         {/* RIGHT COL: Job History & Image */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="aspect-[21/9] relative bg-card border border-border/50 rounded-2xl flex items-center justify-center p-6 shadow-lg overflow-hidden group">
-            <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent z-10" />
-            {fleet.modelInfo?.photo_url ? (
-              <img
-                src={fleet.modelInfo.photo_url}
-                alt={fleet.modelInfo.name}
-                className="w-full h-full object-contain drop-shadow-2xl z-20 group-hover:scale-105 transition-transform duration-700"
-              />
-            ) : (
-              <Truck size={64} className="text-muted-foreground/30 z-20" />
-            )}
-            {fleet.brandInfo?.logo_url && (
-              <div className="absolute top-6 left-6 p-2 bg-background/80 backdrop-blur-sm rounded-lg border border-border/50 z-20">
-                <img
-                  src={fleet.brandInfo.logo_url}
-                  alt={fleet.brandInfo.name}
-                  className="h-6 w-auto object-contain"
-                />
-              </div>
-            )}
-          </div>
+          <FleetImageEditorClient
+            fleetId={fleet.id}
+            currentCustomImage={fleet.customImage || null}
+            modelPhotoUrl={fleet.modelInfo?.photo_url || null}
+            brandLogoUrl={fleet.brandInfo?.logo_url || null}
+            brandName={fleet.brandInfo?.name || null}
+            modelName={fleet.modelInfo?.name || null}
+            isOwner={String(fleet.owner) === String(user._id)}
+            isNismaraPlus={(session?.user as any)?.nismaraplus?.status === true}
+          />
 
           <div className="bg-card border border-border/50 rounded-2xl p-6 shadow-lg">
             <div className="flex justify-between items-center mb-6">

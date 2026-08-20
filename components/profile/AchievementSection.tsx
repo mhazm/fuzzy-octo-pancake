@@ -6,6 +6,7 @@ import { Medal, X } from "lucide-react";
 interface AchievementDetail {
   _id: string;
   name: string;
+  slug?: string;
   description: string;
   imageUrl?: string;
 }
@@ -42,10 +43,14 @@ export default function AchievementSection({
         {userAchievements.length > 0 ? (
           <>
             <div className="grid grid-cols-4 gap-3">
-              {displayedAchievements.map((ua) => (
-                <div
+              {displayedAchievements.map((ua) => {
+                const isClickable = !!ua.achievementDetails?.slug;
+                const Wrapper = isClickable ? require('next/link').default : "div";
+                return (
+                <Wrapper
+                  href={isClickable ? `/achievements/${ua.achievementDetails.slug}` : undefined}
                   key={ua._id.toString()}
-                  className="group relative flex flex-col items-center"
+                  className="group relative flex flex-col items-center cursor-pointer"
                 >
                   <div className="aspect-square w-full bg-background/50 rounded-lg border border-border/50 flex items-center justify-center hover:border-primary/50 hover:bg-primary/5 transition-all duration-300 relative">
                     {ua.achievementDetails?.imageUrl ? (
@@ -81,8 +86,9 @@ export default function AchievementSection({
                       {ua.count}
                     </div>
                   )}
-                </div>
-              ))}
+                </Wrapper>
+                );
+              })}
             </div>
 
             {hasMore && (
@@ -131,10 +137,14 @@ export default function AchievementSection({
             {/* Modal Body */}
             <div className="p-6 overflow-y-auto custom-scrollbar flex-1 bg-background/20">
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {userAchievements.map((ua) => (
-                  <div
+                {userAchievements.map((ua) => {
+                  const isClickable = !!ua.achievementDetails?.slug;
+                  const Wrapper = isClickable ? require('next/link').default : "div";
+                  return (
+                  <Wrapper
+                    href={isClickable ? `/achievements/${ua.achievementDetails.slug}` : undefined}
                     key={ua._id.toString()}
-                    className="bg-card border border-border/50 rounded-xl p-4 flex flex-col items-center hover:border-primary/40 transition-colors shadow-sm"
+                    className={`bg-card border border-border/50 rounded-xl p-4 flex flex-col items-center hover:border-primary/40 transition-colors shadow-sm ${isClickable ? 'cursor-pointer' : ''}`}
                   >
                     <div className="w-16 h-16 rounded-full bg-background flex items-center justify-center border border-border/50 shadow-inner mb-4 relative">
                       {ua.achievementDetails?.imageUrl ? (
@@ -178,8 +188,9 @@ export default function AchievementSection({
                           : "-"}
                       </p>
                     </div>
-                  </div>
-                ))}
+                  </Wrapper>
+                  );
+                })}
               </div>
             </div>
           </div>

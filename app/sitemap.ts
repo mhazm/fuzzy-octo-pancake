@@ -18,16 +18,58 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     users,
     surveys,
     marketItems,
+    achievements,
+    ncEvents,
+    coupons,
   ] = await Promise.all([
-    db.collection("jobs").find({}, { projection: { jobId: 1, updatedAt: 1 } }).toArray(),
-    db.collection("teams").find({}, { projection: { uri: 1, updatedAt: 1 } }).toArray(),
-    db.collection("contracts").find({}, { projection: { contractName: 1, updatedAt: 1 } }).toArray(),
-    db.collection("convoylobby").find({}, { projection: { convoyUri: 1, updatedAt: 1 } }).toArray(),
-    db.collection("gallery_posts").find({}, { projection: { _id: 1, updatedAt: 1 } }).toArray(),
-    db.collection("users").find({}, { projection: { truckyId: 1, updatedAt: 1 } }).toArray(),
-    db.collection("surveys").find({}, { projection: { uri: 1, updatedAt: 1 } }).toArray(),
+    db
+      .collection("jobs")
+      .find({}, { projection: { jobId: 1, updatedAt: 1 } })
+      .toArray(),
+    db
+      .collection("teams")
+      .find({}, { projection: { uri: 1, updatedAt: 1 } })
+      .toArray(),
+    db
+      .collection("contracts")
+      .find({}, { projection: { contractName: 1, updatedAt: 1 } })
+      .toArray(),
+    db
+      .collection("convoylobby")
+      .find({}, { projection: { convoyUri: 1, updatedAt: 1 } })
+      .toArray(),
+    db
+      .collection("gallery_posts")
+      .find({}, { projection: { _id: 1, updatedAt: 1 } })
+      .toArray(),
+    db
+      .collection("users")
+      .find({}, { projection: { truckyId: 1, updatedAt: 1 } })
+      .toArray(),
+    db
+      .collection("surveys")
+      .find({}, { projection: { uri: 1, updatedAt: 1 } })
+      .toArray(),
     // Data MarketItem dari Mongoose secara native menggunakan nama koleksi 'marketitems'
-    db.collection("marketitems").find({ isPublished: true }, { projection: { _id: 1, slug: 1, updatedAt: 1 } }).toArray(),
+    db
+      .collection("marketitems")
+      .find(
+        { isPublished: true },
+        { projection: { _id: 1, slug: 1, updatedAt: 1 } },
+      )
+      .toArray(),
+    db
+      .collection("achievements")
+      .find({}, { projection: { slug: 1, updatedAt: 1 } })
+      .toArray(),
+    db
+      .collection("ncevents")
+      .find({}, { projection: { slug: 1, updatedAt: 1 } })
+      .toArray(),
+    db
+      .collection("coupons")
+      .find({}, { projection: { codeCoupon: 1, updatedAt: 1 } })
+      .toArray(),
   ]);
 
   // 2. Map Jobs (/jobs/[jobId])
@@ -113,7 +155,37 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     }));
 
-  // 10. Rute Statis Lengkap
+  // 10. Map Achievements (/achievements/[slug])
+  const achievementEntries = achievements
+    .filter((ach) => ach.slug)
+    .map((ach) => ({
+      url: `${baseUrl}/achievements/${ach.slug}`,
+      lastModified: ach.updatedAt || new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.6,
+    }));
+
+  // 11. Map Currency Boost Events (/currency-boost/[slug])
+  const ncEventEntries = ncEvents
+    .filter((event) => event.slug)
+    .map((event) => ({
+      url: `${baseUrl}/currency-boost/${event.slug}`,
+      lastModified: event.updatedAt || new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    }));
+
+  // 12. Map Coupons (/coupons/[codeCoupon])
+  const couponEntries = coupons
+    .filter((coupon) => coupon.codeCoupon)
+    .map((coupon) => ({
+      url: `${baseUrl}/coupons/${coupon.codeCoupon}`,
+      lastModified: coupon.updatedAt || new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.6,
+    }));
+
+  // 13. Rute Statis Lengkap
   const routePaths = [
     "",
     "/jobs",
@@ -131,6 +203,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/gallery",
     "/drivers",
     "/racing",
+    "/feeds",
     "/lotto",
     "/scratchers",
     "/timezone",
@@ -139,6 +212,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/currency-boost",
     "/market",
     "/surveys",
+    "/achievements",
   ];
 
   const staticRoutes = routePaths.map((path) => ({
@@ -158,5 +232,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...profileEntries,
     ...surveyEntries,
     ...marketEntries,
+    ...achievementEntries,
+    ...ncEventEntries,
+    ...couponEntries,
   ];
 }

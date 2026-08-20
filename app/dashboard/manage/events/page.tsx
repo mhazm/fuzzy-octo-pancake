@@ -1,7 +1,6 @@
 // app/dashboard/manage-events/page.tsx
 import Link from "next/link";
 import {
-
   Calendar,
   FileText,
   Zap,
@@ -14,8 +13,6 @@ import {
 export const metadata = {
   title: "Manage Events",
 };
-
-
 
 export default function ManageEventsHub() {
   const menu = [
@@ -56,7 +53,7 @@ export default function ManageEventsHub() {
       name: "Surveys & Polling",
       desc: "Kelola formulir survey untuk mendapatkan masukan dari para driver.",
       icon: ClipboardList,
-      href: "/dashboard/manage/events/surveys",
+      href: "/dashboard/manage/surveys",
       color: "text-green-500",
       bg: "bg-green-500/10",
       border: "border-green-500/20",
@@ -68,6 +65,17 @@ export default function ManageEventsHub() {
       desc: "Kelola kupon untuk mendapatkan masukan dari para driver.",
       icon: Gift,
       href: "/dashboard/manage/events/coupon",
+      color: "text-rose-500",
+      bg: "bg-rose-500/10",
+      border: "border-rose-500/20",
+      hoverBorder: "group-hover:border-rose-500/50",
+      glow: "group-hover:bg-rose-500/20",
+    },
+    {
+      name: "Community Goals",
+      desc: "Kelola goals komunitas pengemudi Nismara Transport.",
+      icon: Gift,
+      href: "/dashboard/manage/community-goals",
       color: "text-rose-500",
       bg: "bg-rose-500/10",
       border: "border-rose-500/20",

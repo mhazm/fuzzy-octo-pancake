@@ -2,10 +2,6 @@ import clientPromise from "@/lib/mongodb";
 import { Calendar, Clock, User, Zap, History, Sparkles } from "lucide-react";
 import Link from "next/link";
 
-export const metadata = {
-  title: "Boost & Bonus - Nismara Logistics",
-};
-
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
@@ -14,7 +10,10 @@ export default async function EventsPage() {
   const db = client.db();
 
   // 1. Ambil Event Aktif (Collection: ncevents)
-  const activeEvents = await db.collection("ncevents").find({ isActive: true }).toArray();
+  const activeEvents = await db
+    .collection("ncevents")
+    .find({ isActive: true })
+    .toArray();
 
   // 2. Ambil Riwayat Event (Collection: ncevents, isActive: false)
   const historyEvents = await db

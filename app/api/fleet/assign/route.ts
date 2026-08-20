@@ -55,11 +55,23 @@ export async function POST(request: Request) {
       );
     }
 
+    const existingFleet = await Fleet.findOne({ id: data.id });
+    if (existingFleet) {
+      return NextResponse.json(
+        { error: "Kendaraan dengan ID Trucky tersebut sudah terdaftar di sistem!" },
+        { status: 400 }
+      );
+    }
+
+    let formattedPlatNumber = data.fleet_number.trim().toUpperCase().replace(/\s+/g, "");
+    formattedPlatNumber = formattedPlatNumber.replace(/^NL-?/, "");
+    formattedPlatNumber = `NL-${formattedPlatNumber}`;
+
     const newFleet = await Fleet.create({
       id: data.id,
       fleet_name: data.fleet_name,
       game_id: data.game_id,
-      fleet_number: data.fleet_number,
+      fleet_number: formattedPlatNumber,
       owner: data.owner || null,
       driver: data.owner || null, // Keep driver in sync with owner for legacy features
       model: data.model,

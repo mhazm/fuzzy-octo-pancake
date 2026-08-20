@@ -27,15 +27,20 @@ export async function POST(
     }
 
     const body = await request.json();
-    const platNumber = body.platNumber;
+    let rawPlatNumber = body.platNumber || "";
     const truckyId = body.truckyId;
 
-    if (!platNumber) {
+    if (!rawPlatNumber) {
       return NextResponse.json(
         { error: "Plat kendaraan harus diisi" },
         { status: 400 },
       );
     }
+
+    // Auto-format Plat Number to NL-XXX
+    let platNumber = rawPlatNumber.trim().toUpperCase().replace(/\s+/g, "");
+    platNumber = platNumber.replace(/^NL-?/, ""); // Remove existing NL or NL- if any
+    platNumber = `NL-${platNumber}`;
 
     if (!truckyId) {
       return NextResponse.json(
@@ -53,12 +58,30 @@ export async function POST(
       { _id: params.id, status: "claimed" },
       { $set: { status: "processing" } },
       { new: true }
-    ).populate("fleetStoreId");
+    ).populate({
+      path: "fleetStoreId",
+      populate: {
+        path: "brand",
+        model: "FleetBrand"
+      }
+    });
 
     if (!order) {
       return NextResponse.json(
         { error: "Order tidak ditemukan, belum diambil (claimed), atau sudah diproses" },
         { status: 400 },
+      );
+    }
+
+    // Uniqueness check
+    const existingFleetById = await Fleet.findOne({ id: truckyId });
+    if (existingFleetById) {
+      // Revert status back to claimed since we abort
+      order.status = "claimed";
+      await order.save();
+      return NextResponse.json(
+        { error: "Kendaraan dengan ID Trucky tersebut sudah terdaftar di sistem!" },
+        { status: 400 }
       );
     }
 
@@ -147,9 +170,12 @@ export async function POST(
     });
 
     // 4. Create Fleet for user
+    const brandName = order.fleetStoreId.brand?.name ? `${order.fleetStoreId.brand.name} ` : "";
+    const fleetName = `${brandName}${order.fleetStoreId.name}`.trim();
+
     await Fleet.create({
       id: truckyId,
-      fleet_name: order.fleetStoreId.name,
+      fleet_name: fleetName,
       game_id: String(order.fleetStoreId.game_id),
       fleet_number: platNumber,
       owner: String(buyer._id),

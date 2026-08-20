@@ -109,10 +109,10 @@ export default async function FleetDashboardPage() {
               className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-lg group hover:border-primary/50 transition-colors block"
             >
               <div className="aspect-video relative bg-background/50 flex items-center justify-center p-6 border-b border-border/50">
-                {fleet.modelInfo?.photo_url ? (
+                {fleet.customImage || fleet.modelInfo?.photo_url ? (
                   <img
-                    src={fleet.modelInfo.photo_url}
-                    alt={fleet.modelInfo.name}
+                    src={fleet.customImage || fleet.modelInfo?.photo_url}
+                    alt={fleet.customName || fleet.modelInfo?.name || "Truk"}
                     className="w-full h-full object-contain drop-shadow-2xl group-hover:scale-105 transition-transform duration-500"
                   />
                 ) : (
@@ -161,7 +161,7 @@ export default async function FleetDashboardPage() {
               <div className="p-6">
                 <div className="flex justify-between items-center mb-1">
                   <h2 className="text-xl font-black uppercase tracking-wider">
-                    {fleet.brandInfo?.name} {fleet.modelInfo?.name || "Unknown Model"}
+                    {fleet.customName || `${fleet.brandInfo?.name} ${fleet.modelInfo?.name || "Unknown Model"}`}
                   </h2>
                   <span className="text-xs font-bold text-primary opacity-0 group-hover:opacity-100 transition-opacity">
                     DETAIL &rarr;

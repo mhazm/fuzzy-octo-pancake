@@ -45,10 +45,10 @@ export async function generateMetadata(
     contract?.imageUrl || "https://images.nismara.my.id/227300_188.jpg";
 
   return {
-    title: `${contractName} - ${gameName}`,
+    title: `${contractName} - ${gameName} - Nismara Transport`,
     description: `Detail Special Contract ${contractName} Nismara Transport. Tersedia untuk ${gameName} dengan tujuan perusahaan ${contractCompany}.`,
     openGraph: {
-      title: `${contractName}`,
+      title: `${contractName} - ${gameName} - Nismara Transport`,
       description: `Ambil muatan Special Contract ${contractName} di ${gameName}. Join Nismara Transport sekarang!`,
       images: [
         {

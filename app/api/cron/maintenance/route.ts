@@ -38,9 +38,29 @@ export async function GET(request: Request) {
     for (const order of completedOrders) {
       // Mark as completed
       order.status = "completed";
-      const freedSlot = order.slotNumber;
+      const freedSlotId = order.slotNumber;
       order.slotNumber = null;
       await order.save();
+
+      let slotStillUsable = false;
+      let slotGameId = null;
+      let slotType = null;
+
+      if (freedSlotId) {
+        const garageSlot = await mongoose.model("GarageSlot").findOne({ slotId: freedSlotId });
+        if (garageSlot) {
+          const newCondition = Math.max(0, garageSlot.condition - 2);
+          garageSlot.condition = newCondition;
+          garageSlot.status = newCondition > 0 ? "available" : "broken";
+          garageSlot.currentOrderId = null;
+          garageSlot.fleetId = null;
+          await garageSlot.save();
+
+          slotStillUsable = newCondition > 0;
+          slotGameId = garageSlot.game_id;
+          slotType = garageSlot.type;
+        }
+      }
 
       // Update fleet wear & maintenance thresholds
       const fleet = await Fleet.findById(order.fleetId).populate("model");
@@ -56,7 +76,6 @@ export async function GET(request: Request) {
         const currentMaintenance = fleet.maintenance || { ...baseIntervals };
         const wear = fleet.wear || { unfix_engine: 0, unfix_tires: 0, unfix_transmission: 0, unfix_brakes: 0 };
 
-        // If this is a replace order, we reset the wear and the maintenance threshold
         const isReplace = order.type === "replace";
 
         if (order.components.engine) {
@@ -81,7 +100,6 @@ export async function GET(request: Request) {
         await fleet.save();
       }
       
-      // Notifikasi Servis Selesai
       await sendPersonalNotification(
         order.discordId,
         "Servis Selesai 🔧",
@@ -90,7 +108,6 @@ export async function GET(request: Request) {
         `/dashboard/garage/fleet/${fleet?.get("id") || ''}`
       );
 
-      // Delete Discord channel
       if (DISCORD_BOT_TOKEN && order.discordChannelId) {
         await fetch(`https://discord.com/api/v10/channels/${order.discordChannelId}`, {
           method: "DELETE",
@@ -100,46 +117,73 @@ export async function GET(request: Request) {
         }).catch(err => console.error("Failed to delete discord channel", err));
       }
 
-      // 2. Check waiting list for the freed slot
-      const nextWaiting = await FleetMaintenanceOrder.findOne({ status: "waiting" }).sort({ createdAt: 1 });
-      
-      if (nextWaiting) {
-        nextWaiting.status = "in_service";
-        nextWaiting.slotNumber = freedSlot;
-        nextWaiting.maintenanceStartAt = new Date();
+      // 2. Check waiting list for the freed slot ONLY if the slot is still usable
+      if (slotStillUsable && slotGameId) {
+        // We must find a waiting order that matches the game_id of the slot.
+        // We have to populate the fleet to check game_id, or we can fetch all waiting, 
+        // look up their fleets, and pick the oldest matching one.
+        const allWaiting = await FleetMaintenanceOrder.find({ status: "waiting" }).sort({ createdAt: 1 });
+        let matchedWaiting = null;
         
-        const endAt = new Date();
-        endAt.setDate(endAt.getDate() + nextWaiting.serviceDuration);
-        nextWaiting.maintenanceEndAt = endAt;
-        
-        await nextWaiting.save();
+        for (const w of allWaiting) {
+          const wFleet = await Fleet.findById(w.fleetId);
+          if (wFleet && wFleet.game_id === slotGameId) {
+            // Check VIP constraint: if slot is VIP, user must be VIP.
+            if (slotType === "vip") {
+              const wUser = await User.findOne({ discordId: w.discordId });
+              if (wUser?.nismaraplus?.status === true) {
+                matchedWaiting = w;
+                break;
+              }
+            } else {
+              matchedWaiting = w;
+              break;
+            }
+          }
+        }
 
-        await Fleet.findByIdAndUpdate(nextWaiting.fleetId, {
-          status: "onservice",
-          maintenance_start_date: new Date(),
-          maintenance_end_date: endAt
-        });
+        if (matchedWaiting) {
+          matchedWaiting.status = "in_service";
+          matchedWaiting.slotNumber = freedSlotId;
+          matchedWaiting.maintenanceStartAt = new Date();
+          
+          const endAt = new Date();
+          endAt.setTime(endAt.getTime() + matchedWaiting.serviceDuration * 24 * 60 * 60 * 1000);
+          matchedWaiting.maintenanceEndAt = endAt;
+          
+          await matchedWaiting.save();
 
-        // Notifikasi Masuk Garasi dari Waiting List
-        await sendPersonalNotification(
-          nextWaiting.discordId,
-          "Kendaraan Masuk Garasi 🛠️",
-          `Kendaraan Anda telah masuk ke Garasi Slot ${freedSlot} dari daftar tunggu. Estimasi selesai pada ${endAt.toLocaleDateString("id-ID")}.`,
-          "info",
-          `/dashboard/garage/fleet/${fleet?.get("id") || nextWaiting.fleetId}`
-        );
+          await Fleet.findByIdAndUpdate(matchedWaiting.fleetId, {
+            status: "onservice",
+            maintenance_start_date: new Date(),
+            maintenance_end_date: endAt
+          });
 
-        if (DISCORD_BOT_TOKEN && nextWaiting.discordChannelId) {
-          await fetch(`https://discord.com/api/v10/channels/${nextWaiting.discordChannelId}/messages`, {
-            method: "POST",
-            headers: {
-              "Authorization": `Bot ${DISCORD_BOT_TOKEN}`,
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              content: `✅ Kendaraan Anda kini masuk ke Garasi Slot ${freedSlot}. Estimasi selesai pada ${endAt.toLocaleDateString("id-ID")}.`
-            })
-          }).catch(console.error);
+          await mongoose.model("GarageSlot").findOneAndUpdate(
+            { slotId: freedSlotId },
+            { $set: { status: "in_use", currentOrderId: matchedWaiting._id, fleetId: matchedWaiting.fleetId } }
+          );
+
+          await sendPersonalNotification(
+            matchedWaiting.discordId,
+            "Kendaraan Masuk Garasi 🛠️",
+            `Kendaraan Anda telah masuk ke Garasi Slot ${freedSlotId} dari daftar tunggu. Estimasi selesai pada ${endAt.toLocaleDateString("id-ID")}.`,
+            "info",
+            `/dashboard/garage/fleet/${matchedWaiting.fleetId}`
+          );
+
+          if (DISCORD_BOT_TOKEN && matchedWaiting.discordChannelId) {
+            await fetch(`https://discord.com/api/v10/channels/${matchedWaiting.discordChannelId}/messages`, {
+              method: "POST",
+              headers: {
+                "Authorization": `Bot ${DISCORD_BOT_TOKEN}`,
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                content: `✅ Kendaraan Anda kini masuk ke Garasi Slot ${freedSlotId}. Estimasi selesai pada ${endAt.toLocaleDateString("id-ID")}.`
+              })
+            }).catch(console.error);
+          }
         }
       }
     }

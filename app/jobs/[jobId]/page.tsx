@@ -24,6 +24,7 @@ import {
   CheckCircle,
   Star,
   HelpCircle,
+  Medal,
 } from "lucide-react";
 
 // Helper Format Waktu (Durasi)
@@ -323,7 +324,7 @@ export default async function JobDetailPage(props: {
           <StatBox
             icon={<Navigation className="text-blue-500 dark:text-blue-400" />}
             label={localJob?.statsType || "Distance"}
-            value={`${(details?.real_distance || localJob?.plannedDistanceKm || 0).toLocaleString()} km`}
+            value={`${(details?.real_distance || (isCompleted ? localJob?.distanceKm : localJob?.plannedDistanceKm) || 0).toLocaleString()} km`}
           />
           <StatBox
             icon={<Weight className="text-orange-500 dark:text-orange-400" />}
@@ -366,12 +367,16 @@ export default async function JobDetailPage(props: {
                     </h3>
                     <div className="space-y-3">
                       <BreakdownRow
-                        label="Base Earning"
+                        label={
+                          localJob?.lockedCargoPrice
+                            ? `Base Earning (${localJob.lockedCargoPrice} NC / km)`
+                            : "Base Earning"
+                        }
                         value={localJob?.nc?.base}
                         color="text-green-600 dark:text-green-400"
                       />
                       <BreakdownRow
-                        label="Special Contract Bonus"
+                        label={localJob?.isSpecialContract && localJob?.lockedCargoPrice ? `Special Contract (${localJob.lockedCargoPrice} NC / km)` : "Special Contract Bonus"}
                         value={localJob?.nc?.special}
                         color="text-yellow-600 dark:text-yellow-400"
                       />
@@ -398,7 +403,11 @@ export default async function JobDetailPage(props: {
 
                       {/* Pengeluaran */}
                       <BreakdownRow
-                        label="Biaya Sewa"
+                        label={
+                          localJob?.rentPricePerKm
+                            ? `Biaya Sewa (${localJob.rentPricePerKm} NC / km)`
+                            : "Biaya Sewa"
+                        }
                         value={localJob?.ncCost?.rent}
                         isPenalty
                       />
@@ -408,7 +417,11 @@ export default async function JobDetailPage(props: {
                         isPenalty
                       />
                       <BreakdownRow
-                        label="Biaya Bahan Bakar"
+                        label={
+                          localJob?.marketFuelPricePerL
+                            ? `Biaya Bahan Bakar (${localJob.marketFuelPricePerL} NC / L)`
+                            : "Biaya Bahan Bakar"
+                        }
                         value={localJob?.ncCost?.fuel}
                         isPenalty
                       />
@@ -493,6 +506,56 @@ export default async function JobDetailPage(props: {
                             (localJob?.ncCost?.total || 0)
                           ).toLocaleString()}{" "}
                           NC
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {localJob?.xp && (
+                  <div className="glass-panel p-8 rounded-[2.5rem] border-blue-200 bg-blue-50 dark:border-blue-500/20 dark:bg-blue-900/5 mt-8">
+                    <h3 className="text-lg font-bold text-foreground mb-6 flex items-center gap-3">
+                      <Medal className="text-blue-500 w-5 h-5" /> Rincian
+                      Experience Points (XP)
+                    </h3>
+                    <div className="space-y-3">
+                      <BreakdownRow
+                        label="Base XP"
+                        value={localJob.xp.base}
+                        color="text-green-600 dark:text-green-400"
+                      />
+                      <BreakdownRow
+                        label="Special Contract Bonus"
+                        value={localJob.xp.special}
+                        color="text-yellow-600 dark:text-yellow-400"
+                      />
+                      <BreakdownRow
+                        label="Hardcore Bonus"
+                        value={localJob.xp.hardcore}
+                        color="text-purple-600 dark:text-purple-400"
+                      />
+                      <BreakdownRow
+                        label="Event Bonus"
+                        value={localJob.xp.event}
+                        color="text-blue-600 dark:text-blue-400"
+                      />
+                      <BreakdownRow
+                        label="Nismara Plus Bonus"
+                        value={localJob.xp.nismaraplus}
+                        color="text-blue-600 dark:text-blue-400"
+                      />
+                      <BreakdownRow
+                        label="Discord Booster Bonus"
+                        value={localJob.xp.booster}
+                        color="text-blue-600 dark:text-blue-400"
+                      />
+
+                      <div className="border-t border-slate-200 dark:border-white/10 pt-4 mt-4 flex justify-between items-center">
+                        <span className="font-black text-foreground uppercase text-sm tracking-wider">
+                          Total XP
+                        </span>
+                        <span className="text-3xl font-black text-blue-600 dark:text-blue-400">
+                          +{localJob.xp.total?.toLocaleString() || 0} XP
                         </span>
                       </div>
                     </div>
@@ -635,7 +698,7 @@ export default async function JobDetailPage(props: {
                       Kendaraan
                     </span>
                     <Link
-                      href={`/dashboard/fleet/${internalFleet.id}`}
+                      href={`/fleet/${internalFleet.id}`}
                       className="text-primary hover:underline font-medium text-sm flex items-center gap-1 w-fit"
                     >
                       {internalFleet.brandInfo?.name || "-"}{" "}
@@ -666,13 +729,13 @@ export default async function JobDetailPage(props: {
                   {details?.game_id && details?.cargo_id ? (
                     <Link
                       href={`/cargo-market/${details.game_id}/${details.cargo_id}`}
-                      className="text-primary hover:underline font-medium text-sm w-fit"
+                      className="text-primary hover:underline font-medium text-sm w-fit flex items-center gap-1"
                     >
-                      {details.cargo_name || "Tidak diketahui"}
+                      {details.cargo_name || "Tidak diketahui"} {localJob?.lockedCargoPrice && <span className="text-muted-foreground">({localJob.lockedCargoPrice} NC/km)</span>}
                     </Link>
                   ) : (
-                    <span className="text-sm font-medium text-slate-800 dark:text-white">
-                      {details?.cargo_name || "Tidak diketahui"}
+                    <span className="text-sm font-medium text-slate-800 dark:text-white flex items-center gap-1">
+                      {details?.cargo_name || localJob?.cargoName || "Tidak diketahui"} {localJob?.lockedCargoPrice && <span className="text-muted-foreground">({localJob.lockedCargoPrice} NC/km)</span>}
                     </span>
                   )}
                 </div>
