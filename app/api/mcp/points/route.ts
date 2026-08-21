@@ -26,6 +26,7 @@ export async function GET(request: Request) {
         .collection("pointhistories")
         .find({ userId: discordId, guildId })
         .sort({ createdAt: -1 })
+        .limit(10)
         .toArray(),
     ]);
 
