@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function middleware(request: NextRequest) {
+export default function proxy(request: NextRequest) {
   // Hanya memproteksi rute API MCP
   if (request.nextUrl.pathname.startsWith('/api/mcp')) {
     const authHeader = request.headers.get('authorization');
