@@ -4,6 +4,7 @@ import MarketItem from "@/lib/models/MarketItem";
 import Notification from "@/lib/models/Notification";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { revalidatePath } from "next/cache";
 
 import dbConnect from "@/lib/mongoose";
 export async function POST(
@@ -135,6 +136,14 @@ export async function POST(
     }
 
     await item.save();
+    
+    try {
+      revalidatePath("/market");
+      revalidatePath("/api/market");
+    } catch (e) {
+      console.error("Failed to revalidate cache", e);
+    }
+
     return NextResponse.json({ success: true, message: `Mod berhasil di-${action}`, item });
     
   } catch (error) {

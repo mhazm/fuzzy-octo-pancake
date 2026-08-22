@@ -33,7 +33,7 @@ export default function MarketPage() {
       if (filterCategory) url += `category=${filterCategory}&`;
       if (filterGameId) url += `game_id=${filterGameId}&`;
 
-      const res = await fetch(url);
+      const res = await fetch(url, { cache: "no-store" });
       const data = await res.json();
       setItems(data);
     } catch (error) {

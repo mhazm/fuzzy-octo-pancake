@@ -7,6 +7,7 @@ import "@/lib/models/User";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/route";
 import { deleteFileFromR2 } from "@/lib/r2";
+import { revalidatePath } from "next/cache";
 
 import dbConnect from "@/lib/mongoose";
 
@@ -252,6 +253,13 @@ export async function PUT(
     } catch (notifErr) {
       console.error("Gagal mengirim notifikasi update mod:", notifErr);
     }
+    
+    try {
+      revalidatePath("/market");
+      revalidatePath("/api/market");
+    } catch (e) {
+      console.error("Failed to revalidate cache", e);
+    }
 
     return NextResponse.json({
       success: true,
@@ -351,6 +359,13 @@ export async function DELETE(
 
     if (allNotifications.length > 0) {
       await Notification.insertMany(allNotifications);
+    }
+    
+    try {
+      revalidatePath("/market");
+      revalidatePath("/api/market");
+    } catch (e) {
+      console.error("Failed to revalidate cache", e);
     }
 
     return NextResponse.json({
