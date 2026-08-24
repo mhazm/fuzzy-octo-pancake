@@ -13,6 +13,7 @@ import {
   ShieldCheck,
   Image as ImageIcon,
   Upload,
+  Clock,
 } from "lucide-react";
 import { compressImageToWebP } from "@/lib/imageUtils";
 
@@ -21,12 +22,19 @@ export default function EventManageUI({ active, history, manager }: any) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Format current date + 1 hour for default startDate
+  const defaultStartDate = new Date();
+  defaultStartDate.setHours(defaultStartDate.getHours() + 1);
+  const defaultStartDateString = defaultStartDate.toISOString().slice(0, 16);
+
   const [formData, setFormData] = useState({
     nameEvent: "",
     slug: "",
     type: "all",
     gameId: "all",
     multiplier: "1.5",
+    isScheduled: false,
+    startDate: defaultStartDateString,
     endAt: "",
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -380,6 +388,57 @@ export default function EventManageUI({ active, history, manager }: any) {
                   />
                 </div>
               </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-accent-lilac uppercase ml-2">
+                  Jadwal Event
+                </label>
+                <div className="grid grid-cols-2 gap-4">
+                  <label className={`flex items-center justify-center gap-2 p-3 border rounded-xl cursor-pointer transition-all ${
+                    !formData.isScheduled ? "border-primary bg-primary/10 text-primary font-bold" : "border-border/50 bg-foreground/5 text-muted-foreground hover:bg-foreground/10"
+                  }`}>
+                    <input 
+                      type="radio" 
+                      name="isScheduled" 
+                      value="false" 
+                      checked={!formData.isScheduled} 
+                      onChange={() => setFormData(prev => ({ ...prev, isScheduled: false }))} 
+                      className="hidden" 
+                    />
+                    Berlaku Sekarang
+                  </label>
+                  
+                  <label className={`flex items-center justify-center gap-2 p-3 border rounded-xl cursor-pointer transition-all ${
+                    formData.isScheduled ? "border-primary bg-primary/10 text-primary font-bold" : "border-border/50 bg-foreground/5 text-muted-foreground hover:bg-foreground/10"
+                  }`}>
+                    <input 
+                      type="radio" 
+                      name="isScheduled" 
+                      value="true" 
+                      checked={formData.isScheduled} 
+                      onChange={() => setFormData(prev => ({ ...prev, isScheduled: true }))} 
+                      className="hidden" 
+                    />
+                    <Clock size={16} /> Terjadwal
+                  </label>
+                </div>
+              </div>
+
+              {formData.isScheduled && (
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-accent-lilac uppercase ml-2 flex items-center gap-2">
+                    <Calendar size={12} /> Waktu Dimulai
+                  </label>
+                  <input
+                    type="datetime-local"
+                    name="startDate"
+                    required={formData.isScheduled}
+                    value={formData.startDate}
+                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                    className="w-full bg-foreground/5 border border-border rounded-2xl p-4 text-(-primary-foreground) text-sm font-bold"
+                  />
+                </div>
+              )}
 
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-accent-lilac uppercase ml-2">

@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Ticket, Coins, ShieldAlert, Calendar, Image as ImageIcon, CheckCircle, Loader2, X } from "lucide-react";
+import { Ticket, Coins, ShieldAlert, Calendar, Image as ImageIcon, CheckCircle, Loader2, X, Clock } from "lucide-react";
 import Link from "next/link";
 import { compressImageToWebP } from "@/lib/imageUtils";
 
@@ -19,12 +19,19 @@ export default function CreateCouponPage() {
   defaultDate.setDate(defaultDate.getDate() + 7);
   const defaultDateString = defaultDate.toISOString().slice(0, 16);
 
+  // Format current date + 1 hour for default startDate
+  const defaultStartDate = new Date();
+  defaultStartDate.setHours(defaultStartDate.getHours() + 1);
+  const defaultStartDateString = defaultStartDate.toISOString().slice(0, 16);
+
   const [formData, setFormData] = useState({
     nameCoupon: "",
     codeCoupon: "",
     type: "NC", // 'NC' or 'PENALTY_TICKET'
     minAmount: 0,
     maxAmount: 0,
+    isScheduled: false,
+    startDate: defaultStartDateString,
     endDate: defaultDateString,
   });
 
@@ -255,6 +262,57 @@ export default function CreateCouponPage() {
               className="w-full px-4 py-3 bg-background border border-border/50 rounded-xl focus:ring-2 focus:ring-primary outline-none"
             />
           </div>
+
+          {/* Schedule Toggle */}
+          <div className="space-y-2 md:col-span-2">
+            <label className="text-sm font-bold text-foreground">Jadwal Kupon</label>
+            <div className="grid grid-cols-2 gap-4">
+              <label className={`flex items-center justify-center gap-2 p-4 border rounded-xl cursor-pointer transition-all ${
+                !formData.isScheduled ? "border-primary bg-primary/10 text-primary font-bold" : "border-border/50 bg-background text-muted-foreground hover:bg-muted"
+              }`}>
+                <input 
+                  type="radio" 
+                  name="isScheduled" 
+                  value="false" 
+                  checked={!formData.isScheduled} 
+                  onChange={() => setFormData(prev => ({ ...prev, isScheduled: false }))} 
+                  className="hidden" 
+                />
+                Berlaku Sekarang
+              </label>
+              
+              <label className={`flex items-center justify-center gap-2 p-4 border rounded-xl cursor-pointer transition-all ${
+                formData.isScheduled ? "border-primary bg-primary/10 text-primary font-bold" : "border-border/50 bg-background text-muted-foreground hover:bg-muted"
+              }`}>
+                <input 
+                  type="radio" 
+                  name="isScheduled" 
+                  value="true" 
+                  checked={formData.isScheduled} 
+                  onChange={() => setFormData(prev => ({ ...prev, isScheduled: true }))} 
+                  className="hidden" 
+                />
+                <Clock size={20} /> Terjadwal
+              </label>
+            </div>
+          </div>
+
+          {/* Start Date */}
+          {formData.isScheduled && (
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-foreground flex items-center gap-2">
+                <Calendar size={16} /> Waktu Dimulai
+              </label>
+              <input
+                type="datetime-local"
+                name="startDate"
+                required={formData.isScheduled}
+                value={formData.startDate}
+                onChange={handleChange}
+                className="w-full px-4 py-3 bg-background border border-border/50 rounded-xl focus:ring-2 focus:ring-primary outline-none"
+              />
+            </div>
+          )}
 
           {/* Duration */}
           <div className="space-y-2">

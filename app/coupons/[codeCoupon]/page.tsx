@@ -107,7 +107,8 @@ export default async function CouponDetailPage(props: DetailPageProps) {
     notFound();
   }
 
-  const isExpired = !coupon.isActive || new Date() > new Date(coupon.endDate);
+  const isPending = coupon.isScheduled && new Date() < new Date(coupon.startDate);
+  const isExpired = (!coupon.isActive && !isPending) || new Date() > new Date(coupon.endDate);
   const hasClaimed = session.user?.discordId
     ? (coupon.driverClaims || []).some(
         (c: any) => c.discordId === session.user.discordId,
@@ -222,12 +223,14 @@ export default async function CouponDetailPage(props: DetailPageProps) {
             <div className="flex flex-wrap gap-2 mb-4">
               <span
                 className={`px-4 py-1.5 text-sm font-bold rounded-full backdrop-blur-sm border ${
-                  coupon.isActive
+                  isPending
+                    ? "bg-orange-500/10 text-orange-500 border-orange-500/30"
+                    : coupon.isActive
                     ? "bg-green-500/10 text-green-500 border-green-500/30"
                     : "bg-muted text-foreground/50 border-border"
                 }`}
               >
-                {coupon.isActive ? "Kupon Aktif" : "Kupon Selesai"}
+                {isPending ? "Kupon Belum Dimulai" : coupon.isActive ? "Kupon Aktif" : "Kupon Selesai"}
               </span>
               <span className="px-4 py-1.5 text-sm font-bold rounded-full bg-primary/10 text-primary border border-primary/30">
                 {isNC ? "Hadiah Nismara Coin" : "Tiket Hapus Penalti"}
@@ -251,6 +254,8 @@ export default async function CouponDetailPage(props: DetailPageProps) {
               codeCoupon={coupon.codeCoupon}
               isExpired={isExpired}
               hasClaimed={hasClaimed}
+              isPending={isPending}
+              startDate={coupon.startDate}
             />
           </div>
         </div>

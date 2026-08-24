@@ -94,6 +94,8 @@ export async function POST(request: Request) {
       type,
       minAmount,
       maxAmount,
+      isScheduled,
+      startDate: startDateString,
       endDate: endDateString,
       imageUrl,
     } = body;
@@ -104,7 +106,8 @@ export async function POST(request: Request) {
       !type ||
       typeof minAmount !== "number" ||
       typeof maxAmount !== "number" ||
-      !endDateString
+      !endDateString ||
+      (isScheduled && !startDateString)
     ) {
       return NextResponse.json({ error: "Invalid data" }, { status: 400 });
     }
@@ -124,7 +127,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const startDate = new Date();
+    const startDate = isScheduled && startDateString ? new Date(startDateString) : new Date();
     const endDate = new Date(endDateString);
     
     // Calculate durationDays for the Discord embed
@@ -144,28 +147,31 @@ export async function POST(request: Request) {
       endDate,
       durationDays,
       driverClaims: [], // Array of { discordId, driverId, amount, claimedAt }
-      isActive: true,
+      isActive: !isScheduled,
+      isScheduled: !!isScheduled,
     };
 
     // Save to DB
     const result = await db.collection("coupons").insertOne(newCoupon);
 
     if (result.acknowledged) {
-      // Send Discord Message
-      await sendDiscordCouponMessage(newCoupon);
+      if (!isScheduled) {
+        // Send Discord Message
+        await sendDiscordCouponMessage(newCoupon);
 
-      // Create Global Website Notification
-      await dbConnect();
+        // Create Global Website Notification
+        await dbConnect();
 
-      const isNC = type === "NC";
-      await Notification.create({
-        recipient: "global",
-        title: "🎟️ Kupon Baru Tersedia!",
-        message: `Kupon ${nameCoupon} telah terbit. Hadiah berupa ${isNC ? "Nismara Coin" : "Tiket Penghapusan Penalti"}. Segera klaim sebelum kehabisan!`,
-        type: "info",
-        link: `/coupons/${codeCoupon}`,
-        isRead: false,
-      });
+        const isNC = type === "NC";
+        await Notification.create({
+          recipient: "global",
+          title: "🎟️ Kupon Baru Tersedia!",
+          message: `Kupon ${nameCoupon} telah terbit. Hadiah berupa ${isNC ? "Nismara Coin" : "Tiket Penghapusan Penalti"}. Segera klaim sebelum kehabisan!`,
+          type: "info",
+          link: `/coupons/${codeCoupon}`,
+          isRead: false,
+        });
+      }
 
       return NextResponse.json({ success: true, couponId: result.insertedId });
     } else {
