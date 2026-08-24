@@ -3,12 +3,14 @@ import mongoose from "mongoose";
 import MarketItem from "@/lib/models/MarketItem";
 import MarketPurchase from "@/lib/models/MarketPurchase";
 import Transaction from "@/lib/models/Transaction";
+import "@/lib/models/User";
 import { getServerSession } from "next-auth";
 import crypto from "crypto";
 import { authOptions } from "../../../auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { logExtremeActivity } from "@/lib/securityLogger";
+import { revalidatePath } from "next/cache";
 
 import dbConnect from "@/lib/mongoose";
 const GUILD_ID = process.env.DISCORD_GUILD_ID || "863959415702028318";
@@ -154,6 +156,15 @@ export async function POST(
       marketItemId: item._id,
       pricePaid: price,
     });
+
+    try {
+      revalidatePath("/dashboard/library");
+      revalidatePath("/api/market/library");
+      revalidatePath(`/market/${item.slug}`);
+      revalidatePath(`/market/${item._id}`);
+    } catch(e) {
+      console.error("Failed to revalidate cache", e);
+    }
 
     return NextResponse.json({
       success: true,

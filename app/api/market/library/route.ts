@@ -6,6 +6,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/route";
 
 import dbConnect from "@/lib/mongoose";
+
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
