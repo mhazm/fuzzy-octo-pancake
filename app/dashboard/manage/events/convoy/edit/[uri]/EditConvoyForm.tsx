@@ -28,6 +28,8 @@ export default function EditConvoyForm({ convoy, participantUsers = [] }: { conv
   const [isUploading, setIsUploading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [gameId, setGameId] = useState(convoy.gameId || "1");
+  const [gameplayType, setGameplayType] = useState(convoy.gameplayType || "Convoy Lobby");
+  const [typeConvoy, setTypeConvoy] = useState(convoy.typeConvoy || "Mingguan");
 
   // Helper untuk formatting date/time input agar sesuai dengan value yang diterima
   const toDate = (d: any) => (d ? new Date(d).toISOString().split("T")[0] : "");
@@ -192,9 +194,53 @@ export default function EditConvoyForm({ convoy, participantUsers = [] }: { conv
               </label>
               <select
                 name="typeConvoy"
-                defaultValue={convoy.typeConvoy}
+                value={typeConvoy}
+                onChange={(e) => setTypeConvoy(e.target.value)}
                 className="w-full bg-black/20 border border-border/50 rounded-xl p-3 text-white text-sm focus:border-primary outline-none"
               >
+                <option value="Mingguan">Rutin Mingguan</option>
+                <option value="Bulanan">Rutin Bulanan</option>
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                Gameplay
+              </label>
+              <select
+                name="gameplayType"
+                value={gameplayType}
+                onChange={(e) => setGameplayType(e.target.value)}
+                className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary transition-colors appearance-none"
+              >
+                <option value="Convoy Lobby" className="bg-card">Convoy Lobby</option>
+                <option value="TruckersMP" className="bg-card">TruckersMP</option>
+              </select>
+            </div>
+
+            {gameplayType === "Convoy Lobby" && (
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Lobby ID</label>
+                <input
+                  name="lobbyId"
+                  defaultValue={convoy.lobbyId || "85568392935732469"}
+                  className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary"
+                  placeholder="Contoh: 85568392935732469"
+                />
+              </div>
+            )}
+
+            {gameplayType === "TruckersMP" && (
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Server Name</label>
+                <input
+                  name="serverName"
+                  defaultValue={convoy.serverName || ""}
+                  className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary"
+                  placeholder="Contoh: Simulation 1"
+                />
+              </div>
+            )}
                 <option value="Mingguan">Rutin Mingguan</option>
                 <option value="Bulanan">Rutin Bulanan</option>
               </select>
@@ -210,6 +256,24 @@ export default function EditConvoyForm({ convoy, participantUsers = [] }: { conv
                 className="w-full bg-black/20 border border-emerald-500/30 rounded-xl p-3 text-emerald-400 text-sm focus:border-emerald-500 outline-none"
               >
                 <option value="">-- Pilih Road Captain --</option>
+                {participantUsers.map((u) => (
+                  <option key={u.discordId} value={u.discordId}>
+                    {u.name}
+                  </option>
+                ))}
+              </select>
+              <p className="text-[10px] text-gray-500 italic mt-1">Hanya dari daftar user yang sudah bergabung (Partisipan).</p>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-emerald-400 flex items-center gap-2 uppercase tracking-widest">
+                <Crown size={14} className="text-sky-400" /> Sweeper
+              </label>
+              <select
+                name="sweeper"
+                defaultValue={convoy.sweeper || ""}
+                className="w-full bg-black/20 border border-sky-500/30 rounded-xl p-3 text-sky-400 text-sm focus:border-sky-500 outline-none"
+              >
+                <option value="">-- Pilih Sweeper --</option>
                 {participantUsers.map((u) => (
                   <option key={u.discordId} value={u.discordId}>
                     {u.name}
@@ -377,6 +441,75 @@ export default function EditConvoyForm({ convoy, participantUsers = [] }: { conv
                 className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-foreground"
               />
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* SECTION 4: HADIAH DINAMIS */}
+      <div className="glass-panel p-6 md:p-8 rounded-[2rem] border-border/50 shadow-xl">
+        <h2 className="text-lg font-bold text-foreground mb-6 flex items-center gap-2 border-b border-border/40 pb-4">
+          <Settings className="text-emerald-400 w-5 h-5" /> Pengaturan Hadiah (NC)
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Base Partisipan</label>
+            <input
+              name="participantBaseReward"
+              type="number"
+              min={typeConvoy === "Bulanan" ? 2000 : 1000}
+              max={(typeConvoy === "Bulanan" ? 2000 : 1000) * 4}
+              defaultValue={convoy.rewards?.participantBase || (typeConvoy === "Bulanan" ? 2000 : 1000)}
+              required
+              className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-emerald-500"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Multiplier Partisipan</label>
+            <input
+              name="participantMultiplierReward"
+              type="number"
+              min={150}
+              max={150 * 4}
+              defaultValue={convoy.rewards?.participantMultiplier || 150}
+              required
+              className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-emerald-500"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Bonus Road Captain</label>
+            <input
+              name="rcReward"
+              type="number"
+              min={1500}
+              max={1500 * 4}
+              defaultValue={convoy.rewards?.rc || 1500}
+              required
+              className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-emerald-500"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Bonus Sweeper</label>
+            <input
+              name="sweeperReward"
+              type="number"
+              min={1500}
+              max={1500 * 4}
+              defaultValue={convoy.rewards?.sweeper || 1500}
+              required
+              className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-emerald-500"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Bonus Manager</label>
+            <input
+              name="managerReward"
+              type="number"
+              min={3000}
+              max={3000 * 4}
+              defaultValue={convoy.rewards?.manager || 3000}
+              required
+              className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-emerald-500"
+            />
           </div>
         </div>
       </div>

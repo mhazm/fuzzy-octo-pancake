@@ -26,6 +26,8 @@ export default function CreateConvoyPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [gameId, setGameId] = useState("1");
+  const [gameplayType, setGameplayType] = useState("Convoy Lobby");
+  const [typeConvoy, setTypeConvoy] = useState("Mingguan");
 
   // Auto-fill URI dari Nama Convoy
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -225,6 +227,8 @@ export default function CreateConvoyPage() {
                 </label>
                 <select
                   name="typeConvoy"
+                  value={typeConvoy}
+                  onChange={(e) => setTypeConvoy(e.target.value)}
                   className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary transition-colors appearance-none"
                 >
                   <option value="Mingguan" className="bg-card">
@@ -235,6 +239,44 @@ export default function CreateConvoyPage() {
                   </option>
                 </select>
               </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                  Gameplay
+                </label>
+                <select
+                  name="gameplayType"
+                  value={gameplayType}
+                  onChange={(e) => setGameplayType(e.target.value)}
+                  className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary transition-colors appearance-none"
+                >
+                  <option value="Convoy Lobby" className="bg-card">Convoy Lobby</option>
+                  <option value="TruckersMP" className="bg-card">TruckersMP</option>
+                </select>
+              </div>
+
+              {gameplayType === "Convoy Lobby" && (
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Lobby ID</label>
+                  <input
+                    name="lobbyId"
+                    defaultValue="85568392935732469"
+                    className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary"
+                    placeholder="Contoh: 85568392935732469"
+                  />
+                </div>
+              )}
+
+              {gameplayType === "TruckersMP" && (
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Server Name</label>
+                  <input
+                    name="serverName"
+                    className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary"
+                    placeholder="Contoh: Simulation 1"
+                  />
+                </div>
+              )}
 
               <div className="space-y-2 md:col-span-2">
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">
@@ -393,6 +435,75 @@ export default function CreateConvoyPage() {
                   placeholder="1250"
                 />
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* SECTION 4: HADIAH DINAMIS */}
+        <div className="glass-panel p-6 md:p-8 rounded-[2rem] border-border/50 shadow-xl">
+          <h2 className="text-lg font-bold text-foreground mb-6 flex items-center gap-2 border-b border-border/40 pb-4">
+            <Settings className="text-emerald-400 w-5 h-5" /> Pengaturan Hadiah (NC)
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Base Partisipan</label>
+              <input
+                name="participantBaseReward"
+                type="number"
+                min={typeConvoy === "Bulanan" ? 2000 : 1000}
+                max={(typeConvoy === "Bulanan" ? 2000 : 1000) * 4}
+                defaultValue={typeConvoy === "Bulanan" ? 2000 : 1000}
+                required
+                className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Multiplier Partisipan</label>
+              <input
+                name="participantMultiplierReward"
+                type="number"
+                min={150}
+                max={150 * 4}
+                defaultValue={150}
+                required
+                className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Bonus Road Captain</label>
+              <input
+                name="rcReward"
+                type="number"
+                min={1500}
+                max={1500 * 4}
+                defaultValue={1500}
+                required
+                className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Bonus Sweeper</label>
+              <input
+                name="sweeperReward"
+                type="number"
+                min={1500}
+                max={1500 * 4}
+                defaultValue={1500}
+                required
+                className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Bonus Manager</label>
+              <input
+                name="managerReward"
+                type="number"
+                min={3000}
+                max={3000 * 4}
+                defaultValue={3000}
+                required
+                className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-emerald-500"
+              />
             </div>
           </div>
         </div>

@@ -27,9 +27,21 @@ export interface IConvoyLobby extends Document {
   cargoName?: string;
   cargoMass?: number;
   plannedDistanceKm?: number;
+  gameplayType: "Convoy Lobby" | "TruckersMP";
+  lobbyId?: string;
+  serverName?: string;
   partisipan: IPartisipan[];
   interested: string[]; // array of discordIds
   roadCaptain?: string; // discordId
+  sweeper?: string; // discordId
+  rewards?: {
+    participantBase: number;
+    participantMultiplier: number;
+    rc: number;
+    sweeper: number;
+    manager: number;
+  };
+  ticketNumber?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -48,6 +60,9 @@ const convoyLobbySchema = new Schema<IConvoyLobby>(
   {
     guildId: { type: String, required: true },
     gameId: { type: String, required: true }, // 1 = ETS2, 2 = ATS
+    gameplayType: { type: String, enum: ["Convoy Lobby", "TruckersMP"], default: "Convoy Lobby" },
+    lobbyId: { type: String, default: "85568392935732469" },
+    serverName: { type: String },
     convoyUri: { type: String, required: true, unique: true },
     convoyName: { type: String, required: true },
     description: { type: String, required: true },
@@ -75,6 +90,16 @@ const convoyLobbySchema = new Schema<IConvoyLobby>(
     partisipan: [partisipanSchema],
     interested: [{ type: String }],
     roadCaptain: { type: String },
+    sweeper: { type: String },
+    
+    rewards: {
+      participantBase: { type: Number, default: 1000 },
+      participantMultiplier: { type: Number, default: 150 },
+      rc: { type: Number, default: 1500 },
+      sweeper: { type: Number, default: 1500 },
+      manager: { type: Number, default: 3000 },
+    },
+    ticketNumber: { type: String },
   },
   { timestamps: true },
 );

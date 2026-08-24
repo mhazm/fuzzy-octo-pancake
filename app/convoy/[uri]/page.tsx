@@ -87,6 +87,7 @@ export default async function ConvoyDetailPage({
       ...interestedIds,
       convoy.setBy,
       convoy.roadCaptain,
+      convoy.sweeper,
     ].filter(Boolean))
   );
 
@@ -175,6 +176,11 @@ export default async function ConvoyDetailPage({
                     Sesi Berakhir
                   </span>
                 )}
+                <span className="bg-white/20 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider backdrop-blur-md">
+                  {convoy.gameplayType || "Convoy Lobby"}
+                  {convoy.gameplayType === "TruckersMP" && convoy.serverName ? ` - ${convoy.serverName}` : ""}
+                  {convoy.gameplayType !== "TruckersMP" && convoy.lobbyId ? ` - ID: ${convoy.lobbyId}` : ""}
+                </span>
               </div>
               <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-white drop-shadow-xl">
                 {convoy.convoyName}
@@ -198,7 +204,7 @@ export default async function ConvoyDetailPage({
           </div>
 
           {/* Grid Penanggung Jawab & Road Captain */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className={`grid grid-cols-1 md:grid-cols-2 ${convoy.sweeper ? 'lg:grid-cols-3' : ''} gap-6 mb-8`}>
             {/* Road Captain */}
             <div className="flex items-center gap-4 bg-black/10 border border-white/5 rounded-2xl p-5 hover:border-emerald-500/30 transition-colors">
               {convoy.roadCaptain && usersMap.has(convoy.roadCaptain) ? (
@@ -296,6 +302,57 @@ export default async function ConvoyDetailPage({
                 </div>
               )}
             </div>
+
+            {/* Sweeper */}
+            {convoy.sweeper && (
+              <div className="flex items-center gap-4 bg-black/10 border border-white/5 rounded-2xl p-5 hover:border-sky-500/30 transition-colors">
+                {usersMap.has(convoy.sweeper) ? (
+                  <>
+                    <Link href={`/profile/${usersMap.get(convoy.sweeper)?.truckyId || '#'}`} className="relative shrink-0 w-14 h-14 block hover:opacity-80 transition-opacity">
+                      {usersMap.get(convoy.sweeper)?.image ? (
+                        <img
+                          src={usersMap.get(convoy.sweeper).image}
+                          alt="Sweeper"
+                          className="w-full h-full rounded-full object-cover border-2 border-sky-500/50"
+                        />
+                      ) : (
+                        <div className="w-full h-full rounded-full bg-sky-500/20 flex items-center justify-center text-sky-500 font-black border-2 border-sky-500/50">
+                          {usersMap.get(convoy.sweeper)?.name?.charAt(0) || "S"}
+                        </div>
+                      )}
+                      <div className="absolute -bottom-1 -right-1 bg-sky-500 text-white p-1 rounded-full border-2 border-background">
+                        <Crown size={12} />
+                      </div>
+                    </Link>
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-sky-500 mb-0.5">
+                        Sweeper
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Link href={`/profile/${usersMap.get(convoy.sweeper)?.truckyId || '#'}`} className="text-base font-bold text-foreground hover:text-primary transition-colors">
+                          {usersMap.get(convoy.sweeper)?.name}
+                        </Link>
+                        <UserBadges 
+                          role={usersMap.get(convoy.sweeper)?.discordRole} 
+                          isBooster={usersMap.get(convoy.sweeper)?.isBooster === true} 
+                          isNismaraPlus={usersMap.get(convoy.sweeper)?.nismaraplus?.status === true} 
+                          nismaraPlusStartedAt={usersMap.get(convoy.sweeper)?.nismaraplus?.startedAt}
+                          truckyRank={usersMap.get(convoy.sweeper)?.truckyRank}
+                          className="w-4 h-4" 
+                        />
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-center gap-3 text-foreground/40 italic">
+                    <div className="w-14 h-14 rounded-full bg-white/5 border-2 border-white/10 flex items-center justify-center">
+                      <Users size={20} className="opacity-50" />
+                    </div>
+                    <div className="text-xs">Sweeper tidak ditemukan</div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
@@ -363,6 +420,52 @@ export default async function ConvoyDetailPage({
                       {convoy.plannedDistanceKm
                         ? `${convoy.plannedDistanceKm} KM`
                         : "-"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* REWARD PANEL */}
+              <div className="bg-black/10 border border-emerald-500/20 rounded-2xl p-6 relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+                  <Crown size={64} className="text-emerald-500" />
+                </div>
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-emerald-400 flex items-center gap-2 mb-4 relative z-10">
+                  <Crown size={16} /> Informasi Hadiah (NC)
+                </h3>
+                <div className="space-y-3 font-semibold relative z-10">
+                  <div className="flex justify-between items-center border-b border-emerald-500/10 pb-2">
+                    <span className="text-emerald-100/50 text-xs">
+                      Base Partisipan
+                    </span>
+                    <span className="text-emerald-400 font-black tracking-wider text-sm">
+                      {convoy.rewards?.participantBase || (convoy.typeConvoy === "Bulanan" ? 2000 : 1000)} NC
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center border-b border-emerald-500/10 pb-2">
+                    <span className="text-emerald-100/50 text-xs">
+                      Multiplier per Partisipan
+                    </span>
+                    <span className="text-emerald-400 font-black tracking-wider text-sm">
+                      +{convoy.rewards?.participantMultiplier || 150} NC
+                    </span>
+                  </div>
+                  {(convoy.rewards?.manager || 3000) > 0 && (
+                    <div className="flex justify-between items-center border-b border-emerald-500/10 pb-2">
+                      <span className="text-emerald-100/50 text-xs">
+                        Bonus Manager
+                      </span>
+                      <span className="text-emerald-400 font-black tracking-wider text-sm">
+                        {convoy.rewards?.manager || 3000} NC
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center">
+                    <span className="text-emerald-100/50 text-xs">
+                      Bonus Staff (RC / Sweeper)
+                    </span>
+                    <span className="text-emerald-400 font-black tracking-wider text-sm">
+                      {convoy.rewards?.rc || 1500} NC
                     </span>
                   </div>
                 </div>

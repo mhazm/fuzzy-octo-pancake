@@ -47,9 +47,20 @@ export async function createConvoy(formData: FormData) {
       plannedDistanceKm: rawData.plannedDistanceKm
         ? Number(rawData.plannedDistanceKm)
         : null,
+      gameplayType: rawData.gameplayType || "Convoy Lobby",
+      lobbyId: rawData.gameplayType === "Convoy Lobby" ? (rawData.lobbyId || "85568392935732469") : "",
+      serverName: rawData.gameplayType === "TruckersMP" ? rawData.serverName : "",
       partisipan: [],
       interested: [],
-      roadCaptain: "",
+      roadCaptain: rawData.roadCaptain || "",
+      sweeper: rawData.sweeper || "",
+      rewards: {
+        participantBase: Number(rawData.participantBaseReward) || (rawData.typeConvoy === "Bulanan" ? 2000 : 1000),
+        participantMultiplier: Number(rawData.participantMultiplierReward) || 150,
+        rc: Number(rawData.rcReward) || 1500,
+        sweeper: Number(rawData.sweeperReward) || 1500,
+        manager: Number(rawData.managerReward) || 3000,
+      },
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -173,7 +184,7 @@ export async function createConvoy(formData: FormData) {
                 entity_metadata: {
                   location: `Convoy: ${rawData.sourceCity} -> ${rawData.destinationCity}`,
                 },
-                description: `Konvoi Nismara: ${rawData.convoyName}. Cek Info detail di website.`,
+                description: `Konvoi Nismara: ${rawData.convoyName}.\n\nLink Konvoi: ${convoyUrl}`,
                 image: base64Image,
               }),
             },
@@ -353,7 +364,18 @@ export async function updateConvoy(convoyId: string, formData: FormData) {
           cargoName: rawData.cargoName,
           cargoMass: Number(rawData.cargoMass),
           plannedDistanceKm: Number(rawData.plannedDistanceKm),
+          gameplayType: rawData.gameplayType || "Convoy Lobby",
+          lobbyId: rawData.gameplayType === "Convoy Lobby" ? (rawData.lobbyId || "85568392935732469") : "",
+          serverName: rawData.gameplayType === "TruckersMP" ? rawData.serverName : "",
           roadCaptain: rawData.roadCaptain || "",
+          sweeper: rawData.sweeper || "",
+          rewards: {
+            participantBase: Number(rawData.participantBaseReward) || (rawData.typeConvoy === "Bulanan" ? 2000 : 1000),
+            participantMultiplier: Number(rawData.participantMultiplierReward) || 150,
+            rc: Number(rawData.rcReward) || 1500,
+            sweeper: Number(rawData.sweeperReward) || 1500,
+            manager: Number(rawData.managerReward) || 3000,
+          },
           updatedAt: new Date(),
         },
       },
@@ -426,18 +448,19 @@ export async function claimConvoyRewardAction(convoyId: string) {
   let totalReward = 0;
   const participantCount = convoy.partisipan?.length || 0;
 
-  if (convoy.typeConvoy === "Mingguan") {
-    totalReward += 1000 + (150 * participantCount); // 1000 Base + (150 * Player)
-  } else if (convoy.typeConvoy === "Bulanan") {
-    totalReward += 2000 + (250 * participantCount); // 2000 Base + (250 * Player)
-  }
+  const baseReward = convoy.rewards?.participantBase || (convoy.typeConvoy === "Bulanan" ? 2000 : 1000);
+  const multiplier = convoy.rewards?.participantMultiplier || 150;
+  totalReward += baseReward + (multiplier * participantCount);
 
   // Bonus Ekstra
   if (convoy.setBy === discordId) {
-    totalReward += 3000;
+    totalReward += convoy.rewards?.manager || 3000;
   }
   if (convoy.roadCaptain === discordId) {
-    totalReward += 1500;
+    totalReward += convoy.rewards?.rc || 1500;
+  }
+  if (convoy.sweeper === discordId) {
+    totalReward += convoy.rewards?.sweeper || 1500;
   }
 
   // Update Saldo NC Pemain
