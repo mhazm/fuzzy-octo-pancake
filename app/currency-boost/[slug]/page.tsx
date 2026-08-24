@@ -78,6 +78,8 @@ export default async function CurrencyBoostDetailPage({ params }: any) {
     type: event.type,
     gameId: event.gameId,
     isActive: event.isActive,
+    isScheduled: event.isScheduled,
+    startDate: event.startDate ? event.startDate.toISOString() : null,
     endAt:
       event.realEndAt || event.endAt
         ? (event.realEndAt || event.endAt).toISOString()

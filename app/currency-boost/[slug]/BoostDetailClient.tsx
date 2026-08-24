@@ -13,6 +13,7 @@ import {
   CheckCircle,
   XCircle,
   Coins,
+  Clock,
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -20,10 +21,45 @@ import UserBadges from "@/components/icons/UserBadges";
 
 export default function BoostDetailClient({ event }: { event: any }) {
   const [mounted, setMounted] = useState(false);
+  const [timeLeft, setTimeLeft] = useState("");
+
+  const isExpired = event.endAt ? new Date() > new Date(event.endAt) : false;
+  const isPending = event.isScheduled && new Date() < new Date(event.startDate);
+  const statusActive = event.isActive && !isExpired && !isPending;
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (!isPending || !event.startDate) return;
+
+    const interval = setInterval(() => {
+      const now = new Date().getTime();
+      const target = new Date(event.startDate).getTime();
+      const difference = target - now;
+
+      if (difference <= 0) {
+        window.location.reload(); 
+        clearInterval(interval);
+      } else {
+        const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+        
+        let text = "";
+        if (days > 0) text += `${days} hari `;
+        if (hours > 0) text += `${hours} jam `;
+        if (minutes > 0) text += `${minutes} menit `;
+        text += `${seconds} detik`;
+        
+        setTimeLeft(text);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isPending, event.startDate]);
 
   const formatDate = (dateString: string | null) => {
     if (!mounted || !dateString) return "-";
@@ -50,9 +86,6 @@ export default function BoostDetailClient({ event }: { event: any }) {
     if (type === "TruckersMP") return "TruckersMP";
     return "Semua Mode";
   };
-
-  const isExpired = event.endAt ? new Date() > new Date(event.endAt) : false;
-  const statusActive = event.isActive && !isExpired;
 
   const totalEventBonus = event.participants.reduce(
     (sum: number, p: any) => sum + (p.totalEarned || 0),
@@ -84,7 +117,11 @@ export default function BoostDetailClient({ event }: { event: any }) {
         <div className="relative z-10 p-8 md:p-12 lg:p-16 flex flex-col md:flex-row gap-8 items-start md:items-end justify-between">
           <div className="space-y-4 max-w-3xl">
             <div className="flex flex-wrap items-center gap-3">
-              {statusActive ? (
+              {isPending ? (
+                <span className="bg-orange-500/20 text-orange-400 border border-orange-500/30 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest flex items-center gap-2 shadow-[0_0_15px_rgba(249,115,22,0.3)]">
+                  <Clock size={14} /> Belum Dimulai
+                </span>
+              ) : statusActive ? (
                 <span className="bg-green-500/20 text-green-400 border border-green-500/30 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest flex items-center gap-2 shadow-[0_0_15px_rgba(34,197,94,0.3)]">
                   <CheckCircle size={14} /> Berjalan
                 </span>
@@ -141,14 +178,28 @@ export default function BoostDetailClient({ event }: { event: any }) {
             </h3>
 
             <div className="space-y-6 relative z-10">
-              <div>
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">
-                  Dimulai Pada
-                </p>
-                <p className="font-bold text-gray-200">
-                  {formatDate(event.setAt)}
-                </p>
-              </div>
+              {isPending ? (
+                <div>
+                  <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest mb-1 flex items-center gap-1">
+                    <Clock size={12} /> Dimulai Dalam
+                  </p>
+                  <p className="font-bold text-orange-200">
+                    {timeLeft || "Menghitung..."}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    ({formatDate(event.startDate)})
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">
+                    Dimulai Pada
+                  </p>
+                  <p className="font-bold text-gray-200">
+                    {formatDate(event.setAt)}
+                  </p>
+                </div>
+              )}
               <div className="h-px w-full bg-border" />
               <div>
                 <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">

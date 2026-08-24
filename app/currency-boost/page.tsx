@@ -15,10 +15,22 @@ export default async function EventsPage() {
     .find({ isActive: true })
     .toArray();
 
+  // 1.5 Ambil Event Pending
+  const pendingEvents = await db
+    .collection("ncevents")
+    .find({ isActive: false, isScheduled: true, startDate: { $gt: new Date() } })
+    .toArray();
+
   // 2. Ambil Riwayat Event (Collection: ncevents, isActive: false)
   const historyEvents = await db
     .collection("ncevents")
-    .find({ isActive: false })
+    .find({ 
+      isActive: false,
+      $or: [
+        { isScheduled: { $ne: true } }, 
+        { startDate: { $lte: new Date() } }
+      ]
+    })
     .sort({ endAt: -1 })
     .limit(6)
     .toArray();
@@ -115,6 +127,62 @@ export default async function EventsPage() {
             </div>
           )}
         </section>
+
+        {/* Section 1.5: Pending Events */}
+        {pendingEvents.length > 0 && (
+          <section className="mb-20">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="p-2 bg-orange-500/20 rounded-lg">
+                <Clock className="w-6 h-6 text-orange-400" />
+              </div>
+              <h2 className="text-2xl font-bold text-orange-400">Segera Dimulai</h2>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {pendingEvents.map((event) => (
+                <Link
+                  href={`/currency-boost/${event.slug}`}
+                  key={event._id.toString()}
+                  className="group relative glass-panel block rounded-3xl overflow-hidden border-orange-500/30 hover:border-orange-500 transition-all duration-500 shadow-2xl"
+                >
+                  <div className="relative h-64 w-full overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent z-10" />
+                    <img
+                      src={event.imageUrl}
+                      alt={event.nameEvent}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-60 grayscale"
+                    />
+                    <div className="absolute top-4 right-4 z-20 px-4 py-2 rounded-xl bg-orange-500 text-white font-bold shadow-lg flex items-center gap-2">
+                      <Clock className="w-4 h-4" /> Belum Dimulai
+                    </div>
+                  </div>
+
+                  <div className="p-8 relative z-20">
+                    <h3 className="text-2xl font-bold text-orange-400 mb-4 transition-colors">
+                      {event.nameEvent}
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4 mb-6">
+                      <div className="flex items-center gap-2 text-sm text-gray-400">
+                        <Calendar className="w-4 h-4 text-orange-400" />
+                        <span>Mulai: {formatDate(event.startDate)}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-400">
+                        <Clock className="w-4 h-4 text-orange-400" />
+                        <span>Selesai: {formatDate(event.endAt)}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between pt-4 border-t border-border/50">
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <User className="w-3 h-3" />
+                        <span>Organizer ID: {event.setBy}</span>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Section 2: History Events */}
         <section>
