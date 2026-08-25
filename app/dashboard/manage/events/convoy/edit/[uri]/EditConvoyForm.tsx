@@ -241,10 +241,6 @@ export default function EditConvoyForm({ convoy, participantUsers = [] }: { conv
                 />
               </div>
             )}
-                <option value="Mingguan">Rutin Mingguan</option>
-                <option value="Bulanan">Rutin Bulanan</option>
-              </select>
-            </div>
 
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-emerald-400 flex items-center gap-2 uppercase tracking-widest">
