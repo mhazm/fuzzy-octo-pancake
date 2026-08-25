@@ -37,6 +37,7 @@ interface Coupon {
 // 2. Fungsi Fetch Data dari MongoDB
 async function getCouponsData(): Promise<{
   active: Coupon[];
+  scheduled: Coupon[];
   history: Coupon[];
 }> {
   try {
@@ -50,10 +51,23 @@ async function getCouponsData(): Promise<{
       .sort({ startDate: -1 })
       .toArray();
 
+    // Fetch scheduled coupons
+    const scheduledRaw = await db
+      .collection("coupons")
+      .find({ isActive: false, isScheduled: true, startDate: { $gt: new Date() } })
+      .sort({ startDate: 1 })
+      .toArray();
+
     // Fetch history coupons (isActive: false)
     const historyRaw = await db
       .collection("coupons")
-      .find({ isActive: false })
+      .find({ 
+        isActive: false,
+        $or: [
+          { isScheduled: { $ne: true } },
+          { startDate: { $lte: new Date() } }
+        ]
+      })
       .sort({ endDate: -1 })
       .toArray();
 
@@ -99,10 +113,28 @@ async function getCouponsData(): Promise<{
       isActive: false,
     }));
 
-    return { active, history };
+    const scheduled: Coupon[] = scheduledRaw.map((doc) => ({
+      _id: doc._id.toString(),
+      guildId: doc.guildId,
+      nameCoupon: doc.nameCoupon,
+      codeCoupon: doc.codeCoupon,
+      type: doc.type,
+      minAmount: doc.minAmount,
+      maxAmount: doc.maxAmount,
+      totalNcClaimed: doc.totalNcClaimed || 0,
+      imageUrl: doc.imageUrl || null,
+      setBy: doc.setBy,
+      startDate: parseDate(doc.startDate),
+      endDate: parseDate(doc.endDate),
+      durationDays: doc.durationDays || 0,
+      driverClaims: doc.driverClaims || [],
+      isActive: false,
+    }));
+
+    return { active, scheduled, history };
   } catch (error) {
     console.error("Failed to fetch coupons:", error);
-    return { active: [], history: [] };
+    return { active: [], scheduled: [], history: [] };
   }
 }
 
@@ -120,7 +152,7 @@ const formatDate = (dateString: string | Date) => {
 // 5. Komponen Halaman Utama
 export default async function CouponsPage() {
   // Ambil data (Server-side)
-  const { active, history } = await getCouponsData();
+  const { active, scheduled, history } = await getCouponsData();
 
   return (
     <main className="min-h-screen py-16 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
@@ -171,6 +203,23 @@ export default async function CouponsPage() {
             </div>
           )}
         </section>
+
+        {/* Section Terjadwal */}
+        {scheduled.length > 0 && (
+          <section className="mb-20">
+            <div className="flex items-center gap-4 mb-8">
+              <h2 className="text-3xl font-bold text-foreground tracking-tight">
+                Kupon Terjadwal
+              </h2>
+              <div className="h-1 flex-1 bg-linear-to-r from-yellow-500/50 to-transparent rounded-full" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {scheduled.map((coupon) => (
+                <CouponClientCard key={coupon._id} coupon={coupon} />
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Section Riwayat Kupon */}
         <section>

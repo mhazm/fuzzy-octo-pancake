@@ -22,10 +22,20 @@ export default function EventManageUI({ active, history, manager }: any) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Format current date + 1 hour for default startDate
+  // Helper for WIB default datetime-local value
+  const getWIBDateTimeLocal = (date: Date) => {
+    const wibDate = new Date(date.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+    const year = wibDate.getFullYear();
+    const month = String(wibDate.getMonth() + 1).padStart(2, "0");
+    const day = String(wibDate.getDate()).padStart(2, "0");
+    const hours = String(wibDate.getHours()).padStart(2, "0");
+    const minutes = String(wibDate.getMinutes()).padStart(2, "0");
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
   const defaultStartDate = new Date();
   defaultStartDate.setHours(defaultStartDate.getHours() + 1);
-  const defaultStartDateString = defaultStartDate.toISOString().slice(0, 16);
+  const defaultStartDateString = getWIBDateTimeLocal(defaultStartDate);
 
   const [formData, setFormData] = useState({
     nameEvent: "",
@@ -111,6 +121,8 @@ export default function EventManageUI({ active, history, manager }: any) {
 
       await createNCEventAction({
         ...formData,
+        startDate: formData.isScheduled ? `${formData.startDate}+07:00` : new Date().toISOString(),
+        endAt: `${formData.endAt}+07:00`,
         imageUrl: finalImageUrl,
         setBy: manager.discordId,
         guildId: process.env.DISCORD_GUILD_ID || "863959415702028318",

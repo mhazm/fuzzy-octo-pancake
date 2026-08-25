@@ -14,15 +14,24 @@ export default function CreateCouponPage() {
 
   const [bannerFile, setBannerFile] = useState<File | null>(null);
   
-  // Format current date + 7 days for default datetime-local value
+  // Helper for WIB default datetime-local value
+  const getWIBDateTimeLocal = (date: Date) => {
+    const wibDate = new Date(date.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+    const year = wibDate.getFullYear();
+    const month = String(wibDate.getMonth() + 1).padStart(2, "0");
+    const day = String(wibDate.getDate()).padStart(2, "0");
+    const hours = String(wibDate.getHours()).padStart(2, "0");
+    const minutes = String(wibDate.getMinutes()).padStart(2, "0");
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
   const defaultDate = new Date();
   defaultDate.setDate(defaultDate.getDate() + 7);
-  const defaultDateString = defaultDate.toISOString().slice(0, 16);
+  const defaultDateString = getWIBDateTimeLocal(defaultDate);
 
-  // Format current date + 1 hour for default startDate
   const defaultStartDate = new Date();
   defaultStartDate.setHours(defaultStartDate.getHours() + 1);
-  const defaultStartDateString = defaultStartDate.toISOString().slice(0, 16);
+  const defaultStartDateString = getWIBDateTimeLocal(defaultStartDate);
 
   const [formData, setFormData] = useState({
     nameCoupon: "",
@@ -94,6 +103,8 @@ export default function CreateCouponPage() {
 
       const payload = {
         ...formData,
+        startDate: formData.isScheduled ? `${formData.startDate}+07:00` : new Date().toISOString(),
+        endDate: `${formData.endDate}+07:00`,
         imageUrl: finalImageUrl,
       };
 
