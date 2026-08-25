@@ -37,6 +37,10 @@ export default function EventManageUI({ active, history, manager }: any) {
   defaultStartDate.setHours(defaultStartDate.getHours() + 1);
   const defaultStartDateString = getWIBDateTimeLocal(defaultStartDate);
 
+  const defaultEndDate = new Date();
+  defaultEndDate.setDate(defaultEndDate.getDate() + 7);
+  const defaultEndDateString = getWIBDateTimeLocal(defaultEndDate);
+
   const [formData, setFormData] = useState({
     nameEvent: "",
     slug: "",
@@ -45,7 +49,7 @@ export default function EventManageUI({ active, history, manager }: any) {
     multiplier: "1.5",
     isScheduled: false,
     startDate: defaultStartDateString,
-    endAt: "",
+    endAt: defaultEndDateString,
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
 
@@ -386,14 +390,14 @@ export default function EventManageUI({ active, history, manager }: any) {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-accent-lilac uppercase ml-2">
-                    End Date
+                  <label className="text-[10px] font-black text-accent-lilac uppercase ml-2 flex items-center gap-2">
+                    <Calendar size={12} /> End Date
                   </label>
                   <input
-                    type="date"
+                    type="datetime-local"
                     required
                     value={formData.endAt}
-                    className="w-full bg-foreground/5 border border-border rounded-2xl p-4 text-(-primary-foreground) text-sm"
+                    className="w-full bg-foreground/5 border border-border rounded-2xl p-4 text-(-primary-foreground) text-sm font-bold"
                     onChange={(e) =>
                       setFormData({ ...formData, endAt: e.target.value })
                     }
