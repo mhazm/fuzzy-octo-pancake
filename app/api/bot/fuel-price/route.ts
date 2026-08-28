@@ -21,17 +21,17 @@ export async function POST(request: Request) {
 
     if (lastPriceData) {
       const lastPrice = lastPriceData.price;
-      
+
       // Maksimal naik atau turun sebesar 0.15 NC per jam (Volatilitas)
       const maxChange = 0.15;
-      
+
       // Random pergerakan dari -0.15 hingga +0.15
-      const change = (Math.random() * (maxChange * 2)) - maxChange;
-      
+      const change = Math.random() * (maxChange * 2) - maxChange;
+
       rawPrice = lastPrice + change;
-      
-      // Jaga agar harga tidak keluar dari batas kewajaran (0.10 - 1.00)
-      if (rawPrice > 1.0) rawPrice = 1.0;
+
+      // Jaga agar harga tidak keluar dari batas kewajaran (0.10 - 1.50)
+      if (rawPrice > 1.5) rawPrice = 1.5;
       if (rawPrice < 0.1) rawPrice = 0.1;
     }
 

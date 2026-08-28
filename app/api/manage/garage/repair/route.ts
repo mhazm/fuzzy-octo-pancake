@@ -47,16 +47,22 @@ export async function POST(request: Request) {
     
     for (const w of allWaiting) {
       const wFleet = await Fleet.findById(w.fleetId);
-      if (wFleet && wFleet.game_id === slot.game_id) {
-        if (slot.type === "vip") {
-          const wUser = await User.findOne({ discordId: w.discordId });
-          if (wUser?.nismaraplus?.status === true) {
+      if (wFleet) {
+        let wGameId = wFleet.game_id.toLowerCase();
+        if (wGameId === "1") wGameId = "ets2";
+        if (wGameId === "2") wGameId = "ats";
+        
+        if (wGameId === slot.game_id) {
+          if (slot.type === "vip") {
+            const wUser = await User.findOne({ discordId: w.discordId });
+            if (wUser?.nismaraplus?.status === true) {
+              matchedWaiting = w;
+              break;
+            }
+          } else {
             matchedWaiting = w;
             break;
           }
-        } else {
-          matchedWaiting = w;
-          break;
         }
       }
     }

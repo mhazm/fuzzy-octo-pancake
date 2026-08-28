@@ -37,21 +37,22 @@ export default async function SpecialContractsPage({
 
   const guildId = process.env.DISCORD_GUILD_ID;
 
-  // 1. Ambil Kontrak Aktif
+  // Ambil kontrak aktif (ongoing)
   const activeContracts = await db
     .collection("contracts")
-    .find({ guildId })
+    .find({ guildId, isActive: true })
     .toArray();
 
-  // 2. Ambil Riwayat Kontrak (dengan Pagination)
-  const totalHistoryCount = await db.collection("contracthistories").countDocuments({ guildId });
+  // Ambil history kontrak, dengan paginasi
+  const totalHistoryCount = await db.collection("contracts").countDocuments({ guildId, isActive: false });
   const totalPages = Math.ceil(totalHistoryCount / limit) || 1;
+  const offset = (page - 1) * limit;
 
   const historyContracts = await db
-    .collection("contracthistories")
-    .find({ guildId })
-    .sort({ closedAt: -1 })
-    .skip(skip)
+    .collection("contracts")
+    .find({ guildId, isActive: false })
+    .sort({ endAt: -1 })
+    .skip(offset)
     .limit(limit)
     .toArray();
 
@@ -237,7 +238,7 @@ export default async function SpecialContractsPage({
                             {getGameName(history.gameId)}
                           </span>
                           <span className="text-[10px] text-gray-500 font-medium">
-                            Selesai pada {formatDate(history.closedAt)}
+                            Selesai pada {formatDate(history.updatedAt || history.endAt)}
                           </span>
                         </div>
                         <h4 className="text-2xl font-extrabold text-foreground">

@@ -7,6 +7,7 @@ import "@/lib/models/FleetStore";
 import "@/lib/models/User";
 import "@/lib/models/FleetBrand";
 import User from "@/lib/models/User";
+import "@/lib/models/GarageSlot";
 import { sendPersonalNotification } from "@/lib/services/NotificationService";
 
 import dbConnect from "@/lib/mongoose";
@@ -127,17 +128,23 @@ export async function GET(request: Request) {
         
         for (const w of allWaiting) {
           const wFleet = await Fleet.findById(w.fleetId);
-          if (wFleet && wFleet.game_id === slotGameId) {
-            // Check VIP constraint: if slot is VIP, user must be VIP.
-            if (slotType === "vip") {
-              const wUser = await User.findOne({ discordId: w.discordId });
-              if (wUser?.nismaraplus?.status === true) {
+          if (wFleet) {
+            let wGameId = wFleet.game_id.toLowerCase();
+            if (wGameId === "1") wGameId = "ets2";
+            if (wGameId === "2") wGameId = "ats";
+            
+            if (wGameId === slotGameId) {
+              // Check VIP constraint: if slot is VIP, user must be VIP.
+              if (slotType === "vip") {
+                const wUser = await User.findOne({ discordId: w.discordId });
+                if (wUser?.nismaraplus?.status === true) {
+                  matchedWaiting = w;
+                  break;
+                }
+              } else {
                 matchedWaiting = w;
                 break;
               }
-            } else {
-              matchedWaiting = w;
-              break;
             }
           }
         }
@@ -167,7 +174,7 @@ export async function GET(request: Request) {
           await sendPersonalNotification(
             matchedWaiting.discordId,
             "Kendaraan Masuk Garasi 🛠️",
-            `Kendaraan Anda telah masuk ke Garasi Slot ${freedSlotId} dari daftar tunggu. Estimasi selesai pada ${endAt.toLocaleDateString("id-ID")}.`,
+            `Kendaraan Anda telah masuk ke Garasi Slot ${freedSlotId} dari daftar tunggu. Estimasi selesai pada ${endAt.toLocaleString("id-ID", { timeZone: "Asia/Jakarta", day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })} WIB.`,
             "info",
             `/dashboard/garage/fleet/${matchedWaiting.fleetId}`
           );
@@ -180,7 +187,7 @@ export async function GET(request: Request) {
                 "Content-Type": "application/json"
               },
               body: JSON.stringify({
-                content: `✅ Kendaraan Anda kini masuk ke Garasi Slot ${freedSlotId}. Estimasi selesai pada ${endAt.toLocaleDateString("id-ID")}.`
+                content: `✅ Kendaraan Anda kini masuk ke Garasi Slot ${freedSlotId}. Estimasi selesai pada **${endAt.toLocaleString("id-ID", { timeZone: "Asia/Jakarta", day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })} WIB**.`
               })
             }).catch(console.error);
           }

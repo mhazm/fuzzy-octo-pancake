@@ -36,10 +36,6 @@ export default async function ContractDetailPage(props: {
 
   let contract = await db.collection("contracts").findOne(query);
   if (!contract) {
-    contract = await db.collection("contracthistories").findOne(query);
-  }
-
-  if (!contract) {
     notFound();
   }
 

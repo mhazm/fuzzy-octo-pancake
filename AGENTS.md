@@ -153,3 +153,9 @@ if (!turnstileResult.success) {
 - **Dev mode behavior:** If `TURNSTILE_SECRET_KEY` is not set and `NODE_ENV === "development"`, `verifyTurnstileToken` skips verification and returns `{ success: true }`. This prevents blocking local development. Similarly, `TurnstileWidget` renders a placeholder when `NEXT_PUBLIC_TURNSTILE_SITE_KEY` is absent. **Do NOT use this behavior in production** — always set both keys in the production environment.
 - **Do NOT add Turnstile to admin/manager-only forms** (e.g., survey create/edit, event management). It is only needed for driver-facing public submission forms.
 - **Placement:** Always render `TurnstileWidget` **above** the submit button, after all form questions, so it's the last step before submission.
+
+## 12. Strict Verification (No Guessing)
+
+- **NEVER GUESS THE STRUCTURE:** Do not assume or guess the database schema, field names, or object structures.
+- **ALWAYS VERIFY FIRST:** Before writing queries, aggregation pipelines, or data migration scripts, you **MUST** verify the actual structure by either reading the Mongoose models (e.g., `lib/models/`) or inspecting actual documents in the database.
+- **Why?** Guessing field names (like assuming `endDate` instead of `endAt`) can cause catastrophic data inconsistencies, especially during migrations or when interacting with other services (like the Discord bot) that expect a strict schema.

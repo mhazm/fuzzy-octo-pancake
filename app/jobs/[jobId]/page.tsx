@@ -376,7 +376,12 @@ export default async function JobDetailPage(props: {
                         color="text-green-600 dark:text-green-400"
                       />
                       <BreakdownRow
-                        label={localJob?.isSpecialContract && localJob?.lockedCargoPrice ? `Special Contract (${localJob.lockedCargoPrice} NC / km)` : "Special Contract Bonus"}
+                        label={
+                          localJob?.isSpecialContract &&
+                          localJob?.lockedCargoPrice
+                            ? `Special Contract (${localJob.lockedCargoPrice} NC / km)`
+                            : "Special Contract Bonus"
+                        }
                         value={localJob?.nc?.special}
                         color="text-yellow-600 dark:text-yellow-400"
                       />
@@ -388,6 +393,11 @@ export default async function JobDetailPage(props: {
                       <BreakdownRow
                         label="Event Bonus"
                         value={localJob?.nc?.event}
+                        color="text-blue-600 dark:text-blue-400"
+                      />
+                      <BreakdownRow
+                        label="TruckersMP Bonus"
+                        value={localJob?.nc?.truckersmp}
                         color="text-blue-600 dark:text-blue-400"
                       />
                       <BreakdownRow
@@ -414,6 +424,11 @@ export default async function JobDetailPage(props: {
                       <BreakdownRow
                         label="Biaya Servis"
                         value={localJob?.ncCost?.service}
+                        isPenalty
+                      />
+                      <BreakdownRow
+                        label={`Pajak (${localJob?.tax?.rate * 100}%)`}
+                        value={localJob?.tax?.amount}
                         isPenalty
                       />
                       <BreakdownRow
@@ -731,11 +746,23 @@ export default async function JobDetailPage(props: {
                       href={`/cargo-market/${details.game_id}/${details.cargo_id}`}
                       className="text-primary hover:underline font-medium text-sm w-fit flex items-center gap-1"
                     >
-                      {details.cargo_name || "Tidak diketahui"} {localJob?.lockedCargoPrice && <span className="text-muted-foreground">({localJob.lockedCargoPrice} NC/km)</span>}
+                      {details.cargo_name || "Tidak diketahui"}{" "}
+                      {localJob?.lockedCargoPrice && (
+                        <span className="text-muted-foreground">
+                          ({localJob.lockedCargoPrice} NC/km)
+                        </span>
+                      )}
                     </Link>
                   ) : (
                     <span className="text-sm font-medium text-slate-800 dark:text-white flex items-center gap-1">
-                      {details?.cargo_name || localJob?.cargoName || "Tidak diketahui"} {localJob?.lockedCargoPrice && <span className="text-muted-foreground">({localJob.lockedCargoPrice} NC/km)</span>}
+                      {details?.cargo_name ||
+                        localJob?.cargoName ||
+                        "Tidak diketahui"}{" "}
+                      {localJob?.lockedCargoPrice && (
+                        <span className="text-muted-foreground">
+                          ({localJob.lockedCargoPrice} NC/km)
+                        </span>
+                      )}
                     </span>
                   )}
                 </div>

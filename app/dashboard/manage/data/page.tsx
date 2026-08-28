@@ -12,6 +12,8 @@ import {
   Store,
   Trophy,
   FileQuestion,
+  BookOpen,
+  MonitorPlay,
 } from "lucide-react";
 
 export const metadata = {
@@ -100,6 +102,28 @@ export default async function UserDataHub() {
       border: "border-indigo-500/20",
       hoverBorder: "group-hover:border-indigo-500/50",
       glow: "group-hover:bg-indigo-500/20",
+    },
+    {
+      name: "Knowledge Base",
+      desc: "Kelola Artikel untuk Knowledge Base Nismara.",
+      icon: BookOpen,
+      href: "/dashboard/manage/kb",
+      color: "text-indigo-400",
+      bg: "bg-indigo-500/10",
+      border: "border-indigo-500/20",
+      hoverBorder: "group-hover:border-indigo-500/50",
+      glow: "group-hover:bg-indigo-500/20",
+    },
+    {
+      name: "Global Popup Ad",
+      desc: "Atur iklan/pengumuman popup layar penuh.",
+      icon: MonitorPlay,
+      href: "/dashboard/manage/data/popup",
+      color: "text-emerald-400",
+      bg: "bg-emerald-500/10",
+      border: "border-emerald-500/20",
+      hoverBorder: "group-hover:border-emerald-500/50",
+      glow: "group-hover:bg-emerald-500/20",
     },
   ];
 

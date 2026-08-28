@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import ThemeToggle from "./ThemeToggle";
 import NotificationBell from "@/components/ui/NotificationBell";
@@ -15,6 +16,7 @@ import {
   ExternalLink,
   Home,
   Calendar,
+  CalendarDays,
   Briefcase,
   Truck,
   Users,
@@ -97,6 +99,10 @@ export default function NavbarClient({ session }: { session: any }) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  const pathname = usePathname();
+  const isDashboard = pathname?.startsWith("/dashboard");
+  const effectiveIsScrolled = isScrolled && !isDashboard;
+
   // Standard top-level items (excluding Home and Events which are custom handled)
   const mainMenuItems = [
     { name: "Convoy", href: "/convoy", icon: Truck },
@@ -118,9 +124,14 @@ export default function NavbarClient({ session }: { session: any }) {
     { name: "Community Goals", href: "/community-goals", icon: Target },
     { name: "TimeZone", href: "/timezone", icon: Gamepad2, separator: true },
     {
+      name: "Community Calendar",
+      href: "/calendar",
+      separator: true,
+      icon: CalendarDays,
+    },
+    {
       name: "Currency Boost",
       href: "/currency-boost",
-      separator: true,
       icon: TrendingUp,
     },
     {
@@ -138,17 +149,17 @@ export default function NavbarClient({ session }: { session: any }) {
       <div className="h-20 w-full shrink-0" />
 
       <header
-        className={`fixed left-0 right-0 z-50 flex justify-center pointer-events-none transition-all duration-500 ease-out ${isScrolled ? "top-4 px-4" : "top-0 px-0"}`}
+        className={`fixed left-0 right-0 z-50 flex justify-center pointer-events-none transition-all duration-500 ease-out ${effectiveIsScrolled ? "top-4 px-4" : "top-0 px-0"}`}
       >
         <div
           className={`flex items-center justify-between pointer-events-auto transition-all duration-500 ease-out ${
-            isScrolled
-              ? "w-max max-w-full rounded-full border border-border/50 bg-card/80 backdrop-blur-xl shadow-2xl h-16 px-4 sm:px-6 gap-8 lg:gap-16"
-              : "w-full max-w-full rounded-none border-b border-border/20 bg-background/50 backdrop-blur-md h-20 px-4 sm:px-8 lg:px-12"
+            effectiveIsScrolled
+              ? "w-max max-w-full rounded-full border border-border/50 bg-card/80 backdrop-blur-xl shadow-2xl h-16 px-4 sm:px-6 gap-8 xl:gap-16"
+              : "w-full max-w-full rounded-none border-b border-border/20 bg-background/50 backdrop-blur-md h-20 px-4 sm:px-8 xl:px-12"
           }`}
         >
           {/* LOGO & DESKTOP NAV */}
-          <div className="flex items-center gap-6 lg:gap-8">
+          <div className="flex items-center gap-6 xl:gap-8">
             <Link href="/" className="flex items-center gap-2 group shrink-0">
               <div className="w-8 h-8 bg-linear-to-br from-primary to-accent-sky rounded-lg flex items-center justify-center shadow-lg shadow-primary/20">
                 <NismaraIcon className="w-5 h-5" />
@@ -161,7 +172,7 @@ export default function NavbarClient({ session }: { session: any }) {
               </span>
             </Link>
 
-            <div className="hidden lg:flex items-center">
+            <div className="hidden xl:flex items-center">
               <NavigationMenu>
                 <NavigationMenuList className="gap-1">
                   {/* Home */}
@@ -259,6 +270,20 @@ export default function NavbarClient({ session }: { session: any }) {
                     <NavigationMenuContent>
                       <div className="flex w-[400px] gap-4 p-4 lg:w-[600px]">
                         <ul className="grid w-full lg:w-2/3 grid-cols-1 lg:grid-cols-2 gap-2">
+                          <li>
+                            <NavigationMenuLink
+                              render={<Link href="/calendar" />}
+                              className="flex h-full w-full flex-col items-start gap-1 p-3 bg-primary/10 rounded-md border-primary/20 border"
+                            >
+                              <div className="flex items-center gap-2 font-medium">
+                                <CalendarDays className="w-4 h-4 text-primary" />
+                                Community Calendar
+                              </div>
+                              <p className="text-xs text-muted-foreground line-clamp-2">
+                                Lihat jadwal lengkap seluruh kegiatan dan promo.
+                              </p>
+                            </NavigationMenuLink>
+                          </li>
                           <li>
                             <NavigationMenuLink
                               render={<Link href="/currency-boost" />}
@@ -702,7 +727,7 @@ export default function NavbarClient({ session }: { session: any }) {
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger
                 render={
-                  <Button variant="ghost" size="icon" className="lg:hidden" />
+                  <Button variant="ghost" size="icon" className="xl:hidden" />
                 }
               >
                 <Menu className="h-5 w-5" />

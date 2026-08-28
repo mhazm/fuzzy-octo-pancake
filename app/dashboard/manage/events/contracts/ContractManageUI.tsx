@@ -35,6 +35,8 @@ export default function ContractManageUI({ ongoing, history, manager }: any) {
     imageUrl: "",
     gameId: "1",
     endAt: "",
+    isScheduled: false,
+    startDate: "",
   });
 
   useEffect(() => {
@@ -174,12 +176,17 @@ export default function ContractManageUI({ ongoing, history, manager }: any) {
                     alt=""
                   />
                   <div className="absolute inset-0" />
-                  <div className="absolute top-4 right-6">
+                  <div className="absolute top-4 right-6 flex flex-col gap-2 items-end">
                     <span
                       className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/10 backdrop-blur-md ${game.bg} ${game.color}`}
                     >
                       {game.name}
                     </span>
+                    {c.isScheduled && new Date(c.startDate) > new Date() && (
+                      <span className="px-3 py-1 bg-amber-500/20 text-amber-500 border border-amber-500/30 rounded-full text-[9px] font-black uppercase tracking-widest backdrop-blur-md shadow-lg">
+                        Scheduled
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="p-8 space-y-5">
@@ -287,7 +294,7 @@ export default function ContractManageUI({ ongoing, history, manager }: any) {
                       </div>
                     </td>
                     <td className="px-8 py-5 text-right text-foreground/40 font-mono text-[10px] font-black">
-                      {formatDate(h.closedAt)}
+                      {formatDate(h.updatedAt || h.endAt)}
                     </td>
                   </tr>
                 );
@@ -370,6 +377,38 @@ export default function ContractManageUI({ ongoing, history, manager }: any) {
                     }
                   />
                 </div>
+              </div>
+
+              <div className="space-y-3 bg-foreground/5 p-4 rounded-2xl border border-border">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="w-5 h-5 accent-accent-lilac rounded-md border-border"
+                    checked={formData.isScheduled}
+                    onChange={(e) =>
+                      setFormData({ ...formData, isScheduled: e.target.checked })
+                    }
+                  />
+                  <span className="text-sm font-bold text-foreground">
+                    Jadwalkan Kontrak (Scheduled Contract)
+                  </span>
+                </label>
+                
+                {formData.isScheduled && (
+                  <div className="space-y-1 mt-2 animate-in slide-in-from-top-2 duration-300">
+                    <label className="text-[10px] font-black text-accent-lilac uppercase ml-2">
+                      Start Date (Deployment Time)
+                    </label>
+                    <input
+                      type="datetime-local"
+                      required
+                      className="w-full bg-background/50 border border-border rounded-2xl p-3 text-foreground text-sm outline-none focus:border-accent-lilac"
+                      onChange={(e) =>
+                        setFormData({ ...formData, startDate: e.target.value })
+                      }
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="space-y-1">

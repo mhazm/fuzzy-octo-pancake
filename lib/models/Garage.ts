@@ -23,6 +23,9 @@ const garageSchema = new mongoose.Schema(
     fuelCapacity: { type: Number, required: true, default: 2000 },
     fuelStock: { type: Number, required: true, default: 0 },
     fuelTankLevel: { type: Number, required: true, default: 1 },
+    safeboxLevel: { type: Number, required: true, default: 1 },
+    safeboxStock: { type: Number, required: true, default: 0 },
+    safebox_operational_cost: { type: Number, required: true, default: 0 },
     mechanics: {
       umum: {
         name: { type: String, default: null },

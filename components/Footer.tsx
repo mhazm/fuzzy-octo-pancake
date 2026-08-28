@@ -11,6 +11,7 @@ import {
   ChevronRight,
   ExternalLink,
   ShieldCheck,
+  Heart,
 } from "lucide-react";
 
 export default function Footer() {
@@ -51,6 +52,12 @@ export default function Footer() {
                 className="p-2.5 bg-white/5 rounded-xl text-foreground/40 hover:text-red-500 hover:bg-red-500/10 transition-all"
               >
                 <YoutubeIcon className="w-5 h-5" />
+              </a>
+              <a
+                href="/support-us"
+                className="p-2.5 bg-white/5 rounded-xl text-foreground/40 hover:text-pink-500 hover:bg-pink-500/10 transition-all"
+              >
+                <Heart className="w-5 h-5" />
               </a>
             </div>
           </div>
@@ -95,6 +102,7 @@ export default function Footer() {
                 { name: "Privacy Policy", href: "/privacy" },
                 { name: "Cookie Policy", href: "/cookies" },
                 { name: "Frequently Asked Questions", href: "/faq" },
+                { name: "Knowledge Base", href: "/kb" },
               ].map((link) => (
                 <li key={link.name}>
                   <Link

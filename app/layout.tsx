@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Noto_Sans, Geist } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -8,31 +8,34 @@ import { Providers } from "@/components/Providers";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import { cn } from "@/lib/utils";
 
-const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
-
-const roboto = Noto_Sans({ subsets: ["latin"] });
+const plusJakartaSans = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
   title: {
     template: "%s - Nismara Transport",
-    default: "Nismara Transport - Virtual Trucking & Logistics Company Indonesia",
+    default: "Nismara Transport - Virtual Trucking Company Indonesia",
   },
   description:
-    "Nismara Transport adalah perusahaan virtual trucking dan logistik Indonesia yang menghadirkan sistem pengiriman modern, komunitas driver profesional, event convoy, dan manajemen transportasi terintegrasi",
+    "Nismara Transport adalah perusahaan virtual trucking Indonesia pada game Euro Truck Simulator 2 dan American Simulator 2 yang menghadirkan sistem pengiriman modern, komunitas driver profesional, event convoy, dan manajemen transportasi terintegrasi",
   openGraph: {
     title: {
       template: "%s - Nismara Transport",
-      default: "Nismara Transport - Virtual Trucking & Logistics Company Indonesia",
+      default: "Nismara Transport - Virtual Trucking Company Indonesia",
     },
     description:
-      "Nismara Transport adalah perusahaan virtual trucking dan logistik Indonesia yang menghadirkan sistem pengiriman modern, komunitas driver profesional, event convoy, dan manajemen transportasi terintegrasi",
+      "Nismara Transport adalah perusahaan virtual trucking Indonesia pada game Euro Truck Simulator 2 dan American Simulator 2 yang menghadirkan sistem pengiriman modern, komunitas driver profesional, event convoy, dan manajemen transportasi terintegrasi",
     images: ["https://images.nismara.my.id/227300_188.jpg"],
   },
   keywords: [
     "Nismara Transport",
     "Nismara Group",
     "tmp vtc indonesia",
+    "vtc ets2 indonesia",
+    "vtc ats indonesia",
     "vtc tmp indonesia",
+    "nismara",
+    "nismara vtc",
+    "nismara tmp",
     "Virtual Trucking Company",
     "VTC Indonesia",
     "Truck Simulator Indonesia",
@@ -69,6 +72,8 @@ export const metadata: Metadata = {
   },
 };
 
+import GlobalPopupAd from "@/components/GlobalPopupAd";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -77,10 +82,10 @@ export default function RootLayout({
   return (
     <html
       lang="id"
-      className={cn("dark", "font-sans", geist.variable, "overflow-x-clip")}
+      className={cn("dark", "font-sans", plusJakartaSans.variable, "overflow-x-clip")}
     >
       <body
-        className={`${roboto.className} flex flex-col min-h-screen overflow-x-clip`}
+        className={`font-sans flex flex-col min-h-screen overflow-x-clip`}
       >
         {/* Navbar akan selalu ada di paling atas */}
         <Providers>
@@ -90,6 +95,7 @@ export default function RootLayout({
           </div>
           <Footer />
           <NismaraPlusAdPopup />
+          <GlobalPopupAd />
         </Providers>
       </body>
       {process.env.NEXT_PUBLIC_GA_ID && (

@@ -8,6 +8,7 @@ import Fleet from "@/lib/models/Fleet";
 import "@/lib/models/FleetStore";
 import "@/lib/models/User";
 import "@/lib/models/FleetBrand";
+import "@/lib/models/GarageSlot";
 import Transaction from "@/lib/models/Transaction";
 import { sendPersonalNotification } from "@/lib/services/NotificationService";
 import crypto from "crypto";
@@ -115,7 +116,12 @@ export async function POST(
     if (!fleet) {
       return NextResponse.json({ error: "Kendaraan (Fleet) tidak ditemukan" }, { status: 404 });
     }
-    const gameId = fleet.game_id; // "ets2" or "ats"
+    let gameId = fleet.game_id.toLowerCase();
+    
+    // Trucky API sometimes uses '1' for ETS2 and '2' for ATS
+    if (gameId === "1") gameId = "ets2";
+    if (gameId === "2") gameId = "ats";
+    
     const isVip = userObj?.nismaraplus?.status === true;
 
     // Find available slot based on game and VIP status
@@ -165,7 +171,7 @@ export async function POST(
       await sendPersonalNotification(
         order.discordId,
         "Servis Dimulai 🛠️",
-        `Permintaan servis disetujui. Kendaraan masuk ke Garasi Slot ${assignedSlot}. Estimasi selesai pada ${endAt.toLocaleDateString("id-ID")}.`,
+        `Permintaan servis disetujui. Kendaraan masuk ke Garasi Slot ${assignedSlot}. Estimasi selesai pada ${endAt.toLocaleString("id-ID", { timeZone: "Asia/Jakarta", day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })} WIB.`,
         "info",
         `/dashboard/garage/fleet/${updatedFleet?.get("id") || order.fleetId}`
       );
@@ -180,7 +186,7 @@ export async function POST(
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            content: `✅ Permintaan ${typeText} telah dikonfirmasi oleh <@${session.user.discordId}>. Kendaraan telah masuk ke Garasi Slot ${assignedSlot}. Estimasi selesai pada ${endAt.toLocaleDateString("id-ID")}.`
+            content: `✅ Permintaan ${typeText} telah dikonfirmasi oleh <@${session.user.discordId}>. Kendaraan telah masuk ke Garasi Slot ${assignedSlot}. Estimasi selesai pada **${endAt.toLocaleString("id-ID", { timeZone: "Asia/Jakarta", day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })} WIB**.`
           })
         });
       }

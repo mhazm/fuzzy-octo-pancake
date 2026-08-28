@@ -121,15 +121,11 @@ export async function POST(request: Request) {
       });
 
     } else if (coupon.type === "PENALTY_TICKET") {
-      await db.collection("penaltytickets").insertOne({
-        guildId: "863959415702028318",
-        discordId,
-        driverId,
-        couponId: coupon._id,
-        amount: rewardAmount,
-        status: "active",
-        createdAt: new Date(),
-      });
+      await db.collection("garages").updateOne(
+        { discordId },
+        { $inc: { safeboxStock: rewardAmount } },
+        { upsert: true }
+      );
     }
 
     return NextResponse.json({ 

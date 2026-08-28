@@ -19,11 +19,11 @@ export default async function ManageContractPage() {
 
   // Ambil Kontrak Berjalan dan Riwayat
   const [ongoingContracts, contractHistory] = await Promise.all([
-    db.collection("contracts").find({}).toArray(),
+    db.collection("contracts").find({ isActive: true }).toArray(),
     db
-      .collection("contracthistories")
-      .find({})
-      .sort({ closedAt: -1 })
+      .collection("contracts")
+      .find({ isActive: false })
+      .sort({ endAt: -1 })
       .toArray(),
   ]);
 

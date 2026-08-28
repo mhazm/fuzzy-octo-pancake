@@ -30,15 +30,15 @@ export default async function DashboardLayout({
 
   return (
     <>
-      <div className="flex flex-col lg:flex-row max-w-7xl mx-auto w-full min-h-[calc(100vh-4rem)]">
+      <div className="flex flex-col xl:flex-row w-full min-h-[calc(100vh-5rem)]">
         {/* Sidebar Navigation */}
         <DashboardSidebar userRole={session.user?.role} />
 
         {/* Main Content Area */}
-        <div className="flex-1 w-full overflow-x-hidden">{children}</div>
+        <div className="flex-1 w-full overflow-x-hidden bg-background p-4 md:p-6 lg:p-8 pb-24 xl:pb-8">
+          {children}
+        </div>
       </div>
-
-
     </>
   );
 }
