@@ -49,12 +49,20 @@ export default async function OnboardingPage() {
   const totalDriversCount = await db.collection("driverlinks").countDocuments();
   const totalConvoysCount = await db.collection("convoylobby").countDocuments();
   const completedContractsCount = await db
-    .collection("contracthistories")
-    .countDocuments();
+    .collection("contracts")
+    .countDocuments({ isActive: false });
 
-  const distanceAggregation = await db
-    .collection("contracthistories")
-    .aggregate([{ $group: { _id: null, total: { $sum: "$totalDistance" } } }])
+  const contractHistoriesAgg = await db
+    .collection("contracts")
+    .aggregate([
+      { $match: { isActive: false } },
+      {
+        $group: {
+          _id: null,
+          totalDistance: { $sum: "$totalDistance" },
+        },
+      },
+    ])
     .toArray();
 
   // Format stats for display
@@ -63,7 +71,7 @@ export default async function OnboardingPage() {
   const completedContracts =
     completedContractsCount > 0 ? completedContractsCount : 25;
   const totalDistance = (
-    distanceAggregation[0]?.total || 150000
+    contractHistoriesAgg[0]?.totalDistance || 150000
   ).toLocaleString("id-ID");
 
   // Fetch real users for testimonials

@@ -1,6 +1,7 @@
 import type { Metadata, ResolvingMetadata } from "next";
 import React from "react";
 import clientPromise from "@/lib/mongodb";
+import { notFound } from "next/navigation";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -32,7 +33,7 @@ export async function generateMetadata(
   // Mencari di koleksi utama atau history
   let contract = await db.collection("contracts").findOne(query);
   if (!contract) {
-    contract = await db.collection("contracthistories").findOne(query);
+    return notFound();
   }
 
   // Pengolahan data untuk Meta

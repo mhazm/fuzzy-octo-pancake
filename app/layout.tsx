@@ -72,6 +72,8 @@ export const metadata: Metadata = {
   },
 };
 
+import GlobalPopupAd from "@/components/GlobalPopupAd";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -93,6 +95,7 @@ export default function RootLayout({
           </div>
           <Footer />
           <NismaraPlusAdPopup />
+          <GlobalPopupAd />
         </Providers>
       </body>
       {process.env.NEXT_PUBLIC_GA_ID && (

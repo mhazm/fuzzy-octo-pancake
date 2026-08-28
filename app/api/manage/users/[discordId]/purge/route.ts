@@ -92,10 +92,10 @@ export async function DELETE(
       db.collection("validatedjobs").deleteMany({ userId: discordId }),
     ); // Validated Jobs
 
-    // Hapus footprint user dari array contributors di contracthistories (bukan menghapus seluruh contract-nya)
+    // Hapus footprint user dari array contributors di contracts (bukan menghapus seluruh contract-nya)
     deletePromises.push(
       db
-        .collection("contracthistories")
+        .collection("contracts")
         .updateMany(
           { "contributors.driverId": discordId },
           { $pull: { contributors: { driverId: discordId } as any } },

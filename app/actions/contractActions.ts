@@ -10,7 +10,7 @@ export async function createContractAction(formData: any) {
   const client = await clientPromise;
   const db = client.db();
 
-  const { contractName, companyName, imageUrl, gameId, endAt, setBy, guildId } =
+  const { contractName, companyName, imageUrl, gameId, endAt, setBy, guildId, isScheduled, startDate } =
     formData;
 
   await db.collection("contracts").insertOne({
@@ -25,7 +25,10 @@ export async function createContractAction(formData: any) {
     totalMass: 0,
     setBy, // Discord ID Manager
     setAt: new Date(),
-    endAt: new Date(endAt),
+    startDate: isScheduled ? new Date(`${startDate}+07:00`) : new Date(),
+    endAt: new Date(`${endAt}+07:00`),
+    isActive: true,
+    isScheduled: isScheduled || false,
     contributors: [],
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -130,8 +133,8 @@ export async function createContractAction(formData: any) {
           body: JSON.stringify({
             name: contractName,
             privacy_level: 2, // GUILD_ONLY
-            scheduled_start_time: new Date(Date.now() + 60000).toISOString(), // Harus di masa depan
-            scheduled_end_time: new Date(endAt).toISOString(),
+            scheduled_start_time: isScheduled ? new Date(`${startDate}+07:00`).toISOString() : new Date(Date.now() + 60000).toISOString(),
+            scheduled_end_time: new Date(`${endAt}+07:00`).toISOString(),
             entity_type: 3, // EXTERNAL
             entity_metadata: {
               location: `${companyName} - ${gameId === "1" ? "ETS2" : "ATS"}`,
@@ -171,7 +174,9 @@ export async function updateContractAction(
           companyName: rawData.companyName,
           imageUrl: rawData.imageUrl || null,
           gameId: rawData.gameId,
-          endAt: new Date(rawData.endAt as string),
+          isScheduled: rawData.isScheduled === "true",
+          startDate: rawData.isScheduled === "true" ? new Date(`${rawData.startDate}+07:00`) : new Date(),
+          endAt: new Date(`${rawData.endAt}+07:00`),
           updatedAt: new Date(),
         },
       },
