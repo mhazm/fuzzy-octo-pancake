@@ -58,7 +58,7 @@ export async function getUserPointsData(userId: string) {
     const client = await clientPromise;
     const db = client.db();
 
-    const [pointData, currencyData, historyData, guildSettings, isBooster, activeTicketsData] =
+    const [pointData, currencyData, historyData, guildSettings, isBooster, garageData] =
       await Promise.all([
         db.collection("points").findOne({ userId, guildId: GUILD_ID }),
         db.collection("currencies").findOne({ userId, guildId: GUILD_ID }),
@@ -70,11 +70,11 @@ export async function getUserPointsData(userId: string) {
           .toArray(),
         db.collection("guildsettings").findOne({ guildId: GUILD_ID }),
         checkDiscordBooster(userId), // Cek status booster paralel
-        db.collection("penaltytickets").find({ discordId: userId, status: "active", guildId: GUILD_ID }).toArray(),
+        db.collection("garages").findOne({ discordId: userId }),
       ]);
 
-    // Aggregate tickets
-    const totalPenaltyTickets = activeTicketsData.reduce((acc, ticket) => acc + (ticket.amount || 0), 0);
+    const totalPenaltyTickets = garageData?.safeboxStock || 0;
+    const maxPenaltyTickets = 10 + ((garageData?.safeboxLevel || 1) - 1) * 5;
 
     // Berikan diskon 500 NC jika user adalah booster
     const discountBooster = isBooster ? 500 : 0;
@@ -85,6 +85,7 @@ export async function getUserPointsData(userId: string) {
       pointPrice: guildSettings?.pointPrice || 3000,
       discountBooster,
       totalPenaltyTickets,
+      maxPenaltyTickets,
       history: historyData.map((item) => ({
         ...item,
         _id: item._id.toString(),
@@ -196,12 +197,15 @@ export async function getEligibleJobsForValidation(userId: string) {
     const db = client.db();
 
     // 1. Ambil semua jobId yang sudah pernah divalidasi oleh user ini dari koleksi validatedjobs
-    const validatedRecords = await db
-      .collection("validatedjobs")
-      .find({ userId: userId, guildId: GUILD_ID }, { projection: { jobId: 1 } })
-      .toArray();
+    const [validatedRecords, user] = await Promise.all([
+      db.collection("validatedjobs").find({ userId: userId, guildId: GUILD_ID }, { projection: { jobId: 1 } }).toArray(),
+      db.collection("users").findOne({ discordId: userId })
+    ]);
 
     const validatedIds = validatedRecords.map((rec) => rec.jobId);
+    
+    // Check Nismara Plus status
+    const isNismaraPlus = user?.nismaraplus?.status === true;
 
     // 2. Cari job yang layak, tapi TIDAK ada di daftar validatedIds
     const jobs = await db
@@ -209,27 +213,48 @@ export async function getEligibleJobsForValidation(userId: string) {
       .find({
         driverId: userId,
         jobStatus: "COMPLETED",
-        hardcoreRating: { $gt: 4 },
+        hardcoreRating: { $gte: 4 }, // hardcore rating 4 keatas
         jobId: { $nin: validatedIds }, // Pastikan jobId tidak ada di koleksi validatedjobs
-        isPointValidated: { $ne: true }, // Double check dengan flag baru
       })
       .sort({ completedAt: -1 })
       .toArray();
 
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
     return jobs
       .map((job) => {
         const distance = job.distanceKm || 0;
-        return {
-          _id: job._id.toString(),
-          jobId: job.jobId,
-          sourceCity: job.sourceCity,
-          destinationCity: job.destinationCity,
-          distance: distance,
-          hardcorePoints: job.hardcoreRating,
-          potentialReduction: Math.floor(distance / 500),
-        };
+        const jobDate = new Date(job.completedAt);
+        const isOld = jobDate < thirtyDaysAgo;
+
+        if (isOld) {
+          const ticketAmount = Math.floor(distance / (isNismaraPlus ? 800 : 1000));
+          return {
+            _id: job._id.toString(),
+            jobId: job.jobId,
+            sourceCity: job.sourceCity,
+            destinationCity: job.destinationCity,
+            distance: distance,
+            hardcorePoints: job.hardcoreRating,
+            type: "exchange",
+            ticketAmount: ticketAmount,
+          };
+        } else {
+          const potentialReduction = Math.floor(distance / 500);
+          return {
+            _id: job._id.toString(),
+            jobId: job.jobId,
+            sourceCity: job.sourceCity,
+            destinationCity: job.destinationCity,
+            distance: distance,
+            hardcorePoints: job.hardcoreRating,
+            type: "validation",
+            potentialReduction: potentialReduction,
+          };
+        }
       })
-      .filter((job) => job.potentialReduction > 0);
+      .filter((job) => (job.type === "exchange" ? (job.ticketAmount && job.ticketAmount > 0) : (job.potentialReduction && job.potentialReduction > 0)));
   } catch (error) {
     console.error("Gagal mengambil job layak validasi:", error);
     return [];
@@ -254,12 +279,21 @@ export async function validateJobPoints(jobId: string) {
 
     if (!job) throw new Error("Job tidak ditemukan.");
 
-    // 2. Cek apakah jobId ini sudah ada di koleksi validatedjobs (keamanan ganda)
+    // 2. Cek apakah jobId ini sudah ada di koleksi validatedjobs
     const alreadyValidated = await db
       .collection("validatedjobs")
       .findOne({ jobId: job.jobId });
-    if (alreadyValidated || job.isPointValidated) {
-      throw new Error("Job ini sudah pernah divalidasi sebelumnya.");
+    if (alreadyValidated) {
+      throw new Error("Job ini sudah pernah divalidasi atau ditukar tiket.");
+    }
+    
+    // Cek umur job
+    const jobDate = new Date(job.completedAt);
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    if (jobDate < thirtyDaysAgo) {
+      throw new Error("Job yang sudah lebih dari 30 hari tidak dapat divalidasi untuk pengurangan poin (silakan gunakan fitur Tukar Tiket).");
     }
 
     // 3. Ambil data poin penalti user saat ini
@@ -281,20 +315,14 @@ export async function validateJobPoints(jobId: string) {
 
     // 4. Jalankan operasi atomik
     await Promise.all([
-      // Update koleksi jobs (untuk fitur baru)
-      db
-        .collection("jobhistories")
-        .updateOne(
-          { _id: job._id },
-          { $set: { isPointValidated: true, validatedAt: new Date() } },
-        ),
-      // Insert ke koleksi validatedjobs (untuk menjaga kompatibilitas database lama kamu)
+      // Insert ke koleksi validatedjobs (sebagai tracker utama)
       db.collection("validatedjobs").insertOne({
         guildId: GUILD_ID,
         userId: userId,
         jobId: job.jobId,
         distance: distance,
         deducted: actualReduction,
+        type: "point_reduction",
         createdAt: new Date(),
         updatedAt: new Date(),
         __v: 0,
@@ -374,45 +402,12 @@ export async function usePenaltyTicket(amountToUse: number) {
     }
 
     try {
-      // Ambil semua tiket aktif
-      const activeTickets = await db.collection("penaltytickets").find({ 
-        discordId: userId, 
-        status: "active", 
-        guildId: GUILD_ID 
-      }).toArray();
+      // Cek Safebox
+      const garageData = await db.collection("garages").findOne({ discordId: userId });
+      const safeboxStock = garageData?.safeboxStock || 0;
       
-      const totalAvailable = activeTickets.reduce((acc, t) => acc + (t.amount || 0), 0);
-      
-      if (totalAvailable < amountToUse) {
-        throw new Error("Anda tidak memiliki cukup tiket penghapusan penalti.");
-      }
-
-      // Kalkulasi pengurangan antar dokumen
-      let remainingToDeduct = amountToUse;
-      const bulkOps = [];
-
-      for (const ticket of activeTickets) {
-        if (remainingToDeduct <= 0) break;
-
-        if (ticket.amount <= remainingToDeduct) {
-          // Habiskan tiket ini
-          bulkOps.push({
-            updateOne: {
-              filter: { _id: ticket._id },
-              update: { $set: { amount: 0, status: "used" } }
-            }
-          });
-          remainingToDeduct -= ticket.amount;
-        } else {
-          // Kurangi sebagian
-          bulkOps.push({
-            updateOne: {
-              filter: { _id: ticket._id },
-              update: { $set: { amount: ticket.amount - remainingToDeduct } }
-            }
-          });
-          remainingToDeduct = 0;
-        }
+      if (safeboxStock < amountToUse) {
+        throw new Error("Anda tidak memiliki cukup tiket penghapusan penalti di Safebox.");
       }
 
       // Lakukan pemotongan paralel
@@ -423,15 +418,15 @@ export async function usePenaltyTicket(amountToUse: number) {
           guildId: GUILD_ID,
           managerId: userId,
           points: amountToUse,
-          reason: `Penggunaan ${amountToUse} Tiket Hapus Penalti dari Kupon`,
+          reason: `Penggunaan ${amountToUse} Tiket Hapus Penalti dari Safebox`,
           type: "remove",
           createdAt: new Date(),
-        })
+        }),
+        db.collection("garages").updateOne(
+          { discordId: userId },
+          { $inc: { safeboxStock: -amountToUse } }
+        )
       ];
-
-      if (bulkOps.length > 0) {
-        operations.push(db.collection("penaltytickets").bulkWrite(bulkOps));
-      }
 
       await Promise.all(operations);
 
@@ -455,3 +450,104 @@ export async function usePenaltyTicket(amountToUse: number) {
     return { success: false, message: error.message || "Terjadi kesalahan sistem." };
   }
 }
+
+export async function exchangeJobForTickets(jobId: string) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.discordId) throw new Error("Unauthorized");
+
+    const userId = session.user.discordId;
+    const userName = session.user.name || userId;
+    const client = await clientPromise;
+    const db = client.db();
+
+    // 1. Ambil data job asli
+    const job = await db.collection("jobhistories").findOne({
+      _id: new ObjectId(jobId),
+      driverId: userId,
+    });
+
+    if (!job) throw new Error("Job tidak ditemukan.");
+
+    if (job.hardcoreRating < 4) {
+      throw new Error("Hardcore rating kurang dari 4.");
+    }
+
+    // 2. Cek apakah jobId ini sudah ada di koleksi validatedjobs
+    const alreadyValidated = await db
+      .collection("validatedjobs")
+      .findOne({ jobId: job.jobId });
+    if (alreadyValidated) {
+      throw new Error("Job ini sudah pernah divalidasi atau ditukar tiket.");
+    }
+
+    // Cek umur job (harus > 30 hari)
+    const jobDate = new Date(job.completedAt);
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    if (jobDate >= thirtyDaysAgo) {
+      throw new Error("Job belum berumur 30 hari. Silakan gunakan fitur Validasi Poin.");
+    }
+
+    // 3. Cek Nismara Plus & Kapasitas Safebox
+    const [user, garageData] = await Promise.all([
+      db.collection("users").findOne({ discordId: userId }),
+      db.collection("garages").findOne({ discordId: userId })
+    ]);
+    const isNismaraPlus = user?.nismaraplus?.status === true;
+
+    const distance = job.distanceKm || 0;
+    const ticketAmount = Math.floor(distance / (isNismaraPlus ? 800 : 1000));
+
+    if (ticketAmount <= 0)
+      throw new Error("Jarak job tidak mencukupi untuk ditukar menjadi tiket.");
+
+    // Hitung kapasitas Safebox
+    const safeboxStock = garageData?.safeboxStock || 0;
+    const safeboxLevel = garageData?.safeboxLevel || 1;
+    const maxCapacity = 10 + (safeboxLevel - 1) * 5;
+
+    if (safeboxStock + ticketAmount > maxCapacity) {
+      throw new Error(`Kapasitas Safebox Anda tidak mencukupi (Max: ${maxCapacity}). Harap upgrade Safebox di menu Garage terlebih dahulu.`);
+    }
+
+    // 4. Jalankan operasi atomik
+    await Promise.all([
+      db.collection("garages").updateOne(
+        { discordId: userId },
+        { $inc: { safeboxStock: ticketAmount } },
+        { upsert: true }
+      ),
+      db.collection("validatedjobs").insertOne({
+        guildId: GUILD_ID,
+        userId: userId,
+        jobId: job.jobId,
+        distance: distance,
+        ticketAmount: ticketAmount,
+        type: "ticket_exchange",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        __v: 0,
+      }),
+    ]);
+
+    await sendDiscordLog({
+      title: `🎟️ Tukar Job ke Tiket Penalti`,
+      color: 0xef4444, // Warna merah
+      fields: [
+        { name: "Driver", value: `<@${userId}> (${userName})`, inline: true },
+        { name: "Job ID", value: `#${job.jobId}`, inline: true },
+        { name: "Jarak", value: `${distance} km`, inline: true },
+        { name: "Tiket Didapat", value: `+${ticketAmount} Tiket`, inline: true },
+        { name: "Nismara Plus", value: isNismaraPlus ? "Aktif (Rate 800 KM)" : "Tidak Aktif (Rate 1000 KM)", inline: true },
+      ],
+    });
+
+    revalidatePath("/dashboard/points");
+    return { success: true, message: `Berhasil menukar job menjadi ${ticketAmount} Tiket Hapus Penalti!` };
+  } catch (error: any) {
+    return { success: false, message: error.message };
+  }
+}
+

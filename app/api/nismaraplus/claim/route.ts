@@ -99,16 +99,12 @@ export async function POST(request: Request) {
       __v: 0,
     });
 
-    // 3. Tambah Penalty Tickets
-    await db.collection("penaltytickets").insertOne({
-      guildId,
-      discordId,
-      driverId,
-      couponId: "NISMARAPLUS_MONTHLY",
-      amount: MONTHLY_TICKET_REWARD,
-      status: "active",
-      createdAt: now,
-    });
+    // 3. Tambah Penalty Tickets (Via Safebox)
+    await db.collection("garages").updateOne(
+      { discordId },
+      { $inc: { safeboxStock: MONTHLY_TICKET_REWARD } },
+      { upsert: true }
+    );
 
     return NextResponse.json({ 
       success: true, 

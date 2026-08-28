@@ -9,6 +9,8 @@ import { NismaraIcon } from "@/components/icons/SocialMedia";
 import NismaraPlusBadge from "@/components/icons/NismaraPlusBadge";
 import { getMonthlyStats } from "@/lib/trucky";
 import { redis } from "@/lib/redis";
+import UserBadges from "@/components/icons/UserBadges";
+import HomeEventsWrapper from "@/components/HomeEventsWrapper";
 import {
   ShieldCheck,
   Trophy,
@@ -53,6 +55,7 @@ export default async function Home() {
     monthlyStats,
     supporters,
     allDrivers,
+    top3Drivers,
   ] = await Promise.all([
     // All-time Stats
     db.collection("driverlinks").countDocuments({ guildId }),
@@ -131,6 +134,60 @@ export default async function Home() {
       
       await redis.setex("homepage:alldrivers", 3600, JSON.stringify(mapped));
       return mapped;
+    })(),
+    // Top 3 Drivers This Month
+    (async () => {
+      const cached = await redis.get("homepage:top3drivers_v2");
+      if (cached) return JSON.parse(cached);
+
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
+      const topDriversAgg = await db.collection("jobhistories").aggregate([
+        {
+          $match: {
+            guildId,
+            jobStatus: "COMPLETED",
+            completedAt: { $gte: startOfMonth }
+          }
+        },
+        {
+          $group: {
+            _id: "$driverId",
+            totalKm: { $sum: "$distanceKm" }
+          }
+        },
+        { $sort: { totalKm: -1 } },
+        { $limit: 3 }
+      ]).toArray();
+
+      if (!topDriversAgg.length) return [];
+
+      const driverIds = topDriversAgg.map((d: any) => d._id);
+      const usersData = await db.collection("users").find(
+        { discordId: { $in: driverIds } },
+        { projection: { discordId: 1, name: 1, image: 1, avatarUrl: 1, truckyId: 1, discordRole: 1, isBooster: 1, nismaraplus: 1, truckyRank: 1 } }
+      ).toArray();
+
+      const mappedTop3 = topDriversAgg.map((agg: any) => {
+        const user = usersData.find((u: any) => u.discordId === agg._id);
+        return {
+          discordId: agg._id,
+          totalKm: agg.totalKm,
+          name: user?.name || "Unknown Driver",
+          avatarUrl: user?.image || user?.avatarUrl || "https://ui-avatars.com/api/?name=Driver&background=random",
+          truckyId: user?.truckyId,
+          role: user?.discordRole,
+          isBooster: user?.isBooster,
+          isNismaraPlus: user?.nismaraplus?.status,
+          nismaraPlusStartedAt: user?.nismaraplus?.startedAt,
+          truckyRank: user?.truckyRank
+        };
+      });
+
+      await redis.setex("homepage:top3drivers_v2", 3600, JSON.stringify(mappedTop3));
+      return mappedTop3;
     })(),
   ]);
 
@@ -402,6 +459,80 @@ export default async function Home() {
               </div>
             </div>
           </div>
+
+          {/* Top 3 Drivers This Month */}
+          {top3Drivers && top3Drivers.length > 0 && (
+            <div className="pt-16 border-t border-border/20 mt-16">
+              <ScrollReveal direction="up" className="text-center mb-16">
+                <h3 className="text-3xl font-extrabold text-foreground tracking-tight">
+                  Driver Terjauh Bulan Ini
+                </h3>
+                <p className="text-muted-foreground mt-2">
+                  Pengemudi dengan total jarak tempuh tertinggi gabungan (ETS2 & ATS)
+                </p>
+              </ScrollReveal>
+              
+              <div className="grid grid-cols-1 md:flex md:flex-row md:justify-center md:items-end gap-6 md:gap-8 max-w-4xl mx-auto pb-8 pt-6">
+                {[1, 0, 2].map((idx) => {
+                  const driver = top3Drivers[idx];
+                  if (!driver) return null;
+                  
+                  const rank = idx + 1;
+                  const isFirst = rank === 1;
+                  
+                  const medals = [
+                    "bg-yellow-500/20 text-yellow-500 border-yellow-500/50 shadow-yellow-500/20", 
+                    "bg-gray-300/20 text-gray-300 border-gray-300/50 shadow-gray-300/20", 
+                    "bg-amber-700/20 text-amber-700 border-amber-700/50 shadow-amber-700/20"
+                  ];
+                  const medalColors = medals[idx] || "bg-primary/20 text-primary border-primary/50 shadow-primary/20";
+                  
+                  // Mengatur urutan DOM dan ketinggian podium (di layar desktop md:)
+                  const orderClass = rank === 1 ? "order-1 md:order-2" : rank === 2 ? "order-2 md:order-1" : "order-3 md:order-3";
+                  const heightClass = rank === 1 ? "md:h-[340px] md:-translate-y-8" : "md:h-[300px]";
+                  
+                  return (
+                    <ScrollReveal key={driver.discordId} delay={idx * 0.1} className={`w-full md:w-1/3 flex relative z-10 hover:z-50 ${orderClass}`}>
+                      <div className={`relative group w-full bg-card/60 backdrop-blur-md border border-border/50 rounded-3xl p-6 transition-all duration-300 hover:shadow-2xl hover:border-primary/50 flex flex-col items-center text-center ${heightClass} ${isFirst ? 'hover:shadow-yellow-500/10' : ''}`}>
+                        
+                        <div className={`absolute -top-6 w-12 h-12 rounded-full border-2 flex items-center justify-center font-black text-xl shadow-xl backdrop-blur-sm z-20 ${medalColors}`}>
+                          {rank}
+                        </div>
+                        
+                        <img 
+                          src={driver.avatarUrl} 
+                          alt={driver.name}
+                          className={`relative z-10 rounded-full object-cover ring-4 ring-background shadow-xl mb-4 transition-transform group-hover:scale-105 ${isFirst ? 'w-24 h-24 mt-2' : 'w-20 h-20'}`}
+                        />
+                        
+                        {/* Nama & Link Publik (Standar UI) */}
+                        <Link href={`/profile/${driver.truckyId}`} className="font-bold text-lg mb-1 line-clamp-1 group-hover:text-primary transition-colors hover:underline decoration-primary/50">
+                          {driver.name}
+                        </Link>
+                        
+                        {/* User Badges (Standar UI) */}
+                        <div className="flex flex-wrap items-center justify-center gap-1.5 mb-auto mt-1 z-10">
+                          <UserBadges 
+                            role={driver.role}
+                            isBooster={driver.isBooster}
+                            isNismaraPlus={driver.isNismaraPlus}
+                            nismaraPlusStartedAt={driver.nismaraPlusStartedAt}
+                            truckyRank={driver.truckyRank}
+                          />
+                        </div>
+
+                        {/* Skor Jarak Tempuh */}
+                        <div className="flex items-baseline gap-1 mt-4 pt-4 border-t border-border/30 w-full justify-center">
+                          <span className="text-3xl font-black text-gradient">{driver.totalKm.toLocaleString("id-ID")}</span>
+                          <span className="text-xs font-bold text-muted-foreground">KM</span>
+                        </div>
+                      </div>
+                    </ScrollReveal>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
@@ -646,6 +777,12 @@ export default async function Home() {
               <h2 className="text-4xl md:text-5xl font-extrabold text-foreground tracking-tight leading-tight">
                 Bertemu dengan <span className="text-accent-sky">Komunitas Kami</span>
               </h2>
+              <div className="mt-8">
+                <Link href="/drivers" className="inline-flex items-center justify-center rounded-xl bg-accent-sky/10 text-accent-sky border border-accent-sky/20 px-6 py-2.5 font-bold hover:bg-accent-sky hover:text-white transition-all gap-2 group">
+                  Lihat Semua Driver
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </Link>
+              </div>
             </ScrollReveal>
           </div>
           
@@ -733,6 +870,8 @@ export default async function Home() {
           </div>
         </section>
       )}
+
+      <HomeEventsWrapper />
 
       {/* 9. CALL TO ACTION (REGISTER) */}
       <section className="py-32 relative overflow-hidden">

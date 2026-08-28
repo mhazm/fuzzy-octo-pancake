@@ -15,10 +15,14 @@ import {
   Info,
   Ticket,
 } from "lucide-react";
-import { payPenaltyPoints, validateJobPoints, usePenaltyTicket } from "./actions";
+import {
+  payPenaltyPoints,
+  validateJobPoints,
+  usePenaltyTicket,
+  exchangeJobForTickets
+} from "./actions";
 import { Modal } from "@/components/ui/Modal";
 import { showAlert } from "@/lib/dialog";
-
 
 interface HistoryItem {
   _id: string;
@@ -33,7 +37,8 @@ interface PenaltyClientUIProps {
   totalNC: number;
   pointPrice: number;
   discountBooster: number;
-  totalPenaltyTickets: number; // Added prop for penalty tickets
+  totalPenaltyTickets: number;
+  maxPenaltyTickets: number;
   history: HistoryItem[];
   eligibleJobs: any[];
 }
@@ -43,7 +48,8 @@ export default function PenaltyClientUI({
   totalNC,
   pointPrice,
   discountBooster,
-  totalPenaltyTickets = 0,
+  totalPenaltyTickets,
+  maxPenaltyTickets,
   history,
   eligibleJobs,
 }: PenaltyClientUIProps) {
@@ -58,8 +64,16 @@ export default function PenaltyClientUI({
   const [currentPage, setCurrentPage] = useState(1);
   const [isTicketLoading, setIsTicketLoading] = useState(false);
   const [ticketAmountToUse, setTicketAmountToUse] = useState<number>(1);
-  const [validationModal, setValidationModal] = useState<{ open: boolean; jobId: string | null; potentialReduction: number }>({ open: false, jobId: null, potentialReduction: 0 });
-  const [validationMessage, setValidationMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
+  const [validationModal, setValidationModal] = useState<{
+    open: boolean;
+    jobId: string | null;
+    potentialReduction: number;
+    type: "validation" | "exchange";
+  }>({ open: false, jobId: null, potentialReduction: 0, type: "validation" });
+  const [validationMessage, setValidationMessage] = useState<{
+    text: string;
+    type: "success" | "error";
+  } | null>(null);
   const ITEMS_PER_PAGE = 5;
 
   const totalItems = eligibleJobs.length;
@@ -130,28 +144,43 @@ export default function PenaltyClientUI({
     setIsTicketLoading(false);
   };
 
-  const handleValidation = (jobId: string, potentialReduction: number) => {
+  const handleValidation = (jobId: string, potentialReduction: number, type: "validation" | "exchange" = "validation") => {
     setValidationMessage(null);
-    setValidationModal({ open: true, jobId, potentialReduction });
+    setValidationModal({ open: true, jobId, potentialReduction, type });
   };
 
   const confirmValidation = async () => {
     if (!validationModal.jobId) return;
     setIsLoading(true);
     setValidationMessage(null);
-    const res = await validateJobPoints(validationModal.jobId);
+    
+    let res;
+    if (validationModal.type === "validation") {
+      res = await validateJobPoints(validationModal.jobId);
+    } else {
+      res = await exchangeJobForTickets(validationModal.jobId);
+    }
+    
     if (res.success) {
       setValidationMessage({ text: res.message, type: "success" });
       if (currentJobs.length === 1 && currentPage > 1) {
         setCurrentPage(currentPage - 1);
       }
-      setTimeout(() => setValidationModal({ open: false, jobId: null, potentialReduction: 0 }), 2000);
+      setTimeout(
+        () =>
+          setValidationModal({
+            open: false,
+            jobId: null,
+            potentialReduction: 0,
+            type: "validation"
+          }),
+        2000,
+      );
     } else {
       setValidationMessage({ text: res.message, type: "error" });
     }
     setIsLoading(false);
   };
-
 
   return (
     <div className="space-y-8">
@@ -195,22 +224,26 @@ export default function PenaltyClientUI({
           </p>
         </div>
 
-        <div className="rounded-xl border bg-card text-card-foreground shadow p-6 border-red-500/20 relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-            <Ticket className="w-24 h-24 text-red-500" />
+        <div className="bg-card border border-border/50 rounded-2xl p-6 relative overflow-hidden shadow-lg group hover:border-primary/50 transition-colors">
+          <div className="absolute right-0 top-0 p-6 opacity-10 rotate-12 group-hover:rotate-0 group-hover:scale-110 transition-transform duration-500">
+            <Ticket size={120} />
           </div>
-          <div className="flex flex-row items-center justify-between pb-2 space-y-0 relative z-10">
-            <h3 className="tracking-tight text-sm font-medium">
+          <div className="relative z-10">
+            <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold mb-1">
               Tiket Hapus Penalti
-            </h3>
-            <Ticket className="h-4 w-4 text-red-500" />
+            </p>
+            <div className="flex items-baseline gap-2 mb-4">
+              <span className="text-4xl font-black">{totalPenaltyTickets}</span>
+              <span className="text-muted-foreground font-bold">/ {maxPenaltyTickets} Tiket (Safebox)</span>
+            </div>
+            
+            <a
+              href="/dashboard/garage"
+              className="inline-flex w-full py-2 items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/10 text-primary hover:bg-primary/20 transition-colors font-bold text-xs uppercase tracking-wider"
+            >
+              Upgrade Safebox
+            </a>
           </div>
-          <div className="text-4xl font-bold text-red-500 relative z-10">
-            {totalPenaltyTickets}
-          </div>
-          <p className="text-xs text-muted-foreground mt-1 relative z-10">
-            Digunakan untuk validasi Job
-          </p>
         </div>
 
         <div className="rounded-xl border bg-card text-card-foreground shadow p-6 flex flex-col justify-center items-center">
@@ -257,7 +290,7 @@ export default function PenaltyClientUI({
           <div className="absolute -right-10 -top-10 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-500">
             <Ticket className="w-48 h-48 text-red-500 rotate-12" />
           </div>
-          
+
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
             <div className="flex items-center gap-2">
               <Ticket className="w-5 h-5 text-red-500" />
@@ -266,11 +299,13 @@ export default function PenaltyClientUI({
                 TOTAL: {totalPenaltyTickets} TIKET
               </span>
             </div>
-            
+
             <div className="flex items-center gap-3">
               <div className="flex items-center bg-background border border-border/50 rounded-xl overflow-hidden">
                 <button
-                  onClick={() => setTicketAmountToUse(p => Math.max(1, p - 1))}
+                  onClick={() =>
+                    setTicketAmountToUse((p) => Math.max(1, p - 1))
+                  }
                   disabled={ticketAmountToUse <= 1 || isTicketLoading}
                   className="px-3 py-3 hover:bg-muted disabled:opacity-50 transition-colors border-r border-border/50 text-foreground"
                 >
@@ -283,14 +318,30 @@ export default function PenaltyClientUI({
                   value={ticketAmountToUse}
                   onChange={(e) => {
                     const val = parseInt(e.target.value) || 1;
-                    setTicketAmountToUse(Math.min(Math.max(1, val), Math.min(totalPenaltyTickets, initialPoints)));
+                    setTicketAmountToUse(
+                      Math.min(
+                        Math.max(1, val),
+                        Math.min(totalPenaltyTickets, initialPoints),
+                      ),
+                    );
                   }}
                   disabled={isTicketLoading}
                   className="w-16 text-center bg-transparent py-3 font-bold text-sm focus:outline-none"
                 />
                 <button
-                  onClick={() => setTicketAmountToUse(p => Math.min(Math.min(totalPenaltyTickets, initialPoints), p + 1))}
-                  disabled={ticketAmountToUse >= Math.min(totalPenaltyTickets, initialPoints) || isTicketLoading}
+                  onClick={() =>
+                    setTicketAmountToUse((p) =>
+                      Math.min(
+                        Math.min(totalPenaltyTickets, initialPoints),
+                        p + 1,
+                      ),
+                    )
+                  }
+                  disabled={
+                    ticketAmountToUse >=
+                      Math.min(totalPenaltyTickets, initialPoints) ||
+                    isTicketLoading
+                  }
                   className="px-3 py-3 hover:bg-muted disabled:opacity-50 transition-colors border-l border-border/50 text-foreground"
                 >
                   +
@@ -298,15 +349,23 @@ export default function PenaltyClientUI({
               </div>
               <button
                 onClick={handleUseTicket}
-                disabled={isTicketLoading || initialPoints === 0 || ticketAmountToUse > initialPoints || ticketAmountToUse > totalPenaltyTickets}
+                disabled={
+                  isTicketLoading ||
+                  initialPoints === 0 ||
+                  ticketAmountToUse > initialPoints ||
+                  ticketAmountToUse > totalPenaltyTickets
+                }
                 className="px-6 py-3 bg-red-500 hover:bg-red-600 text-white text-sm font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-red-500/20 active:scale-95 whitespace-nowrap"
               >
-                {isTicketLoading ? "Memproses..." : `Gunakan Tiket (-${ticketAmountToUse} Poin)`}
+                {isTicketLoading
+                  ? "Memproses..."
+                  : `Gunakan Tiket (-${ticketAmountToUse} Poin)`}
               </button>
             </div>
           </div>
           <p className="text-sm text-muted-foreground mt-4 max-w-2xl relative z-10">
-            Gunakan tiket ini untuk menghapus poin penalti secara instan tanpa perlu memvalidasi job hardcore atau menggunakan Nismara Coin.
+            Gunakan tiket ini untuk menghapus poin penalti secara instan tanpa
+            perlu memvalidasi job hardcore atau menggunakan Nismara Coin.
           </p>
         </div>
       )}
@@ -315,7 +374,7 @@ export default function PenaltyClientUI({
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-2">
             <Zap className="w-5 h-5 text-primary" />
-            <h3 className="font-bold">Validasi Job Hardcore</h3>
+            <h3 className="font-bold">Job Hardcore (Validasi & Tukar Tiket)</h3>
             <span className="ml-2 px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-black rounded-full">
               TOTAL: {totalItems} JOBS
             </span>
@@ -363,16 +422,30 @@ export default function PenaltyClientUI({
                     #{job.jobId} - {job.sourceCity} ke {job.destinationCity}
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    {job.distance} km • {job.hardcorePoints} HC Points
+                    {job.distance} km • {job.hardcorePoints} HC Points {job.type === "exchange" ? "• (> 30 Hari)" : ""}
                   </p>
                 </div>
-                <button
-                  onClick={() => handleValidation(job._id, job.potentialReduction)}
-                  disabled={isLoading}
-                  className="px-4 py-2 bg-primary text-white md:bg-primary/10 md:text-primary md:hover:bg-primary md:hover:text-white rounded-lg text-xs font-black transition-all"
-                >
-                  VALIDASI (-{job.potentialReduction})
-                </button>
+                {job.type === "validation" ? (
+                  <button
+                    onClick={() =>
+                      handleValidation(job._id, job.potentialReduction, "validation")
+                    }
+                    disabled={isLoading}
+                    className="px-4 py-2 bg-primary text-white md:bg-primary/10 md:text-primary md:hover:bg-primary md:hover:text-white rounded-lg text-xs font-black transition-all"
+                  >
+                    VALIDASI (-{job.potentialReduction})
+                  </button>
+                ) : (
+                  <button
+                    onClick={() =>
+                      handleValidation(job._id, job.ticketAmount, "exchange")
+                    }
+                    disabled={isLoading}
+                    className="px-4 py-2 bg-red-500 text-white md:bg-red-500/10 md:text-red-500 md:hover:bg-red-500 md:hover:text-white rounded-lg text-xs font-black transition-all whitespace-nowrap"
+                  >
+                    TUKAR TIKET (+{job.ticketAmount})
+                  </button>
+                )}
               </div>
             ))}
 
@@ -585,25 +658,53 @@ export default function PenaltyClientUI({
         </div>
       )}
 
-
       {/* Validation Modal */}
       <Modal
         isOpen={validationModal.open}
-        onClose={() => !isLoading && setValidationModal({ open: false, jobId: null, potentialReduction: 0 })}
-        title="Konfirmasi Validasi"
+        onClose={() =>
+          !isLoading &&
+          setValidationModal({
+            open: false,
+            jobId: null,
+            potentialReduction: 0,
+            type: "validation"
+          })
+        }
+        title={validationModal.type === "validation" ? "Konfirmasi Validasi" : "Konfirmasi Tukar Tiket"}
       >
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Apakah Anda yakin ingin memvalidasi job ini? Poin penalti Anda akan berkurang sebanyak <strong>{validationModal.potentialReduction}</strong> poin.
+            {validationModal.type === "validation" ? (
+              <>
+                Apakah Anda yakin ingin memvalidasi job ini? Poin penalti Anda akan
+                berkurang sebanyak{" "}
+                <strong>{validationModal.potentialReduction}</strong> poin.
+              </>
+            ) : (
+              <>
+                Apakah Anda yakin ingin menukar job lama ini? Anda akan
+                mendapatkan tambahan{" "}
+                <strong>{validationModal.potentialReduction}</strong> tiket hapus penalti.
+              </>
+            )}
           </p>
           {validationMessage && (
-            <div className={`p-3 rounded-md text-sm ${validationMessage.type === "success" ? "bg-green-500/10 text-green-600" : "bg-red-500/10 text-red-600"}`}>
+            <div
+              className={`p-3 rounded-md text-sm ${validationMessage.type === "success" ? "bg-green-500/10 text-green-600" : "bg-red-500/10 text-red-600"}`}
+            >
               {validationMessage.text}
             </div>
           )}
           <div className="flex gap-2 justify-end mt-4">
             <button
-              onClick={() => setValidationModal({ open: false, jobId: null, potentialReduction: 0 })}
+              onClick={() =>
+                setValidationModal({
+                  open: false,
+                  jobId: null,
+                  potentialReduction: 0,
+                  type: "validation"
+                })
+              }
               disabled={isLoading}
               className="px-4 py-2 rounded-md hover:bg-secondary text-sm font-medium transition-colors"
             >

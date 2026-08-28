@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { useState, useEffect } from "react"; // Tambahkan useEffect
-import { updateProfile, getUserSettings } from "./actions"; // Import getUserSettings
+import { updateProfile, getUserSettings, syncTruckersMP, unlinkTruckersMP } from "./actions"; // Import actions TMP
 import {
   User,
   Image as ImageIcon,
@@ -13,10 +13,12 @@ import {
   CheckCircle,
   UploadCloud,
   ShieldAlert,
-  Link,
+  Link as LinkIcon,
+  Truck,
+  Unlink
 } from "lucide-react";
 import { compressImageToWebP } from "@/lib/imageUtils";
-import { showAlert } from "@/lib/dialog";
+import { showAlert, showConfirm } from "@/lib/dialog";
 
 
 export default function SettingsClient() {
@@ -27,6 +29,12 @@ export default function SettingsClient() {
     type: "success" | "error";
     text: string;
   } | null>(null);
+
+  // TMP State
+  const [tmpId, setTmpId] = useState("");
+  const [isTmpDriver, setIsTmpDriver] = useState(false);
+  const [truckersmpId, setTruckersmpId] = useState<string | null>(null);
+  const [isSyncingTmp, setIsSyncingTmp] = useState(false);
 
   // State form
   const [name, setName] = useState("");
@@ -73,6 +81,8 @@ export default function SettingsClient() {
             website: data.social_media.website || "",
           });
         }
+        setTruckersmpId(data.truckersmpId || null);
+        setIsTmpDriver(data.isTmpDriver || false);
       }
       setIsInitialLoading(false);
     }
@@ -81,6 +91,46 @@ export default function SettingsClient() {
       fetchInitialData();
     }
   }, [session]);
+
+  const handleSyncTmp = async () => {
+    if (!tmpId || isNaN(Number(tmpId))) {
+      showAlert("ID TruckersMP harus berupa angka yang valid.");
+      return;
+    }
+    
+    setIsSyncingTmp(true);
+    const result = await syncTruckersMP(Number(tmpId));
+    setIsSyncingTmp(false);
+    
+    if (result.success) {
+      showAlert(result.message);
+      setTruckersmpId(tmpId);
+      setIsTmpDriver(true);
+    } else {
+      if (result.message.includes("Ticket") || result.message.includes("bukan member")) {
+         setMessage({ type: "error", text: result.message + " Buka menu Ticket untuk meminta bantuan." });
+      } else {
+         showAlert(result.message, "error");
+      }
+    }
+  };
+
+  const handleUnlinkTmp = async () => {
+    if (await showConfirm("Yakin ingin memutus tautan akun TruckersMP Anda?")) {
+      setIsSyncingTmp(true);
+      const result = await unlinkTruckersMP();
+      setIsSyncingTmp(false);
+      
+      if (result.success) {
+        showAlert(result.message);
+        setTruckersmpId(null);
+        setIsTmpDriver(false);
+        setTmpId("");
+      } else {
+        showAlert(result.message, "error");
+      }
+    }
+  };
 
   const uploadToR2 = async (file: File, folder: string) => {
     const res = await fetch("/api/upload", {
@@ -249,6 +299,59 @@ export default function SettingsClient() {
           </div>
         )}
 
+        {/* TRUCKERSMP SYNC CARD */}
+        <div className="glass-panel p-8 rounded-[2rem] border-border/50 mb-8 bg-black/40">
+          <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+            <Truck className="text-orange-500 w-5 h-5" /> Integrasi TruckersMP
+          </h2>
+          <p className="text-sm text-gray-400 mb-6">
+            Tautkan akun TruckersMP Anda untuk memastikan Anda adalah anggota Nismara Transport.
+          </p>
+          
+          {truckersmpId ? (
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl bg-green-500/10 border border-green-500/20">
+              <div className="flex items-center gap-3">
+                <CheckCircle className="w-6 h-6 text-green-500 shrink-0" />
+                <div>
+                  <h3 className="font-bold text-green-400">Akun Terhubung</h3>
+                  <p className="text-sm text-green-500/80">ID TruckersMP: {truckersmpId}</p>
+                </div>
+              </div>
+              <button 
+                onClick={handleUnlinkTmp}
+                disabled={isSyncingTmp}
+                className="px-4 py-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/20 font-bold rounded-xl text-sm transition-colors flex items-center gap-2"
+              >
+                {isSyncingTmp ? <Loader2 className="w-4 h-4 animate-spin" /> : <Unlink className="w-4 h-4" />}
+                Putuskan Tautan
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col sm:flex-row items-end gap-4">
+              <div className="w-full space-y-2">
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                  ID TruckersMP
+                </label>
+                <input
+                  type="text"
+                  value={tmpId}
+                  onChange={(e) => setTmpId(e.target.value)}
+                  placeholder="Contoh: 5610149"
+                  className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-orange-500 transition-colors"
+                />
+              </div>
+              <button 
+                onClick={handleSyncTmp}
+                disabled={isSyncingTmp || !tmpId}
+                className="w-full sm:w-auto px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl transition-all disabled:opacity-50 whitespace-nowrap flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20"
+              >
+                {isSyncingTmp ? <Loader2 className="w-5 h-5 animate-spin" /> : <Truck className="w-5 h-5" />}
+                Sinkronisasi
+              </button>
+            </div>
+          )}
+        </div>
+
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -389,7 +492,7 @@ export default function SettingsClient() {
 
           <div className="glass-panel p-8 rounded-[2rem] border-border/50">
             <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
-              <Link className="text-pink-500 w-5 h-5" /> Tautan Sosial Media
+              <LinkIcon className="text-pink-500 w-5 h-5" /> Tautan Sosial Media
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {[

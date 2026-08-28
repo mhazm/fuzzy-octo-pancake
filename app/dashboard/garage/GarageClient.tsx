@@ -10,6 +10,7 @@ import {
   AlertTriangle,
   AlertCircle,
   Fuel,
+  Ticket,
 } from "lucide-react";
 import Link from "next/link";
 import HireMechanicModal from "./HireMechanicModal";
@@ -33,6 +34,10 @@ export default function GarageClient({ garage }: GarageClientProps) {
   const [fuelUpgradeModalOpen, setFuelUpgradeModalOpen] = useState(false);
   const [fuelDowngradeModalOpen, setFuelDowngradeModalOpen] = useState(false);
   const [fuelMultiplier, setFuelMultiplier] = useState(1);
+
+  const [safeboxUpgradeModalOpen, setSafeboxUpgradeModalOpen] = useState(false);
+  const [safeboxDowngradeModalOpen, setSafeboxDowngradeModalOpen] = useState(false);
+  const [safeboxMultiplier, setSafeboxMultiplier] = useState(1);
 
   const [loadingAction, setLoadingAction] = useState(false);
   
@@ -66,6 +71,32 @@ export default function GarageClient({ garage }: GarageClientProps) {
     for (let i = currentSlot + 1; i <= targetSlot; i++) {
       const tier = Math.floor((i - 1) / 3);
       cost += 1000 + (tier * 500);
+    }
+    return cost;
+  };
+
+  const calculateSafeboxOpCostDelta = (startLevel: number, multiplier: number, isUpgrade: boolean) => {
+    let cost = 0;
+    if (isUpgrade) {
+      for (let i = startLevel + 1; i <= startLevel + multiplier; i++) {
+        const tier = Math.floor((i - 2) / 3);
+        cost += 250 + (tier * 150);
+      }
+    } else {
+      for (let i = startLevel; i > startLevel - multiplier; i--) {
+        const tier = Math.floor((i - 2) / 3);
+        cost += 250 + (tier * 150);
+      }
+    }
+    return cost;
+  };
+
+  const calculateSafeboxUpgradeCost = (currentLevel: number, multiplier: number) => {
+    let cost = 0;
+    const newLevel = currentLevel + multiplier;
+    for (let i = currentLevel + 1; i <= newLevel; i++) {
+      const tier = Math.floor((i - 2) / 3);
+      cost += 1000 + Math.max(0, tier * 200);
     }
     return cost;
   };
@@ -158,6 +189,46 @@ export default function GarageClient({ garage }: GarageClientProps) {
     }
   };
 
+  const handleSafeboxUpgrade = async () => {
+    setLoadingAction(true);
+    try {
+      const res = await fetch("/api/garage/safebox-upgrade", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ multiplier: safeboxMultiplier }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal meng-upgrade safebox");
+      window.location.reload();
+    } catch (err: any) {
+      await showAlert(err.message);
+    } finally {
+      setLoadingAction(false);
+      setSafeboxUpgradeModalOpen(false);
+      setSafeboxMultiplier(1);
+    }
+  };
+
+  const handleSafeboxDowngrade = async () => {
+    setLoadingAction(true);
+    try {
+      const res = await fetch("/api/garage/safebox-downgrade", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ multiplier: safeboxMultiplier }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal men-downgrade safebox");
+      window.location.reload();
+    } catch (err: any) {
+      await showAlert(err.message);
+    } finally {
+      setLoadingAction(false);
+      setSafeboxDowngradeModalOpen(false);
+      setSafeboxMultiplier(1);
+    }
+  };
+
   const handleFire = async (specialty: MechanicSpecialty) => {
     if (
       !await showConfirm(
@@ -222,6 +293,7 @@ export default function GarageClient({ garage }: GarageClientProps) {
     garage.fleetSlot > 1 && garage.fleetSlot > garage.fleetSlotUsed;
 
   const canDowngradeFuel = (garage.fuelTankLevel || 1) > 1;
+  const canDowngradeSafebox = (garage.safeboxLevel || 1) > 1;
 
   // Dynamic Upgrade Calculation
   const deficit = Math.max(0, (garage.fleetSlotUsed || 0) - garage.fleetSlot);
@@ -301,7 +373,7 @@ export default function GarageClient({ garage }: GarageClientProps) {
       </div>
 
       {/* OVERVIEW CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-card border border-border/50 rounded-2xl p-6 relative overflow-hidden shadow-lg group hover:border-primary/50 transition-colors">
           <div className="absolute right-0 top-0 p-6 opacity-10 rotate-12 group-hover:rotate-0 group-hover:scale-110 transition-transform duration-500">
             <Warehouse size={120} />
@@ -360,12 +432,19 @@ export default function GarageClient({ garage }: GarageClientProps) {
                 </span>
                 <span className="text-muted-foreground font-bold">NC</span>
               </div>
-              <div className="text-[10px] font-medium text-muted-foreground mt-1">
-                (Fleet:{" "}
-                {(garage.fleet_operational_cost || 0).toLocaleString("id-ID")}{" "}
-                NC | Fuel Tank:{" "}
-                {(garage.fuel_operational_cost || 0).toLocaleString("id-ID")}{" "}
-                NC)
+              <div className="flex flex-col gap-0.5 mt-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                <div className="flex justify-between items-center border-b border-border/30 pb-0.5">
+                  <span>Fleet</span>
+                  <span className="text-foreground">{(garage.fleet_operational_cost || 0).toLocaleString("id-ID")} NC</span>
+                </div>
+                <div className="flex justify-between items-center border-b border-border/30 pb-0.5">
+                  <span>Fuel Tank</span>
+                  <span className="text-foreground">{(garage.fuel_operational_cost || 0).toLocaleString("id-ID")} NC</span>
+                </div>
+                <div className="flex justify-between items-center pb-0.5">
+                  <span>Safebox</span>
+                  <span className="text-foreground">{(garage.safebox_operational_cost || 0).toLocaleString("id-ID")} NC</span>
+                </div>
               </div>
             </div>
             {garage.next_payment_date ? (
@@ -432,6 +511,60 @@ export default function GarageClient({ garage }: GarageClientProps) {
             </div>
           </div>
         </div>
+
+        {/* SAFEBOX CARD */}
+        <div className="bg-card border border-border/50 rounded-2xl p-6 relative overflow-hidden shadow-lg group hover:border-primary/50 transition-colors">
+          <div className="absolute right-0 top-0 p-6 opacity-10 rotate-12 group-hover:rotate-0 group-hover:scale-110 transition-transform duration-500">
+            <Ticket size={120} />
+          </div>
+          <div className="relative z-10">
+            <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold mb-1 flex items-center gap-2">
+              <Ticket size={12} className="text-red-500" />
+              Safebox Tiket
+            </p>
+            <div className="flex items-baseline gap-2 mb-2">
+              <span className="text-3xl font-black text-red-500">
+                {garage.safeboxStock || 0}
+              </span>
+              <span className="text-muted-foreground font-bold">
+                / {10 + ((garage.safeboxLevel || 1) - 1) * 5} Tiket
+              </span>
+            </div>
+            
+            <div className="flex flex-col gap-1 text-[10px] uppercase font-bold text-muted-foreground">
+               <div className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-red-500" /> Tersedia: {garage.safeboxStock || 0} Tiket</div>
+            </div>
+            
+            <div className="flex flex-col mt-3 pt-3 border-t border-border/50 space-y-3">
+              <p className="text-[10px] text-muted-foreground uppercase font-medium">
+                Safebox Level {garage.safeboxLevel || 1}
+              </p>
+              <div className="flex gap-2">
+                <Link
+                  href="/dashboard/points"
+                  className="flex-1 text-center text-[10px] font-bold uppercase tracking-widest bg-emerald-500/10 text-emerald-500 px-2 py-1.5 rounded-lg hover:bg-emerald-500/20 transition-colors"
+                >
+                  Tukar Job
+                </Link>
+                {canDowngradeSafebox && (
+                  <button
+                    onClick={() => setSafeboxDowngradeModalOpen(true)}
+                    className="flex-1 text-[10px] font-bold uppercase tracking-widest bg-amber-500/10 text-amber-500 px-2 py-1.5 rounded-lg hover:bg-amber-500/20 transition-colors"
+                  >
+                    Downgrade
+                  </button>
+                )}
+                <button
+                  onClick={() => setSafeboxUpgradeModalOpen(true)}
+                  className="flex-1 text-[10px] font-bold uppercase tracking-widest bg-red-500/10 text-red-500 px-2 py-1.5 rounded-lg hover:bg-red-500/20 transition-colors"
+                >
+                  Upgrade
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
 
       {/* MECHANICS SECTION */}
@@ -822,6 +955,152 @@ export default function GarageClient({ garage }: GarageClientProps) {
             <button
               onClick={handleFuelDowngrade}
               className="flex-1 py-3 rounded-xl font-bold text-sm bg-red-500 text-white hover:bg-red-600 transition-all uppercase tracking-wider shadow-lg hover:shadow-red-500/25 disabled:opacity-50 flex justify-center items-center gap-2"
+              disabled={loadingAction}
+            >
+              {loadingAction ? "Memproses..." : "Lanjutkan Downgrade"}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Safebox Upgrade Modal */}
+      <Modal
+        isOpen={safeboxUpgradeModalOpen}
+        onClose={() => !loadingAction && setSafeboxUpgradeModalOpen(false)}
+        title="Upgrade Safebox Tiket"
+      >
+        <div className="space-y-6">
+          <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex gap-3 text-red-500">
+            <Ticket className="shrink-0" />
+            <div>
+              <p className="font-bold text-sm mb-1">
+                Konfirmasi Upgrade Safebox
+              </p>
+              <p className="text-xs opacity-90 leading-relaxed">
+                Setiap 1 Level (+5 Tiket) membutuhkan biaya dasar 1.000 NC, dan naik 200 NC setiap 3 level. 
+                Biaya operasional bertambah secara progresif (+150 NC setiap 3 level).
+              </p>
+            </div>
+          </div>
+
+          <div>
+             <label className="block text-xs font-bold mb-2 text-muted-foreground">Jumlah Level Upgrade (Multiplier)</label>
+             <Input 
+                type="number" 
+                min={1} 
+                value={safeboxMultiplier} 
+                onChange={(e) => setSafeboxMultiplier(Math.max(1, parseInt(e.target.value) || 1))} 
+             />
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex justify-between text-sm items-center py-2 border-b border-border/50">
+              <span className="text-muted-foreground">Level / Kapasitas Baru</span>
+              <span className="font-bold">
+                Lvl {(garage.safeboxLevel || 1) + safeboxMultiplier} ( {10 + (((garage.safeboxLevel || 1) + safeboxMultiplier) - 1) * 5} Tiket )
+              </span>
+            </div>
+            <div className="flex justify-between text-sm items-center py-2 border-b border-border/50">
+              <span className="text-muted-foreground">
+                Tambahan Ops. Cost / Bulan
+              </span>
+              <span className="font-bold text-red-400">+{calculateSafeboxOpCostDelta(garage.safeboxLevel || 1, safeboxMultiplier, true)} NC</span>
+            </div>
+            <div className="flex justify-between text-sm items-center py-2 border-b border-border/50">
+              <span className="text-muted-foreground">Total Biaya Upgrade</span>
+              <span className="font-black text-lg text-red-500">{calculateSafeboxUpgradeCost(garage.safeboxLevel || 1, safeboxMultiplier).toLocaleString("id-ID")} NC</span>
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={() => { setSafeboxUpgradeModalOpen(false); setSafeboxMultiplier(1); }}
+              className="flex-1 py-3 rounded-xl font-bold text-sm bg-card border border-border hover:bg-muted transition-colors uppercase tracking-wider"
+              disabled={loadingAction}
+            >
+              Batal
+            </button>
+            <button
+              onClick={handleSafeboxUpgrade}
+              className="flex-1 py-3 rounded-xl font-bold text-sm bg-red-500 text-white hover:bg-red-600 transition-all uppercase tracking-wider shadow-lg hover:shadow-red-500/25 disabled:opacity-50 flex justify-center items-center gap-2"
+              disabled={loadingAction}
+            >
+              {loadingAction ? "Memproses..." : "Bayar & Upgrade"}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Safebox Downgrade Modal */}
+      <Modal
+        isOpen={safeboxDowngradeModalOpen}
+        onClose={() => !loadingAction && setSafeboxDowngradeModalOpen(false)}
+        title="Downgrade Safebox Tiket"
+      >
+        <div className="space-y-6">
+          <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 flex gap-3 text-amber-500">
+            <AlertCircle className="shrink-0" />
+            <div>
+              <p className="font-bold text-sm mb-1">
+                Konfirmasi Downgrade Safebox
+              </p>
+              <p className="text-xs opacity-90 leading-relaxed">
+                Tindakan ini membutuhkan biaya <strong>500 NC</strong> per level.
+              </p>
+              <p className="text-xs font-bold mt-2 text-amber-500">
+                Pastikan stok tiket penalti Anda tidak melebihi kapasitas baru, atau
+                downgrade akan dibatalkan otomatis oleh sistem.
+              </p>
+            </div>
+          </div>
+
+          <div>
+             <label className="block text-xs font-bold mb-2 text-muted-foreground">Jumlah Level Downgrade (Maks: {Math.max(1, (garage.safeboxLevel || 1) - 1)})</label>
+             <Input 
+                type="number" 
+                min={1} 
+                max={Math.max(1, (garage.safeboxLevel || 1) - 1)}
+                value={safeboxMultiplier} 
+                onChange={(e) => {
+                  const max = Math.max(1, (garage.safeboxLevel || 1) - 1);
+                  let val = parseInt(e.target.value) || 1;
+                  if (val > max) val = max;
+                  if (val < 1) val = 1;
+                  setSafeboxMultiplier(val);
+                }} 
+             />
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex justify-between text-sm items-center py-2 border-b border-border/50">
+              <span className="text-muted-foreground">Level / Kapasitas Baru</span>
+              <span className="font-bold">
+                Lvl {(garage.safeboxLevel || 1) - safeboxMultiplier} ( {10 + (((garage.safeboxLevel || 1) - safeboxMultiplier) - 1) * 5} Tiket )
+              </span>
+            </div>
+            <div className="flex justify-between text-sm items-center py-2 border-b border-border/50">
+              <span className="text-muted-foreground">
+                Pengurangan Ops. Cost / Bulan
+              </span>
+              <span className="font-bold text-emerald-500">-{calculateSafeboxOpCostDelta(garage.safeboxLevel || 1, safeboxMultiplier, false)} NC</span>
+            </div>
+            <div className="flex justify-between text-sm items-center py-2 border-b border-border/50">
+              <span className="text-muted-foreground">Total Biaya Downgrade</span>
+              <span className="font-black text-lg text-amber-500">{(500 * safeboxMultiplier).toLocaleString("id-ID")} NC</span>
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={() => { setSafeboxDowngradeModalOpen(false); setSafeboxMultiplier(1); }}
+              className="flex-1 py-3 rounded-xl font-bold text-sm bg-card border border-border hover:bg-muted transition-colors uppercase tracking-wider"
+              disabled={loadingAction}
+            >
+              Batal
+            </button>
+            <button
+              onClick={handleSafeboxDowngrade}
+              className="flex-1 py-3 rounded-xl font-bold text-sm bg-amber-500 text-white hover:bg-amber-600 transition-all uppercase tracking-wider shadow-lg hover:shadow-amber-500/25 disabled:opacity-50 flex justify-center items-center gap-2"
               disabled={loadingAction}
             >
               {loadingAction ? "Memproses..." : "Lanjutkan Downgrade"}

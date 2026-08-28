@@ -12,6 +12,7 @@ import {
   Store,
   Trophy,
   FileQuestion,
+  BookOpen,
 } from "lucide-react";
 
 export const metadata = {
@@ -95,6 +96,17 @@ export default async function UserDataHub() {
       desc: "Kelola bank soal ujian kelayakan untuk intern.",
       icon: FileQuestion,
       href: "/dashboard/manage/data/quiz",
+      color: "text-indigo-400",
+      bg: "bg-indigo-500/10",
+      border: "border-indigo-500/20",
+      hoverBorder: "group-hover:border-indigo-500/50",
+      glow: "group-hover:bg-indigo-500/20",
+    },
+    {
+      name: "Knowledge Base",
+      desc: "Kelola Artikel untuk Knowledge Base Nismara.",
+      icon: BookOpen,
+      href: "/dashboard/manage/kb",
       color: "text-indigo-400",
       bg: "bg-indigo-500/10",
       border: "border-indigo-500/20",

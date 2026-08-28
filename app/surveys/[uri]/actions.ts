@@ -130,19 +130,11 @@ export async function submitSurveyAction(data: SubmitSurveyInput) {
 
         rewardMessage = `Berhasil! Jawaban tersimpan & kamu mendapatkan ${rewardAmount} Nismara Coin!`;
       } else if (rewardType === "PENALTY_TICKET") {
-        const driverId = session.user.driverData?.truckyId
-          ? String(session.user.driverData.truckyId)
-          : String(discordId);
-          
-        await db.collection("penaltytickets").insertOne({
-          guildId: guildId,
-          discordId: discordId,
-          driverId: driverId,
-          surveyId: survey._id,
-          amount: rewardAmount,
-          status: "active",
-          createdAt: new Date(),
-        });
+        await db.collection("garages").updateOne(
+          { discordId: discordId },
+          { $inc: { safeboxStock: rewardAmount } },
+          { upsert: true }
+        );
         
         rewardMessage = `Berhasil! Jawaban tersimpan & kamu mendapatkan ${rewardAmount} Tiket Hapus Penalti!`;
       }

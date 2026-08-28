@@ -1,6 +1,6 @@
 import "dotenv/config";
-import clientPromise from "./lib/mongodb";
-import { getCompanyMembersMap } from "./lib/trucky";
+import clientPromise from "../lib/mongodb";
+import { getCompanyMembersMap } from "../lib/trucky";
 import mongoose from "mongoose";
 
 async function run() {
@@ -14,9 +14,12 @@ async function run() {
     const driverLinks = await db.collection("driverlinks").find({}).toArray();
     const discordIdsFromLinks = driverLinks.map((d) => d.userId);
 
-    const webUsers = await db.collection("users").find({
-      discordId: { $in: discordIdsFromLinks }
-    }).toArray();
+    const webUsers = await db
+      .collection("users")
+      .find({
+        discordId: { $in: discordIdsFromLinks },
+      })
+      .toArray();
 
     const internUsers: any[] = [];
     const internDiscordIds: string[] = [];
@@ -33,23 +36,34 @@ async function run() {
 
       const finalRole = truckyRoleName || webUser?.truckyRole || "";
 
-      if (finalRole.toLowerCase().includes("intern") || finalRole.toLowerCase().includes("magang")) {
+      if (
+        finalRole.toLowerCase().includes("intern") ||
+        finalRole.toLowerCase().includes("magang")
+      ) {
         internUsers.push({
           _id: webUser?._id || new mongoose.Types.ObjectId(),
           discordId: link.userId,
-          name: webUser?.name || link.truckyName || truckyData.username || "Unknown Driver",
+          name:
+            webUser?.name ||
+            link.truckyName ||
+            truckyData.username ||
+            "Unknown Driver",
         });
         internDiscordIds.push(link.userId);
       }
     });
 
     const discordIds = internDiscordIds;
-    
+
     // Test the fleet query which failed before
-    const validUserIds = internUsers.filter(u => u._id).map(u => u._id);
-    const fleets = validUserIds.length > 0 
-      ? await db.collection("fleets").find({ owner: { $in: validUserIds } }).toArray()
-      : [];
+    const validUserIds = internUsers.filter((u) => u._id).map((u) => u._id);
+    const fleets =
+      validUserIds.length > 0
+        ? await db
+            .collection("fleets")
+            .find({ owner: { $in: validUserIds } })
+            .toArray()
+        : [];
 
     console.log("fleets length:", fleets.length);
     console.log("Success!");

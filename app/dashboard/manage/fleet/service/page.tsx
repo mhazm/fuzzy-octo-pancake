@@ -19,8 +19,6 @@ export const metadata = {
   title: "Manage Service",
 };
 
-
-
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const fetchCache = "force-no-store";
@@ -79,7 +77,11 @@ export default async function ManagerServicePage() {
         new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
     );
 
-  const rawSlots = await db.collection("garageslots").find().sort({ slotId: 1 }).toArray();
+  const rawSlots = await db
+    .collection("garageslots")
+    .find()
+    .sort({ slotId: 1 })
+    .toArray();
   const slots = JSON.parse(JSON.stringify(rawSlots));
 
   return (
@@ -90,8 +92,8 @@ export default async function ManagerServicePage() {
             <div className="p-2 bg-accent-sky/10 rounded-lg text-accent-sky">
               <Settings size={24} />
             </div>
-            <h1 className="text-4xl font-black text-foreground tracking-tighter uppercase italic">
-              Bengkel & Garasi
+            <h1 className="text-4xl font-black text-foreground tracking-tighter uppercase">
+              Bengkel Servis
             </h1>
           </div>
           <p className="text-foreground/40 font-bold uppercase text-[10px] tracking-[0.2em] ml-11">
@@ -121,7 +123,9 @@ export default async function ManagerServicePage() {
                     <h3 className="font-black uppercase tracking-widest text-lg flex items-center gap-2">
                       {slot.slotId}
                       {slot.type === "vip" && (
-                        <span className="text-[10px] bg-amber-500/20 text-amber-500 px-2 py-0.5 rounded-full font-bold uppercase">VIP</span>
+                        <span className="text-[10px] bg-amber-500/20 text-amber-500 px-2 py-0.5 rounded-full font-bold uppercase">
+                          VIP
+                        </span>
                       )}
                     </h3>
                     <div className="flex flex-col items-end gap-1">
@@ -153,7 +157,9 @@ export default async function ManagerServicePage() {
                               {order.fleetInfo?.fleet_number}
                             </p>
                             {order.type === "replace" && (
-                              <span className="text-[10px] bg-red-500 text-white px-2 py-0.5 rounded-full font-black uppercase tracking-widest animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.5)]">Ganti Part</span>
+                              <span className="text-[10px] bg-red-500 text-white px-2 py-0.5 rounded-full font-black uppercase tracking-widest animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.5)]">
+                                Ganti Part
+                              </span>
                             )}
                           </div>
                           <p className="text-xs text-muted-foreground uppercase tracking-widest">
@@ -175,36 +181,46 @@ export default async function ManagerServicePage() {
                           <span className="text-muted-foreground uppercase font-bold">
                             Selesai Pada
                           </span>
-                          <span className="font-black text-amber-500">
-                            {new Date(order.maintenanceEndAt).toLocaleDateString(
-                              "id-ID",
-                            )}
+                          <span className="font-black text-amber-500 text-right">
+                            {new Date(
+                              order.maintenanceEndAt,
+                            ).toLocaleString("id-ID", { timeZone: "Asia/Jakarta", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })} WIB
                           </span>
                         </div>
                       </div>
                     </div>
                   ) : (
                     <div className="py-8 text-center text-muted-foreground">
-                      <Wrench size={32} className={`mx-auto mb-3 opacity-20 ${slot.status === 'broken' ? 'text-rose-500' : ''}`} />
+                      <Wrench
+                        size={32}
+                        className={`mx-auto mb-3 opacity-20 ${slot.status === "broken" ? "text-rose-500" : ""}`}
+                      />
                       <p className="text-xs font-bold uppercase tracking-widest">
-                        {slot.status === "broken" ? "Menunggu Perbaikan" : "Siap Menerima Kendaraan"}
+                        {slot.status === "broken"
+                          ? "Menunggu Perbaikan"
+                          : "Siap Menerima Kendaraan"}
                       </p>
                     </div>
                   )}
 
                   <div className="mt-4 pt-4 border-t border-border/50">
                     <div className="flex justify-between text-xs mb-1">
-                      <span className="text-muted-foreground uppercase font-bold">Kondisi Alat</span>
+                      <span className="text-muted-foreground uppercase font-bold">
+                        Kondisi Alat
+                      </span>
                       <span className="font-black">{slot.condition}%</span>
                     </div>
                     <div className="w-full h-2 bg-background/50 rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full ${slot.condition > 50 ? 'bg-emerald-500' : slot.condition > 20 ? 'bg-amber-500' : 'bg-rose-500'}`} 
+                      <div
+                        className={`h-full ${slot.condition > 50 ? "bg-emerald-500" : slot.condition > 20 ? "bg-amber-500" : "bg-rose-500"}`}
                         style={{ width: `${slot.condition}%` }}
                       ></div>
                     </div>
-                    
-                    <RepairSlotClient slotId={slot.slotId} condition={slot.condition} />
+
+                    <RepairSlotClient
+                      slotId={slot.slotId}
+                      condition={slot.condition}
+                    />
                   </div>
                 </div>
               );
@@ -233,7 +249,9 @@ export default async function ManagerServicePage() {
                     <h3 className="font-black uppercase tracking-widest text-lg flex items-center gap-2">
                       {slot.slotId}
                       {slot.type === "vip" && (
-                        <span className="text-[10px] bg-amber-500/20 text-amber-500 px-2 py-0.5 rounded-full font-bold uppercase">VIP</span>
+                        <span className="text-[10px] bg-amber-500/20 text-amber-500 px-2 py-0.5 rounded-full font-bold uppercase">
+                          VIP
+                        </span>
                       )}
                     </h3>
                     <div className="flex flex-col items-end gap-1">
@@ -265,7 +283,9 @@ export default async function ManagerServicePage() {
                               {order.fleetInfo?.fleet_number}
                             </p>
                             {order.type === "replace" && (
-                              <span className="text-[10px] bg-red-500 text-white px-2 py-0.5 rounded-full font-black uppercase tracking-widest animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.5)]">Ganti Part</span>
+                              <span className="text-[10px] bg-red-500 text-white px-2 py-0.5 rounded-full font-black uppercase tracking-widest animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.5)]">
+                                Ganti Part
+                              </span>
                             )}
                           </div>
                           <p className="text-xs text-muted-foreground uppercase tracking-widest">
@@ -287,36 +307,46 @@ export default async function ManagerServicePage() {
                           <span className="text-muted-foreground uppercase font-bold">
                             Selesai Pada
                           </span>
-                          <span className="font-black text-amber-500">
-                            {new Date(order.maintenanceEndAt).toLocaleDateString(
-                              "id-ID",
-                            )}
+                          <span className="font-black text-amber-500 text-right">
+                            {new Date(
+                              order.maintenanceEndAt,
+                            ).toLocaleString("id-ID", { timeZone: "Asia/Jakarta", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })} WIB
                           </span>
                         </div>
                       </div>
                     </div>
                   ) : (
                     <div className="py-8 text-center text-muted-foreground">
-                      <Wrench size={32} className={`mx-auto mb-3 opacity-20 ${slot.status === 'broken' ? 'text-rose-500' : ''}`} />
+                      <Wrench
+                        size={32}
+                        className={`mx-auto mb-3 opacity-20 ${slot.status === "broken" ? "text-rose-500" : ""}`}
+                      />
                       <p className="text-xs font-bold uppercase tracking-widest">
-                        {slot.status === "broken" ? "Menunggu Perbaikan" : "Siap Menerima Kendaraan"}
+                        {slot.status === "broken"
+                          ? "Menunggu Perbaikan"
+                          : "Siap Menerima Kendaraan"}
                       </p>
                     </div>
                   )}
 
                   <div className="mt-4 pt-4 border-t border-border/50">
                     <div className="flex justify-between text-xs mb-1">
-                      <span className="text-muted-foreground uppercase font-bold">Kondisi Alat</span>
+                      <span className="text-muted-foreground uppercase font-bold">
+                        Kondisi Alat
+                      </span>
                       <span className="font-black">{slot.condition}%</span>
                     </div>
                     <div className="w-full h-2 bg-background/50 rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full ${slot.condition > 50 ? 'bg-emerald-500' : slot.condition > 20 ? 'bg-amber-500' : 'bg-rose-500'}`} 
+                      <div
+                        className={`h-full ${slot.condition > 50 ? "bg-emerald-500" : slot.condition > 20 ? "bg-amber-500" : "bg-rose-500"}`}
                         style={{ width: `${slot.condition}%` }}
                       ></div>
                     </div>
-                    
-                    <RepairSlotClient slotId={slot.slotId} condition={slot.condition} />
+
+                    <RepairSlotClient
+                      slotId={slot.slotId}
+                      condition={slot.condition}
+                    />
                   </div>
                 </div>
               );
@@ -347,11 +377,15 @@ export default async function ManagerServicePage() {
                       <h3 className="font-bold text-sm flex items-center gap-2">
                         {order.fleetInfo?.fleet_number}
                         {order.type === "replace" && (
-                          <span className="text-[10px] bg-red-500/20 text-red-500 px-1.5 py-0.5 rounded-sm font-black uppercase">Replace</span>
+                          <span className="text-[10px] bg-red-500/20 text-red-500 px-1.5 py-0.5 rounded-sm font-black uppercase">
+                            Replace
+                          </span>
                         )}
                       </h3>
                       {order.type === "replace" && (
-                        <span className="text-[10px] bg-red-500/20 text-red-500 px-1.5 py-0.5 rounded-sm font-black uppercase ml-1">Replace</span>
+                        <span className="text-[10px] bg-red-500/20 text-red-500 px-1.5 py-0.5 rounded-sm font-black uppercase ml-1">
+                          Replace
+                        </span>
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground uppercase tracking-widest">
@@ -398,7 +432,9 @@ export default async function ManagerServicePage() {
                       <h3 className="font-bold text-sm flex items-center gap-2">
                         {order.fleetInfo?.fleet_number}
                         {order.type === "replace" && (
-                          <span className="text-[10px] bg-red-500/20 text-red-500 px-1.5 py-0.5 rounded-sm font-black uppercase">Replace</span>
+                          <span className="text-[10px] bg-red-500/20 text-red-500 px-1.5 py-0.5 rounded-sm font-black uppercase">
+                            Replace
+                          </span>
                         )}
                       </h3>
                       <p className="text-xs text-muted-foreground uppercase tracking-widest">

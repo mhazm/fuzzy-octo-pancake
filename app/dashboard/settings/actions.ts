@@ -4,7 +4,8 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
 import { revalidatePath } from "next/cache";
-import { deleteFileFromR2 } from "@/lib/r2"; // Gunakan utility hapus R2 yang sudah dibuat sebelumnya
+import { deleteFileFromR2 } from "@/lib/r2";
+import { getDriverStats } from "@/lib/tmp";
 
 export async function updateProfile(formData: FormData) {
   const session = await getServerSession(authOptions);
@@ -121,9 +122,94 @@ export async function getUserSettings() {
         world_of_truck: "",
         website: "",
       },
+      truckersmpId: user.truckersmpId || null,
+      isTmpDriver: user.isTmpDriver || false,
     };
   } catch (error) {
     console.error("Error fetching settings:", error);
     return null;
+  }
+}
+
+export async function syncTruckersMP(tmpId: number) {
+  const session = await getServerSession(authOptions);
+  if (!session || !session.user?.email) {
+    return { success: false, message: "Unauthorized." };
+  }
+
+  try {
+    const data = await getDriverStats(tmpId);
+    if (!data || data.error) {
+      return { success: false, message: "ID TruckersMP tidak valid atau API sedang gangguan." };
+    }
+
+    const vtcInfo = data.response?.vtc;
+    if (!vtcInfo || !vtcInfo.inVTC || vtcInfo.id !== 82362) {
+      return { 
+        success: false, 
+        message: "Akun TruckersMP ini bukan member Nismara Transport. Silakan buat Ticket jika merasa ini kesalahan." 
+      };
+    }
+
+    const client = await clientPromise;
+    const db = client.db();
+    const usersCol = db.collection("users");
+
+    const existingUser = await usersCol.findOne({ truckersmpId: tmpId.toString() });
+    if (existingUser && existingUser.email !== session.user.email) {
+      return { success: false, message: "ID TruckersMP ini sudah ditautkan ke akun lain." };
+    }
+
+    const updateResult = await usersCol.updateOne(
+      { email: session.user.email },
+      { 
+        $set: { 
+          truckersmpId: tmpId.toString(),
+          steamId: data.response.steamID64.toString(),
+          isTmpDriver: true 
+        } 
+      }
+    );
+
+    if (updateResult.modifiedCount > 0 || updateResult.matchedCount > 0) {
+      revalidatePath("/dashboard/settings");
+      return { success: true, message: "Akun TruckersMP berhasil ditautkan!" };
+    }
+
+    return { success: false, message: "Gagal memperbarui database." };
+  } catch (error) {
+    console.error("TMP Sync Error:", error);
+    return { success: false, message: "Terjadi kesalahan internal." };
+  }
+}
+
+export async function unlinkTruckersMP() {
+  const session = await getServerSession(authOptions);
+  if (!session || !session.user?.email) {
+    return { success: false, message: "Unauthorized." };
+  }
+
+  try {
+    const client = await clientPromise;
+    const db = client.db();
+    const usersCol = db.collection("users");
+
+    const updateResult = await usersCol.updateOne(
+      { email: session.user.email },
+      { 
+        $unset: { truckersmpId: "", steamId: "" },
+        $set: { isTmpDriver: false }
+      }
+    );
+
+    if (updateResult.modifiedCount > 0) {
+      revalidatePath("/dashboard/settings");
+      return { success: true, message: "Tautan TruckersMP berhasil diputuskan!" };
+    }
+
+    return { success: false, message: "Gagal memutus tautan database." };
+  } catch (error) {
+    console.error("TMP Unlink Error:", error);
+    return { success: false, message: "Terjadi kesalahan internal." };
   }
 }
