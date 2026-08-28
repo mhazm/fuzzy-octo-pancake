@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
 
-export async function GET(req: NextRequest, { params }: { params: { slug: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     const isManager = session?.user?.role === "manager" || session?.user?.role === "admin";

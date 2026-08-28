@@ -10,7 +10,7 @@ export async function getPopupConfig() {
     const client = await clientPromise;
     const db = client.db();
     
-    const popup = await db.collection("settings").findOne({ _id: "global_popup" });
+    const popup = await db.collection<any>("settings").findOne({ _id: "global_popup" });
     
     if (!popup) {
       return {
@@ -41,7 +41,7 @@ export async function updatePopupConfig(data: any) {
     const client = await clientPromise;
     const db = client.db();
     
-    await db.collection("settings").updateOne(
+    await db.collection<any>("settings").updateOne(
       { _id: "global_popup" },
       {
         $set: {
