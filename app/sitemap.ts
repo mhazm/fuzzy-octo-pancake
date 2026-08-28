@@ -22,6 +22,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ncEvents,
     coupons,
     communitygoals,
+    kbCategories,
+    kbArticles,
   ] = await Promise.all([
     db
       .collection("jobs")
@@ -74,6 +76,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     db
       .collection("communitygoals")
       .find({}, { projection: { slug: 1, updatedAt: 1 } })
+      .toArray(),
+    db
+      .collection("kb_categories")
+      .find({}, { projection: { slug: 1, updatedAt: 1, createdAt: 1 } })
+      .toArray(),
+    db
+      .collection("kb_articles")
+      .find({ accessLevel: "public" }, { projection: { slug: 1, categorySlug: 1, updatedAt: 1, createdAt: 1 } })
       .toArray(),
   ]);
 
@@ -200,6 +210,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     }));
 
+  // Map KB Categories
+  const kbCategoryEntries = kbCategories
+    .filter((cat) => cat.slug)
+    .map((cat) => ({
+      url: `${baseUrl}/kb/${cat.slug}`,
+      lastModified: cat.updatedAt || cat.createdAt || new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.8,
+    }));
+
+  // Map KB Articles
+  const kbArticleEntries = kbArticles
+    .filter((art) => art.slug && art.categorySlug)
+    .map((art) => ({
+      url: `${baseUrl}/kb/${art.categorySlug}/${art.slug}`,
+      lastModified: art.updatedAt || art.createdAt || new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    }));
+
   // 14. Rute Statis Lengkap
   const routePaths = [
     "",
@@ -229,6 +259,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/surveys",
     "/achievements",
     "/community-goals",
+    "/kb",
   ];
 
   const staticRoutes = routePaths.map((path) => ({
@@ -252,5 +283,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...ncEventEntries,
     ...couponEntries,
     ...communityGoalEntries,
+    ...kbCategoryEntries,
+    ...kbArticleEntries,
   ];
 }

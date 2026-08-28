@@ -1,5 +1,5 @@
 # Nismara Transport (Nismara Logistics)
-> Platform manajemen logistik dan virtual trucking resmi untuk komunitas simulasi Nismara.
+> Platform manajemen logistik dan virtual trucking indonesia resmi untuk komunitas simulasi Nismara.
 
 ## Tentang Nismara Transport
 Nismara Transport adalah divisi logistik virtual yang dikhususkan bagi para penggemar simulasi mengemudi jarak jauh. Kami mewadahi para pengemudi virtual dalam sebuah ekosistem perusahaan yang terstruktur, realistis, dan saling menghargai. Komunitas kami mengedepankan lingkungan bermain yang santai namun tetap sopan dan profesional, menyesuaikan dengan mayoritas anggota kami yang berada di rentang usia dewasa.
@@ -11,12 +11,25 @@ Divisi operasional logistik kami berfokus pada dua simulator utama:
 
 ## Sistem dan Fitur Utama
 Sistem web Nismara Transport terintegrasi secara terpusat untuk memantau performa dan kedisiplinan pengemudi, meliputi:
-- **Pelacakan Pekerjaan (Job Tracking):** Pencatatan riwayat pengiriman kargo dan jarak tempuh operasional pengemudi secara presisi melalui integrasi Trucky.
-- **Sistem Ekonomi (Nismara Coin / NC):** Ekosistem ekonomi virtual mandiri. Setiap pengemudi akan mendapatkan imbalan berupa saldo Nismara Coin dari hasil penyelesaian rute logistik mereka. Mata uang ini dapat digunakan untuk fitur Market (Mod, Kargo, Bahan Bakar), Pembelian Armada (Fleet), dan Pemeliharaan (Maintenance).
-- **Sistem Poin Penalti:** Untuk menjaga standar simulasi yang berkualitas, kami menerapkan sistem poin penalti (kedisiplinan). Sistem ini mencatat pelanggaran lalu lintas virtual atau aturan perusahaan untuk memastikan setiap anggota mengemudi dengan tanggung jawab.
-- **Social Gallery & Komunitas:** Fitur interaktif bergaya sosial media (mirip Instagram/Thread) untuk berbagi momen perjalanan dan interaksi antar anggota, lengkap dengan komentar berulir (nested replies) dan optimistik UI untuk *Likes*.
-- **Manajemen Konvoi:** Pengelolaan jadwal dan pendaftaran peserta konvoi komunitas.
-- **Sistem Tiket Terintegrasi:** Untuk pelaporan fitur, masalah, atau komentar yang melanggar.
+- **[Pelacakan Pekerjaan (Job Tracking)](/jobs):** Pencatatan riwayat pengiriman kargo dan jarak tempuh operasional pengemudi secara presisi melalui integrasi Trucky.
+- **[Sistem Ekonomi (Nismara Coin / NC)](/dashboard/currency):** Ekosistem ekonomi virtual mandiri. Setiap pengemudi akan mendapatkan imbalan berupa saldo Nismara Coin dari hasil penyelesaian rute logistik mereka. Mata uang ini dapat digunakan untuk fitur Market (Mod, Kargo, Bahan Bakar), Pembelian Armada (Fleet), dan Pemeliharaan (Maintenance).
+- **[Sistem Poin Penalti](/dashboard/points):** Untuk menjaga standar simulasi yang berkualitas, kami menerapkan sistem poin penalti (kedisiplinan). Sistem ini mencatat pelanggaran lalu lintas virtual atau aturan perusahaan untuk memastikan setiap anggota mengemudi dengan tanggung jawab.
+- **[Social Gallery & Komunitas](/gallery atau /feeds):** Fitur interaktif bergaya sosial media (mirip Instagram/Thread) untuk berbagi momen perjalanan dan interaksi antar anggota, lengkap dengan komentar berulir (nested replies) dan optimistik UI untuk *Likes*.
+- **[Manajemen Konvoi](/convoy):** Pengelolaan jadwal dan pendaftaran peserta konvoi komunitas.
+- **[Sistem Tiket Terintegrasi](/dashboard/ticket):** Untuk pelaporan fitur, masalah, atau komentar yang melanggar.
+- **[Knowledge Base (Pusat Bantuan)](/kb):** Direktori artikel dan dokumentasi resmi perusahaan yang memuat panduan, tutorial, serta aturan operasional untuk membantu seluruh anggota.
+- **[Garage (Inventaris Truk Driver)](/dashboard/garage):** Fitur sentral untuk mengelola armada truk (Fleet), perekrutan mekanik, servis berkala, serta brankas (Safebox) tiket penalti.
+- **[Leaderboard](/leaderboard):** Papan peringkat global yang menyoroti dedikasi *driver* berdasarkan perolehan Nismara Coin (NC), total jarak, dan pencapaian lainnya.
+- **[Profile](/profile):** Halaman profil publik *driver* yang memamerkan statistik mengemudi, riwayat *job*, lencana (*badges*), serta koleksi truk.
+- **[Calendar Event](/calendar):** Jadwal interaktif yang menginformasikan agenda konvoi, *event* komunitas, dan pembaruan sistem secara *real-time*.
+- **[Special Contract](/special-contracts):** Misi logistik gabungan berskala besar yang mewajibkan seluruh anggota berkolaborasi untuk mencapai target kargo dan jarak secara kolektif.
+- **[Currency Boost](/currency-boost):** Sistem *event* berbatas waktu yang melipatgandakan pendapatan *Nismara Coin* (NC) untuk rute atau jenis kargo tertentu.
+- **[Coupons](/coupons):** Fitur penebusan kode promo untuk mendapatkan kompensasi, hadiah gratis, atau akses eksklusif yang dibagikan pada momen tertentu.
+- **[Community Goals](/community-goals):** Tantangan komunal dengan sistem pencapaian bertingkat (*tier*). Jika komunitas berhasil mencapai target muatan, semua partisipan akan menerima hadiah.
+- **[Cargo Market](/cargo-market):** Bursa lelang kargo di mana anggota dapat menjual atau membeli akses *job* langka yang bernilai tinggi kepada sesama *driver* menggunakan mata uang NC.
+- **[Fuel Market](/fuel-market):** Pasar fluktuatif untuk bahan bakar (solar). *Driver* dapat menimbun solar di saat murah dan memperjualbelikannya secara *Peer-to-Peer* (P2P) untuk profitabilitas.
+- **[List Driver](/drivers)**: Daftar seluruh driver Nismara Transport.
+- **[Teams](/teams)**: Daftar seluruh tim Nismara Transport.
 
 ## Ekosistem & Integrasi
 Platform ini dirancang khusus untuk memenuhi kebutuhan komunitas Virtual Trucking Company (VTC) dengan integrasi berikut:
@@ -36,7 +49,26 @@ Sebagai tanda terima kasih, donatur **Nismara+** diberikan fitur ekstra dalam ek
 - **Fitur Sosial & Media:** Batas ukuran unggahan aset yang lebih besar (hingga 5MB) dan dukungan penuh untuk format gambar animasi (GIF) di Gallery maupun Market.
 - **Eksklusivitas:** Penyematan lencana (Badge) emas VIP di profil/komentar website, serta role kustom khusus di server Discord komunitas.
 
+## Cara Bergabung dengan VTC Nismara Transport
+Berikut adalah panduan singkat untuk bergabung dengan VTC Nismara Transport:
+1. Bergabung dengan server Discord resmi Nismara: https://link.nismara.web.id/discord
+2. Membaca seluruh Terms of Service (TOS) dan Rules perusahaan di channel informasi.
+3. Mendaftar di website ini: https://career.nismara.web.id
+4. Mengikuti proses interview singkat.
+5. Jika lulus, Anda akan dibantu untuk setup Trucky dan sistem lainnya.
+
+## Platform Resmi VTC Nismara Transport
+Berikut adalah platform resmi VTC Nismara Transport:
+- **Trucky**: https://hub.truckyapp.com/vtc/nismara-logistic
+- **TruckersMP**: https://truckersmp.com/vtc/82362
+- **Trucksbook**: https://trucksbook.eu/company/212618
+
 ## Tautan Resmi
 - **Portal Logistik (Utama):** https://transport.nismara.web.id
 - **Portal Komunitas Nismara:** https://nismara.web.id
 - **Aset Media:** https://images.nismara.my.id
+
+## Sosial Media Nismara Transport
+- **Instagram:** https://link.nismara.web.id/instagram
+- **Youtube:** https://link.nismara.web.id/youtube
+- **Discord:** https://link.nismara.web.id/discord
