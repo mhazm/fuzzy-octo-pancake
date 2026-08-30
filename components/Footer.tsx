@@ -70,8 +70,8 @@ export default function Footer() {
             <ul className="space-y-4">
               {[
                 { name: "Dashboard", href: "/dashboard" },
-                { name: "Leaderboard", href: "/dashboard/leaderboard" },
-                { name: "Special Contract", href: "/special-contract" },
+                { name: "Leaderboard", href: "/leaderboard" },
+                { name: "Special Contract", href: "/special-contracts" },
                 { name: "All Jobs", href: "/jobs" },
                 { name: "Teams", href: "/teams" },
               ].map((link) => (
