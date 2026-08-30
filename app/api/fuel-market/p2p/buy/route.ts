@@ -62,40 +62,78 @@ export async function POST(request: Request) {
     }
 
     const buyerCapacity = buyerGarage.fuelCapacity || 2000;
-    const buyerStock = buyerGarage.fuelStock || 0;
+    const buyerPhysicalFuel = (buyerGarage.fuelStock || 0) + (buyerGarage.fuelListed || 0);
     
-    if (buyerStock + listing.amount > buyerCapacity) {
-      return NextResponse.json({ error: `Kapasitas tangki Anda tidak muat. (Sisa kapasitas: ${buyerCapacity - buyerStock} L)` }, { status: 400 });
+    if (buyerPhysicalFuel + listing.amount > buyerCapacity) {
+      const remainingSpace = Math.max(0, buyerCapacity - buyerPhysicalFuel);
+      return NextResponse.json({ 
+        error: `Kapasitas tangki Anda tidak muat. (Sisa kapasitas: ${remainingSpace.toLocaleString("id-ID")} L)` 
+      }, { status: 400 });
     }
 
     // Eksekusi Transaksi
-    // 1. Potong saldo pembeli
-    await db.collection("currencies").updateOne(
-      { userId: buyerDiscordId, guildId: GUILD_ID },
+    // 1. Potong saldo pembeli secara atomik
+    const buyerCurrencyUpdate = await db.collection("currencies").updateOne(
+      { userId: buyerDiscordId, guildId: GUILD_ID, totalNC: { $gte: roundedCost } },
       { $inc: { totalNC: -roundedCost } }
     );
+    if (buyerCurrencyUpdate.modifiedCount === 0) {
+      return NextResponse.json({ error: "Saldo NC Anda tidak mencukupi" }, { status: 400 });
+    }
 
-    // 2. Tambah BBM ke pembeli
-    await db.collection("garages").updateOne(
-      { discordId: buyerDiscordId },
+    // 2. Tambah BBM ke pembeli dengan pengaman kapasitas atomik
+    const garageUpdateResult = await db.collection("garages").updateOne(
+      {
+        discordId: buyerDiscordId,
+        $expr: {
+          $lte: [
+            { $add: [{ $ifNull: ["$fuelStock", 0] }, { $ifNull: ["$fuelListed", 0] }, listing.amount] },
+            { $ifNull: ["$fuelCapacity", 2000] }
+          ]
+        }
+      },
       { $inc: { fuelStock: listing.amount } }
     );
 
-    // 3. Tambah saldo penjual (hanya base cost, fee dihanguskan)
+    if (garageUpdateResult.modifiedCount === 0) {
+      // Rollback potongan saldo pembeli jika kapasitas tidak muat
+      await db.collection("currencies").updateOne(
+        { userId: buyerDiscordId, guildId: GUILD_ID },
+        { $inc: { totalNC: roundedCost } }
+      );
+      return NextResponse.json({ error: "Kapasitas tangki Anda tidak muat atau telah penuh." }, { status: 400 });
+    }
+
+    // 3. Ubah status listing secara atomik untuk mencegah double buy
+    const listingUpdate = await FuelMarketListing.updateOne(
+      { _id: listing._id, status: "active" },
+      { $set: { status: "sold" } }
+    );
+
+    if (listingUpdate.modifiedCount === 0) {
+      // Rollback potongan saldo dan BBM jika listing sudah keduluan dibeli
+      await db.collection("currencies").updateOne(
+        { userId: buyerDiscordId, guildId: GUILD_ID },
+        { $inc: { totalNC: roundedCost } }
+      );
+      await db.collection("garages").updateOne(
+        { discordId: buyerDiscordId },
+        { $inc: { fuelStock: -listing.amount } }
+      );
+      return NextResponse.json({ error: "Listing BBM ini sudah terjual atau ditarik" }, { status: 400 });
+    }
+
+    // 4. Tambah saldo penjual (hanya base cost, fee dihanguskan)
     await db.collection("currencies").updateOne(
       { userId: listing.sellerDiscordId, guildId: GUILD_ID },
       { $inc: { totalNC: baseCost } }
     );
 
-    // 3b. Kurangi status Listed dari garasi penjual karena sudah laku
+    // 4b. Kurangi status Listed dari garasi penjual karena sudah laku
     await db.collection("garages").updateOne(
       { discordId: listing.sellerDiscordId },
       { $inc: { fuelListed: -listing.amount } }
     );
-
-    // 4. Ubah status listing
-    listing.status = "sold";
-    await listing.save();
 
     // Catat histori pembeli
     await db.collection("currencyhistories").insertOne({

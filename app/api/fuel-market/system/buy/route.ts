@@ -52,10 +52,13 @@ export async function POST(request: Request) {
     }
 
     const buyerCapacity = buyerGarage.fuelCapacity || 2000;
-    const buyerStock = buyerGarage.fuelStock || 0;
+    const buyerPhysicalFuel = (buyerGarage.fuelStock || 0) + (buyerGarage.fuelListed || 0);
     
-    if (buyerStock + amount > buyerCapacity) {
-      return NextResponse.json({ error: `Kapasitas tangki Anda tidak muat. (Sisa kapasitas: ${buyerCapacity - buyerStock} L)` }, { status: 400 });
+    if (buyerPhysicalFuel + amount > buyerCapacity) {
+      const remainingSpace = Math.max(0, buyerCapacity - buyerPhysicalFuel);
+      return NextResponse.json({ 
+        error: `Kapasitas tangki Anda tidak muat. (Sisa kapasitas: ${remainingSpace.toLocaleString("id-ID")} L)` 
+      }, { status: 400 });
     }
 
     // Eksekusi Transaksi
@@ -69,11 +72,28 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Transaksi gagal, saldo NC Anda tidak mencukupi." }, { status: 400 });
     }
 
-    // 2. Tambah BBM ke pembeli
-    await db.collection("garages").updateOne(
-      { discordId: buyerDiscordId },
+    // 2. Tambah BBM ke pembeli dengan pengaman kapasitas atomik
+    const garageUpdateResult = await db.collection("garages").updateOne(
+      {
+        discordId: buyerDiscordId,
+        $expr: {
+          $lte: [
+            { $add: [{ $ifNull: ["$fuelStock", 0] }, { $ifNull: ["$fuelListed", 0] }, amount] },
+            { $ifNull: ["$fuelCapacity", 2000] }
+          ]
+        }
+      },
       { $inc: { fuelStock: amount } }
     );
+
+    if (garageUpdateResult.modifiedCount === 0) {
+      // Rollback saldo pembeli jika kapasitas tangki penuh
+      await db.collection("currencies").updateOne(
+        { userId: buyerDiscordId, guildId: GUILD_ID },
+        { $inc: { totalNC: roundedCost } }
+      );
+      return NextResponse.json({ error: "Kapasitas tangki Anda tidak muat atau telah penuh." }, { status: 400 });
+    }
 
     // 3. Catat histori pembeli (Currency)
     await db.collection("currencyhistories").insertOne({

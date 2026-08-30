@@ -34,6 +34,8 @@ export async function POST(request: Request) {
     const currentCapacity = userGarage.fuelCapacity || MIN_CAPACITY;
     const currentLevel = userGarage.fuelTankLevel || MIN_LEVEL;
     const currentStock = userGarage.fuelStock || 0;
+    const currentListed = userGarage.fuelListed || 0;
+    const totalPhysicalFuel = currentStock + currentListed;
 
     if (currentLevel <= MIN_LEVEL) {
       return NextResponse.json({ error: "Tangki sudah di level terendah" }, { status: 400 });
@@ -49,17 +51,22 @@ export async function POST(request: Request) {
 
     const totalCost = DOWNGRADE_COST * multiplier;
 
-    // Cek saldo user
-    const userCurrency = await db.collection("currencies").findOne({ userId: discordId, guildId: GUILD_ID });
-    if (!userCurrency || userCurrency.totalNC < totalCost) {
-      return NextResponse.json({ error: `Saldo NC tidak mencukupi. Butuh ${totalCost} NC untuk downgrade.` }, { status: 400 });
-    }
-
     const newCapacity = currentCapacity - (CAPACITY_DECREASE * multiplier);
 
-    // Cegah downgrade jika stok melebihi kapasitas baru
-    if (currentStock > newCapacity) {
-      return NextResponse.json({ error: `Downgrade gagal! Anda memiliki ${Math.floor(currentStock)} L bensin, sedangkan kapasitas baru hanya ${newCapacity} L. Jual bensin Anda terlebih dahulu.` }, { status: 400 });
+    // Cegah downgrade jika total BBM fisik (stock + listed di market) melebihi kapasitas baru
+    if (totalPhysicalFuel > newCapacity) {
+      return NextResponse.json({ 
+        error: `Downgrade gagal! Total BBM yang Anda miliki (${Math.floor(totalPhysicalFuel).toLocaleString("id-ID")} L, termasuk yang dijual di Market) melebihi kapasitas baru (${newCapacity.toLocaleString("id-ID")} L). Jual atau habiskan BBM Anda terlebih dahulu.` 
+      }, { status: 400 });
+    }
+
+    // Cek saldo user & potong secara atomik
+    const currencyUpdate = await db.collection("currencies").updateOne(
+      { userId: discordId, guildId: GUILD_ID, totalNC: { $gte: totalCost } },
+      { $inc: { totalNC: -totalCost } }
+    );
+    if (currencyUpdate.modifiedCount === 0) {
+      return NextResponse.json({ error: `Saldo NC tidak mencukupi. Butuh ${totalCost} NC untuk downgrade.` }, { status: 400 });
     }
 
     const currentFuelOpCost = userGarage.fuel_operational_cost || 0;
@@ -76,12 +83,6 @@ export async function POST(request: Request) {
     // Pastikan operasional cost tidak minus
     const newFuelOpCost = Math.max(0, currentFuelOpCost - totalOpCostDecrease);
     const newTotalOpCost = newFuelOpCost + currentFleetOpCost;
-
-    // Transaksi potongan NC
-    await db.collection("currencies").updateOne(
-      { userId: discordId, guildId: GUILD_ID },
-      { $inc: { totalNC: -totalCost } }
-    );
 
     // Catat riwayat
     await db.collection("currencyhistories").insertOne({

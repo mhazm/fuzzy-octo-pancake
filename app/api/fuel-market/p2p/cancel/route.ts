@@ -37,15 +37,36 @@ export async function POST(request: Request) {
     const client = await clientPromise;
     const db = client.db();
 
+    // Validasi kapasitas garasi sebelum dikembalikan ke stock
+    const userGarage = await db.collection("garages").findOne({ discordId });
+    if (!userGarage) {
+      return NextResponse.json({ error: "Garasi tidak ditemukan" }, { status: 404 });
+    }
+
+    const currentCapacity = userGarage.fuelCapacity || 2000;
+    const currentStock = userGarage.fuelStock || 0;
+
+    if (currentStock + listing.amount > currentCapacity) {
+      return NextResponse.json({ 
+        error: `Gagal menarik BBM! Kapasitas tangki garasi Anda (${currentCapacity.toLocaleString("id-ID")} L) tidak mencukupi untuk menampung kembali ${listing.amount.toLocaleString("id-ID")} L BBM (Stok saat ini: ${Math.floor(currentStock).toLocaleString("id-ID")} L). Silakan upgrade tangki garasi Anda terlebih dahulu.` 
+      }, { status: 400 });
+    }
+
+    // Ubah status listing secara atomik untuk mencegah race condition
+    const listingUpdate = await FuelMarketListing.updateOne(
+      { _id: listing._id, status: "active", sellerDiscordId: discordId },
+      { $set: { status: "cancelled" } }
+    );
+
+    if (listingUpdate.modifiedCount === 0) {
+      return NextResponse.json({ error: "Listing ini sudah tidak aktif (mungkin sudah terjual)" }, { status: 400 });
+    }
+
     // Kembalikan BBM ke Garasi (dari Listed ke Stock)
     await db.collection("garages").updateOne(
       { discordId },
       { $inc: { fuelStock: listing.amount, fuelListed: -listing.amount } }
     );
-
-    // Ubah status listing
-    listing.status = "cancelled";
-    await listing.save();
 
     return NextResponse.json({ success: true, message: "BBM berhasil ditarik dan dikembalikan ke garasi Anda!" });
 
