@@ -33,6 +33,25 @@ const nextConfig = {
     ],
   },
   output: "standalone",
+  async redirects() {
+    return [
+      {
+        source: "/dashboard/leaderboard",
+        destination: "/leaderboard",
+        permanent: true,
+      },
+      {
+        source: "/special-contract",
+        destination: "/special-contracts",
+        permanent: true,
+      },
+      {
+        source: "/special-contract/:slug*",
+        destination: "/special-contracts/:slug*",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;

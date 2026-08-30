@@ -83,9 +83,11 @@ export default function RootLayout({
     <html
       lang="id"
       className={cn("dark", "font-sans", plusJakartaSans.variable, "overflow-x-clip")}
+      suppressHydrationWarning
     >
       <body
         className={`font-sans flex flex-col min-h-screen overflow-x-clip`}
+        suppressHydrationWarning
       >
         {/* Navbar akan selalu ada di paling atas */}
         <Providers>
@@ -97,10 +99,10 @@ export default function RootLayout({
           <NismaraPlusAdPopup />
           <GlobalPopupAd />
         </Providers>
+        {process.env.NEXT_PUBLIC_GA_ID && (
+          <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
+        )}
       </body>
-      {process.env.NEXT_PUBLIC_GA_ID && (
-        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
-      )}
     </html>
   );
 }
