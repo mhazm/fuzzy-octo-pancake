@@ -88,7 +88,9 @@ export default async function ManageOverview() {
     db.collection("users").countDocuments({ isOnLeave: true }),
     db.collection("users").countDocuments({ "nismaraplus.status": true }),
     db.collection("users").countDocuments({ role: "intern" }),
-    db.collection("tickets").countDocuments({ status: { $in: ["OPEN", "PENDING", "IN_PROGRESS"] } }),
+    db
+      .collection("tickets")
+      .countDocuments({ status: { $in: ["OPEN", "PENDING", "IN_PROGRESS"] } }),
     db
       .collection("currencies")
       .aggregate([
@@ -154,13 +156,19 @@ export default async function ManageOverview() {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
           <div className="space-y-3 max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-widest">
-              <Sparkles size={13} /> Operational Command Center • Integrated Telemetry
+              <Sparkles size={13} /> Operational Command Center • Integrated
+              Telemetry
             </div>
             <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-foreground uppercase">
-              Manager <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-lilac via-primary to-accent-sky">Hub</span>
+              Manager{" "}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-lilac via-primary to-accent-sky">
+                Hub
+              </span>
             </h1>
             <p className="text-muted-foreground text-xs md:text-sm leading-relaxed">
-              Pusat komando manajerial Nismara Transport. Pantau integritas database, audit operasi logistik spesial, verifikasi penalti, dan orkestrasi seluruh armada komunitas.
+              Pusat komando manajerial Nismara Transport. Pantau integritas
+              database, audit operasi logistik spesial, verifikasi penalti, dan
+              orkestrasi seluruh armada komunitas.
             </p>
           </div>
 
@@ -189,7 +197,8 @@ export default async function ManageOverview() {
                   Total Penalties
                 </p>
                 <p className="text-base md:text-lg font-black text-red-400 tabular-nums mt-1">
-                  {totalPenaltyPoints[0]?.total?.toLocaleString("id-ID") || 0} PTS
+                  {totalPenaltyPoints[0]?.total?.toLocaleString("id-ID") || 0}{" "}
+                  PTS
                 </p>
               </div>
             </div>
@@ -200,9 +209,7 @@ export default async function ManageOverview() {
       {/* 2. SYSTEM INTEGRITY & DATABASE HEALTH BAR */}
       <div
         className={`p-1.5 rounded-[2rem] border transition-all duration-500 shadow-md ${
-          hasIssue
-            ? "bg-red-500/10 border-red-500/30"
-            : "bg-card border-border"
+          hasIssue ? "bg-red-500/10 border-red-500/30" : "bg-card border-border"
         }`}
       >
         <div className="flex flex-col md:flex-row items-center justify-between px-6 py-3.5 gap-4">
@@ -225,14 +232,16 @@ export default async function ManageOverview() {
                   hasIssue ? "text-red-400" : "text-emerald-400"
                 }`}
               >
-                {hasIssue ? "Data Inconsistency Detected" : "All Systems Nominal (100% Synchronized)"}
+                {hasIssue
+                  ? "Data Inconsistency Detected"
+                  : "All Systems Nominal (100% Synchronized)"}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-6">
             <Link
-              href="/dashboard/manage/currency-data"
+              href="/dashboard/manage/data/nc-data"
               className="flex items-center gap-2 group hover:opacity-80 transition-opacity"
             >
               <span className="text-[10px] font-black uppercase text-muted-foreground">
@@ -240,19 +249,23 @@ export default async function ManageOverview() {
               </span>
               <span
                 className={`text-xs font-black tabular-nums ${
-                  currencyMismatch ? "text-red-400 underline decoration-dotted" : "text-foreground"
+                  currencyMismatch
+                    ? "text-red-400 underline decoration-dotted"
+                    : "text-foreground"
                 }`}
               >
                 {totalCurrencyRecords} / {totalDriverLinks}
               </span>
               <Activity
                 size={12}
-                className={currencyMismatch ? "text-red-400" : "text-emerald-400"}
+                className={
+                  currencyMismatch ? "text-red-400" : "text-emerald-400"
+                }
               />
             </Link>
 
             <Link
-              href="/dashboard/manage/point-data"
+              href="/dashboard/manage/data/point-data"
               className="flex items-center gap-2 group border-l border-border pl-6 hover:opacity-80 transition-opacity"
             >
               <span className="text-[10px] font-black uppercase text-muted-foreground">
@@ -260,7 +273,9 @@ export default async function ManageOverview() {
               </span>
               <span
                 className={`text-xs font-black tabular-nums ${
-                  pointsMismatch ? "text-red-400 underline decoration-dotted" : "text-foreground"
+                  pointsMismatch
+                    ? "text-red-400 underline decoration-dotted"
+                    : "text-foreground"
                 }`}
               >
                 {totalPointsRecords} / {totalDriverLinks}
@@ -269,6 +284,14 @@ export default async function ManageOverview() {
                 size={12}
                 className={pointsMismatch ? "text-red-400" : "text-emerald-400"}
               />
+            </Link>
+
+            <Link
+              href="/dashboard/manage/audit"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-primary/20 hover:bg-primary/30 border border-primary/40 text-primary text-[11px] font-black uppercase tracking-wider transition-all shadow-xs border-l pl-5 ml-1"
+            >
+              <ShieldCheck size={13} />
+              Audit Center
             </Link>
           </div>
         </div>
@@ -295,7 +318,9 @@ export default async function ManageOverview() {
             </div>
             <div className="flex items-center justify-between mt-1 text-[10px]">
               <span className="text-emerald-400 font-bold">
-                {ongoingContractsCount > 0 ? "Live Operating" : "Tidak Ada Kontrak"}
+                {ongoingContractsCount > 0
+                  ? "Live Operating"
+                  : "Tidak Ada Kontrak"}
               </span>
               {scheduledContractsCount > 0 && (
                 <span className="text-amber-400 font-bold">
@@ -324,7 +349,9 @@ export default async function ManageOverview() {
               {upcomingConvoysCount}
             </div>
             <p className="text-[10px] text-sky-400 font-bold mt-1">
-              {upcomingConvoysCount > 0 ? `${upcomingConvoysCount} Jadwal Mendatang` : "Belum Ada Jadwal"}
+              {upcomingConvoysCount > 0
+                ? `${upcomingConvoysCount} Jadwal Mendatang`
+                : "Belum Ada Jadwal"}
             </p>
           </div>
         </Link>
@@ -494,12 +521,36 @@ export default async function ManageOverview() {
 
             <div className="space-y-2">
               {[
-                { name: "Giveaways Engine", href: "/dashboard/manage/giveaways", desc: "Undian hadiah & quest tiket pengemudi" },
-                { name: "Special Contracts", href: "/dashboard/manage/events/contracts", desc: "Kontrak logistik khusus ETS2 & ATS" },
-                { name: "Convoy Lobby", href: "/dashboard/manage/events/convoy", desc: "Jadwal & rute konvoi komunitas" },
-                { name: "Coupon Engine", href: "/dashboard/manage/events/coupon", desc: "Kode kupon hadiah NC & tiket" },
-                { name: "Community Goals", href: "/dashboard/manage/community-goals", desc: "Target pengiriman bersama" },
-                { name: "Currency Boost Events", href: "/dashboard/manage/events", desc: "Event pengganda bonus NC" },
+                {
+                  name: "Giveaways Engine",
+                  href: "/dashboard/manage/giveaways",
+                  desc: "Undian hadiah & quest tiket pengemudi",
+                },
+                {
+                  name: "Special Contracts",
+                  href: "/dashboard/manage/events/contracts",
+                  desc: "Kontrak logistik khusus ETS2 & ATS",
+                },
+                {
+                  name: "Convoy Lobby",
+                  href: "/dashboard/manage/events/convoy",
+                  desc: "Jadwal & rute konvoi komunitas",
+                },
+                {
+                  name: "Coupon Engine",
+                  href: "/dashboard/manage/events/coupon",
+                  desc: "Kode kupon hadiah NC & tiket",
+                },
+                {
+                  name: "Community Goals",
+                  href: "/dashboard/manage/community-goals",
+                  desc: "Target pengiriman bersama",
+                },
+                {
+                  name: "Currency Boost Events",
+                  href: "/dashboard/manage/events",
+                  desc: "Event pengganda bonus NC",
+                },
               ].map((item, idx) => (
                 <Link
                   key={idx}
@@ -510,9 +561,14 @@ export default async function ManageOverview() {
                     <p className="text-xs font-black text-foreground uppercase group-hover:text-primary transition-colors">
                       {item.name}
                     </p>
-                    <p className="text-[10px] text-muted-foreground line-clamp-1">{item.desc}</p>
+                    <p className="text-[10px] text-muted-foreground line-clamp-1">
+                      {item.desc}
+                    </p>
                   </div>
-                  <ChevronRight size={14} className="text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+                  <ChevronRight
+                    size={14}
+                    className="text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all"
+                  />
                 </Link>
               ))}
             </div>
@@ -531,10 +587,26 @@ export default async function ManageOverview() {
 
             <div className="space-y-2">
               {[
-                { name: "Fleet Store", href: "/dashboard/manage/fleet/store", desc: "Katalog unit truk armada Nismara" },
-                { name: "Fleet Assignment", href: "/dashboard/manage/fleet/assign", desc: "Distribusi truk ke pengemudi" },
-                { name: "Maintenance & Service", href: "/dashboard/manage/fleet/service", desc: "Perbaikan dan inspeksi kendaraan" },
-                { name: "Cargo Directory", href: "/dashboard/manage/cargo", desc: "Daftar muatan & tarif pengiriman" },
+                {
+                  name: "Fleet Store",
+                  href: "/dashboard/manage/fleet/store",
+                  desc: "Katalog unit truk armada Nismara",
+                },
+                {
+                  name: "Fleet Assignment",
+                  href: "/dashboard/manage/fleet/assign",
+                  desc: "Distribusi truk ke pengemudi",
+                },
+                {
+                  name: "Maintenance & Service",
+                  href: "/dashboard/manage/fleet/service",
+                  desc: "Perbaikan dan inspeksi kendaraan",
+                },
+                {
+                  name: "Cargo Directory",
+                  href: "/dashboard/manage/cargo",
+                  desc: "Daftar muatan & tarif pengiriman",
+                },
               ].map((item, idx) => (
                 <Link
                   key={idx}
@@ -545,9 +617,14 @@ export default async function ManageOverview() {
                     <p className="text-xs font-black text-foreground uppercase group-hover:text-accent-sky transition-colors">
                       {item.name}
                     </p>
-                    <p className="text-[10px] text-muted-foreground line-clamp-1">{item.desc}</p>
+                    <p className="text-[10px] text-muted-foreground line-clamp-1">
+                      {item.desc}
+                    </p>
                   </div>
-                  <ChevronRight size={14} className="text-muted-foreground group-hover:text-accent-sky group-hover:translate-x-0.5 transition-all" />
+                  <ChevronRight
+                    size={14}
+                    className="text-muted-foreground group-hover:text-accent-sky group-hover:translate-x-0.5 transition-all"
+                  />
                 </Link>
               ))}
             </div>
@@ -560,19 +637,52 @@ export default async function ManageOverview() {
                 <Users size={15} /> Driver & Komunitas
               </span>
               <span className="text-[9px] font-bold text-muted-foreground uppercase">
-                7 Layanan
+                8 Layanan
               </span>
             </div>
 
             <div className="space-y-2">
               {[
-                { name: "Manager Payroll & KPI", href: "/dashboard/manage/payroll", desc: "Sistem gaji bulanan & insentif performa" },
-                { name: "Driver Directory", href: "/dashboard/manage/data/users", desc: "Audit data seluruh pengemudi" },
-                { name: "Intern Monitor", href: "/dashboard/manage/data/intern", desc: "Pantau kelulusan masa magang" },
-                { name: "Achievement Registry", href: "/dashboard/manage/data/achievement", desc: "Lencana dan penghargaan driver" },
-                { name: "Surveys & Polling", href: "/dashboard/manage/surveys", desc: "Kuesioner dan aspirasi anggota" },
-                { name: "Support Desk (Tickets)", href: "/dashboard/manage/tickets", desc: "Laporan masalah dan bantuan tiket" },
-                { name: "Season Pass & Quests", href: "/dashboard/manage/season-pass", desc: "Pengaturan musim dan quest berkala" },
+                {
+                  name: "Audit Center & Integrity",
+                  href: "/dashboard/manage/audit",
+                  desc: "Audit role Discord & bersihkan data orphaned",
+                },
+                {
+                  name: "Manager Payroll & KPI",
+                  href: "/dashboard/manage/payroll",
+                  desc: "Sistem gaji bulanan & insentif performa",
+                },
+                {
+                  name: "Driver Directory",
+                  href: "/dashboard/manage/data/users",
+                  desc: "Audit data seluruh pengemudi",
+                },
+                {
+                  name: "Intern Monitor",
+                  href: "/dashboard/manage/data/intern",
+                  desc: "Pantau kelulusan masa magang",
+                },
+                {
+                  name: "Achievement Registry",
+                  href: "/dashboard/manage/data/achievement",
+                  desc: "Lencana dan penghargaan driver",
+                },
+                {
+                  name: "Surveys & Polling",
+                  href: "/dashboard/manage/surveys",
+                  desc: "Kuesioner dan aspirasi anggota",
+                },
+                {
+                  name: "Support Desk (Tickets)",
+                  href: "/dashboard/manage/tickets",
+                  desc: "Laporan masalah dan bantuan tiket",
+                },
+                {
+                  name: "Season Pass & Quests",
+                  href: "/dashboard/manage/season-pass",
+                  desc: "Pengaturan musim dan quest berkala",
+                },
               ].map((item, idx) => (
                 <Link
                   key={idx}
@@ -583,9 +693,14 @@ export default async function ManageOverview() {
                     <p className="text-xs font-black text-foreground uppercase group-hover:text-amber-400 transition-colors">
                       {item.name}
                     </p>
-                    <p className="text-[10px] text-muted-foreground line-clamp-1">{item.desc}</p>
+                    <p className="text-[10px] text-muted-foreground line-clamp-1">
+                      {item.desc}
+                    </p>
                   </div>
-                  <ChevronRight size={14} className="text-muted-foreground group-hover:text-amber-400 group-hover:translate-x-0.5 transition-all" />
+                  <ChevronRight
+                    size={14}
+                    className="text-muted-foreground group-hover:text-amber-400 group-hover:translate-x-0.5 transition-all"
+                  />
                 </Link>
               ))}
             </div>
@@ -634,7 +749,9 @@ export default async function ManageOverview() {
               }`}
             >
               <div className="p-6 border-b border-border bg-white/[0.02] flex justify-between items-center">
-                <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border ${tier.badge}`}>
+                <span
+                  className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border ${tier.badge}`}
+                >
                   {tier.title}
                 </span>
                 <span className="text-xs font-black text-muted-foreground">
@@ -667,7 +784,9 @@ export default async function ManageOverview() {
                         </p>
                       </div>
                     </div>
-                    <div className={`text-xs font-black tabular-nums ${tier.textColor}`}>
+                    <div
+                      className={`text-xs font-black tabular-nums ${tier.textColor}`}
+                    >
                       {sopir.points} PTS
                     </div>
                   </Link>

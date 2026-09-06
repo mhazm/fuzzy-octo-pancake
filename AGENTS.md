@@ -211,5 +211,10 @@ Setiap pembuatan halaman publik atau layout baru harus menyertakan metadata SEO,
 - **Halaman Dashboard (`app/dashboard/**`):** Menggunakan template `%s - Dashboard Nismara` dan `robots: { index: false, follow: false }`. Jangan tambahkan OpenGraph atau Twitter Card pada halaman dashboard internal.
 - **Skill Reference:** Untuk instruksi dan contoh template lengkap, rujuk `.agents/skills/seo-metadata/SKILL.md`.
 
+## 16. User Purge & Zero-Orphan Standards
 
-
+Setiap penambahan koleksi MongoDB baru, Mongoose model, atau fitur yang menyimpan data pengguna (`discordId`, `userId`, `truckyId`, `driverId`), media unggahan Cloudflare R2, atau array keterlibatan pengguna (`participants`, `contributors`, `likes`):
+- **Wajib Didaftarkan ke Purge Engine:** Selalu perbarui `app/api/manage/users/[discordId]/purge/route.ts` agar data pengguna pada fitur baru tersebut terhapus tuntas saat akun di-purge (baik via web dashboard maupun otomatis saat driver keluar dari Trucky).
+- **Pembedaan Owner vs Driver:** Bedakan secara ketat antara aset milik pengguna (dihapus beserta file R2 dan slot garasi dibebaskan) vs aset yang hanya disewa/disetir (cukup unassign driver ke `null`).
+- **Array Footprint:** Untuk dokumen publik bersama, gunakan `$pull` agar dokumen induk tidak terhapus.
+- **Skill Reference:** Panduan implementasi, pola kode, dan checklist lengkap wajib merujuk ke `.agents/skills/user-purge-maintenance/SKILL.md`.
