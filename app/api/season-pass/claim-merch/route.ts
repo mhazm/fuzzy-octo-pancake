@@ -266,7 +266,7 @@ export async function POST(request: Request) {
                       },
                     ],
                     footer: {
-                      text: `Nismara Logistics Portal • Discord ID: ${discordId}`,
+                      text: `Nismara Transport Portal • Discord ID: ${discordId}`,
                     },
                     timestamp: new Date().toISOString(),
                   },

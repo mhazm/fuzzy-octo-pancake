@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import EventManageUI from "./EventManageUI";
 
 export const metadata = {
-  title: "Kelola Currency Boost Event | Nismara Logistics",
+  title: "Kelola Currency Boost Event",
 };
 
 export const dynamic = "force-dynamic";

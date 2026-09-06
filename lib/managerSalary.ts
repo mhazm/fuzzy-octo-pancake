@@ -370,6 +370,16 @@ export async function calculateManagerPerformance(managerId: string, month: stri
   });
   const internPromotionPoints = internPromotionsCount * 3;
 
+  // 10. Audit / Evaluasi Driver Magang (2 Poin/evaluasi)
+  // Anti-abuse: driverId !== managerId
+  const internEvaluationsCount = await db.collection("driverevaluations").countDocuments({
+    closedByManagerId: String(managerId),
+    status: "closed",
+    driverId: { $ne: String(managerId) },
+    closedAt: { $gte: startOfMonth, $lt: endOfMonth },
+  });
+  const internEvaluationPoints = internEvaluationsCount * 2;
+
   // Total Poin Keseluruhan
   const totalPoints =
     ticketsHandled +
@@ -380,7 +390,8 @@ export async function calculateManagerPerformance(managerId: string, month: stri
     boostPoints +
     modPoints +
     distancePoints +
-    internPromotionPoints;
+    internPromotionPoints +
+    internEvaluationPoints;
 
   const rewards = calculateRewardsFromPoints(totalPoints, 10000);
 
@@ -409,6 +420,8 @@ export async function calculateManagerPerformance(managerId: string, month: stri
       distancePoints,
       internPromotionsHandled: internPromotionsCount,
       internPromotionPoints,
+      internEvaluationsHandled: internEvaluationsCount,
+      internEvaluationPoints,
     },
     rewards,
   };
@@ -482,6 +495,8 @@ export async function claimManagerSalary(managerId: string, month: string) {
           distancePoints: perf.breakdown.distancePoints,
           internPromotionsHandled: perf.breakdown.internPromotionsHandled,
           internPromotionPoints: perf.breakdown.internPromotionPoints,
+          internEvaluationsHandled: perf.breakdown.internEvaluationsHandled,
+          internEvaluationPoints: perf.breakdown.internEvaluationPoints,
         },
       },
     },
@@ -542,7 +557,7 @@ export async function claimManagerSalary(managerId: string, month: string) {
         discordId: managerId,
         guildId: GUILD_ID,
         title: vTemplate.title,
-        description: `Hadiah performa Manager Nismara Logistics periode ${month}`,
+        description: `Hadiah performa Manager Nismara Transport periode ${month}`,
         category: vTemplate.category,
         discountType: vTemplate.discountType,
         discountValue: vTemplate.discountValue,

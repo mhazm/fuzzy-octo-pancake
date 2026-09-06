@@ -9,10 +9,10 @@ export const fetchCache = "force-no-store";
 
 export const metadata: Metadata = {
   title: "Undian Berhadiah & Giveaways",
-  description: "Event undian berhadiah resmi bagi seluruh pengemudi Nismara Logistics. Selesaikan misi atau tukarkan NC untuk memenangkan hadiah spektakuler!",
+  description: "Event undian berhadiah resmi bagi seluruh pengemudi Nismara Transport. Selesaikan misi atau tukarkan NC untuk memenangkan hadiah spektakuler!",
   openGraph: {
     title: "Undian Berhadiah & Giveaways",
-    description: "Event undian berhadiah resmi bagi seluruh pengemudi Nismara Logistics. Selesaikan misi atau tukarkan NC untuk memenangkan hadiah spektakuler!",
+    description: "Event undian berhadiah resmi bagi seluruh pengemudi Nismara Transport. Selesaikan misi atau tukarkan NC untuk memenangkan hadiah spektakuler!",
     url: "https://transport.nismara.web.id/giveaways",
     siteName: "Nismara Transport",
     locale: "id_ID",
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Undian Berhadiah & Giveaways",
-    description: "Event undian berhadiah resmi bagi seluruh pengemudi Nismara Logistics.",
+    description: "Event undian berhadiah resmi bagi seluruh pengemudi Nismara Transport.",
     images: ["https://images.nismara.my.id/227300_188.jpg"],
   },
 };

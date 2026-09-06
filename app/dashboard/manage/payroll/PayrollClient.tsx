@@ -28,6 +28,7 @@ import {
   ShieldAlert,
   HelpCircle,
   GraduationCap,
+  ClipboardCheck,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -768,6 +769,32 @@ export default function PayrollClient({
               </span>
             </div>
           </div>
+
+          {/* 10. Audit / Evaluasi Driver Magang */}
+          <div className="rounded-xl bg-card border border-border p-4 space-y-3 hover:border-primary/40 transition shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className="w-9 h-9 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-500">
+                <ClipboardCheck className="w-4 h-4" />
+              </div>
+              <span className="px-2 py-0.5 rounded-md bg-muted text-[11px] font-bold text-muted-foreground border border-border/50">
+                2 Poin / Evaluasi
+              </span>
+            </div>
+            <div>
+              <div className="text-xs text-muted-foreground font-semibold">
+                Audit / Evaluasi Driver Magang
+              </div>
+              <div className="text-xl font-black text-foreground mt-0.5">
+                {currentBreakdown.internEvaluationsHandled || 0} Evaluasi
+              </div>
+            </div>
+            <div className="pt-2 border-t border-border/60 flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">Poin Didapat:</span>
+              <span className="font-bold text-amber-600 dark:text-amber-400">
+                +{currentBreakdown.internEvaluationPoints || 0} Poin
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -894,7 +921,7 @@ export default function PayrollClient({
                     Slip Gaji Digital Manager
                   </h3>
                   <p className="text-xs text-muted-foreground">
-                    Nismara Logistics Official Payroll
+                    Nismara Transport Official Payroll
                   </p>
                 </div>
               </div>

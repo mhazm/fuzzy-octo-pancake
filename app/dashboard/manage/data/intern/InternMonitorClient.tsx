@@ -4,9 +4,11 @@ import { useState, useEffect } from "react";
 import {
   Users, Search, Briefcase, Coins, Trophy, Car, ShoppingBag, Ticket,
   Dices, Target, Clock, ChevronDown, ChevronUp, MapPin, Zap, TrendingUp,
-  User, AlertTriangle, Star, ShieldCheck, Flag, CheckCircle2, Flame, ArrowRight
+  User, AlertTriangle, Star, ShieldCheck, Flag, CheckCircle2, Flame, ArrowRight,
+  ClipboardCheck, ExternalLink, X, FileText, CheckCircle, MessageSquare, History
 } from "lucide-react";
 import Swal from "sweetalert2";
+import { showAlert, showConfirm } from "@/lib/dialog";
 
 export default function InternMonitorClient() {
   const [interns, setInterns] = useState<any[]>([]);
@@ -14,6 +16,16 @@ export default function InternMonitorClient() {
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [guildId, setGuildId] = useState("863959415702028318");
+
+  // State untuk modal evaluasi
+  const [closeModalIntern, setCloseModalIntern] = useState<any | null>(null);
+  const [closeReason, setCloseReason] = useState("");
+  const [evaluationNotes, setEvaluationNotes] = useState("");
+  const [isSubmittingClose, setIsSubmittingClose] = useState(false);
+
+  // State untuk modal riwayat evaluasi
+  const [historyModalIntern, setHistoryModalIntern] = useState<any | null>(null);
 
   useEffect(() => {
     fetchInterns();
@@ -22,10 +34,14 @@ export default function InternMonitorClient() {
   const fetchInterns = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/manage/interns");
+      const res = await fetch("/api/manage/interns", {
+        cache: "no-store",
+        headers: { Pragma: "no-cache", "Cache-Control": "no-cache" },
+      });
       const data = await res.json();
       if (data.success) {
         setInterns(data.interns);
+        if (data.guildId) setGuildId(data.guildId);
       }
     } catch (error) {
       console.error(error);
@@ -79,7 +95,7 @@ export default function InternMonitorClient() {
   const handlePromote = async (intern: any) => {
     const confirm = await Swal.fire({
       title: "Promosikan ke Sopir?",
-      text: `Role ${intern.name} di Discord akan diubah dari Intern menjadi Driver.`,
+      text: `Role ${intern.name} di Discord akan diubah dari Intern menjadi Driver dan seluruh poin penalti miliknya akan dihapus (Amnesti Poin menjadi 0).`,
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#10b981",
@@ -140,6 +156,79 @@ export default function InternMonitorClient() {
     } finally {
       setActionLoading(null);
     }
+  };
+
+  const handleStartEvaluation = async (intern: any) => {
+    const confirmed = await showConfirm(
+      `Panggil ${intern.name} untuk sesi evaluasi? Sistem akan membuat channel Discord khusus evaluasi di kategori interview.`
+    );
+    if (!confirmed) return;
+
+    setActionLoading(intern._id);
+    try {
+      const res = await fetch(`/api/manage/interns/${intern.discordId}/evaluation`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await res.json();
+      if (data.success) {
+        await showAlert(data.message || "Channel evaluasi berhasil dibuat!", "Berhasil");
+        fetchInterns();
+      } else {
+        await showAlert(data.error || "Gagal memulai evaluasi", "Gagal");
+      }
+    } catch (error) {
+      console.error(error);
+      await showAlert("Terjadi kesalahan sistem saat membuat channel evaluasi.", "Error");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const openCloseModal = (intern: any) => {
+    setCloseModalIntern(intern);
+    setCloseReason("");
+    setEvaluationNotes("");
+  };
+
+  const handleSubmitCloseEvaluation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!closeModalIntern) return;
+    if (!closeReason.trim()) {
+      return await showAlert("Alasan penutupan evaluasi wajib diisi.", "Peringatan");
+    }
+    if (!evaluationNotes.trim()) {
+      return await showAlert("Hasil/catatan evaluasi wajib diisi agar staf manager lain dapat melihat hasil evaluasi.", "Peringatan");
+    }
+
+    setIsSubmittingClose(true);
+    try {
+      const res = await fetch(`/api/manage/interns/${closeModalIntern.discordId}/evaluation/close`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ closeReason, evaluationNotes }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCloseModalIntern(null);
+        await showAlert(
+          `Evaluasi driver ${closeModalIntern.name} berhasil diselesaikan!\n\nChannel Discord telah dihapus dan Anda mendapatkan +2 Poin KPI Payroll Manager (Audit Intern).`,
+          "Evaluasi Selesai 🎉"
+        );
+        fetchInterns();
+      } else {
+        await showAlert(data.error || "Gagal menutup evaluasi.", "Gagal");
+      }
+    } catch (error) {
+      console.error(error);
+      await showAlert("Terjadi kesalahan koneksi saat menutup evaluasi.", "Error");
+    } finally {
+      setIsSubmittingClose(false);
+    }
+  };
+
+  const openHistoryModal = (intern: any) => {
+    setHistoryModalIntern(intern);
   };
 
   const StatCard = ({ icon: Icon, label, value, sub, color = "text-white" }: any) => (
@@ -424,13 +513,13 @@ export default function InternMonitorClient() {
                     </div>
                   </div>
 
-                  {/* Interview Action */}
-                  <div className="border-t border-border/30 pt-6 mt-4 flex justify-between items-center">
+                  {/* Evaluasi & Promosi */}
+                  <div className="border-t border-border/30 pt-6 mt-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
                       <h4 className="text-sm font-bold text-white mb-1">Evaluasi & Promosi</h4>
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-gray-400 space-y-1">
                         {intern.quiz ? (
-                          <div className="flex items-center gap-2 mt-1">
+                          <div className="flex items-center gap-2">
                             Status Ujian: 
                             <span className={`font-bold px-2 py-0.5 rounded-full ${intern.quiz.passed ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
                               {intern.quiz.passed ? 'LULUS' : 'GAGAL'}
@@ -439,41 +528,280 @@ export default function InternMonitorClient() {
                             | Percobaan: <span className="font-bold text-white">{intern.quiz.attemptCount}x</span>
                           </div>
                         ) : (
-                          "Belum ada data ujian kelayakan."
+                          <div>Belum ada data ujian kelayakan.</div>
+                        )}
+
+                        {intern.evaluation?.active && (
+                          <div className="flex items-center gap-2 text-indigo-400 font-semibold mt-1">
+                            <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
+                            <span>Sesi Evaluasi Aktif: <code className="bg-indigo-950/60 px-2 py-0.5 rounded text-indigo-300 border border-indigo-500/30 text-[11px]">{intern.evaluation.active.channelName}</code></span>
+                          </div>
                         )}
                       </div>
                     </div>
                     
-                    {intern.quiz?.passed ? (
-                      <button 
-                        onClick={() => handlePromote(intern)}
-                        disabled={actionLoading === intern._id}
-                        className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-colors disabled:opacity-50"
-                      >
-                        {actionLoading === intern._id ? "Memproses..." : "Luluskan (Promosi)"} <CheckCircle2 className="w-4 h-4" />
-                      </button>
-                    ) : intern.quiz?.attemptCount >= 2 ? (
-                      <button 
-                        onClick={() => handleResetQuiz(intern)}
-                        disabled={actionLoading === intern._id}
-                        className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-colors disabled:opacity-50"
-                      >
-                        {actionLoading === intern._id ? "Memproses..." : "Reset Ujian"} <AlertTriangle className="w-4 h-4" />
-                      </button>
-                    ) : (
-                      <button 
-                        onClick={() => handleInterview(intern)}
-                        disabled={actionLoading === intern._id}
-                        className="flex items-center gap-2 bg-accent-lilac hover:bg-accent-lilac/80 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-colors disabled:opacity-50"
-                      >
-                        {actionLoading === intern._id ? "Memproses..." : "Mulai Interview"} <ArrowRight className="w-4 h-4" />
-                      </button>
-                    )}
+                    <div className="flex flex-wrap items-center gap-2.5">
+                      {/* Tombol Lihat Riwayat Hasil Evaluasi */}
+                      {intern.evaluation?.history?.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => openHistoryModal(intern)}
+                          className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-card hover:bg-muted text-gray-300 hover:text-white border border-border text-xs font-bold transition shadow-sm"
+                          title="Lihat Riwayat Hasil Evaluasi"
+                        >
+                          <FileText className="w-3.5 h-3.5 text-indigo-400" />
+                          <span>Hasil Evaluasi ({intern.evaluation.history.length})</span>
+                        </button>
+                      )}
+
+                      {/* Tombol Aksi Evaluasi: Aktif vs Panggil */}
+                      {intern.evaluation?.active ? (
+                        <>
+                          <a
+                            href={`https://discord.com/channels/${guildId}/${intern.evaluation.active.channelId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition shadow-sm"
+                            title="Buka Channel Evaluasi di Discord"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5" /> Buka Channel <ExternalLink className="w-3 h-3" />
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => openCloseModal(intern)}
+                            disabled={actionLoading === intern._id}
+                            className="flex items-center gap-1.5 bg-rose-600 hover:bg-rose-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition shadow-sm disabled:opacity-50"
+                            title="Tutup Channel & Simpan Hasil Evaluasi (+2 Poin KPI)"
+                          >
+                            <CheckCircle className="w-3.5 h-3.5" /> Tutup Evaluasi (+2 KPI)
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleStartEvaluation(intern)}
+                          disabled={actionLoading === intern._id}
+                          className="flex items-center gap-1.5 bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/40 px-4 py-2.5 rounded-xl text-xs font-bold transition shadow-sm disabled:opacity-50"
+                        >
+                          <ClipboardCheck className="w-3.5 h-3.5 text-indigo-400" />
+                          {actionLoading === intern._id ? "Memproses..." : "Panggil untuk Evaluasi"}
+                        </button>
+                      )}
+
+                      {/* Tombol Ujian / Promosi */}
+                      {intern.quiz?.passed ? (
+                        <button 
+                          onClick={() => handlePromote(intern)}
+                          disabled={actionLoading === intern._id}
+                          className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-colors disabled:opacity-50"
+                        >
+                          {actionLoading === intern._id ? "Memproses..." : "Luluskan (Promosi)"} <CheckCircle2 className="w-3.5 h-3.5" />
+                        </button>
+                      ) : intern.quiz?.attemptCount >= 2 ? (
+                        <button 
+                          onClick={() => handleResetQuiz(intern)}
+                          disabled={actionLoading === intern._id}
+                          className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-colors disabled:opacity-50"
+                        >
+                          {actionLoading === intern._id ? "Memproses..." : "Reset Ujian"} <AlertTriangle className="w-3.5 h-3.5" />
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={() => handleInterview(intern)}
+                          disabled={actionLoading === intern._id}
+                          className="flex items-center gap-2 bg-accent-lilac hover:bg-accent-lilac/80 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-colors disabled:opacity-50"
+                        >
+                          {actionLoading === intern._id ? "Memproses..." : "Mulai Interview"} <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Modal: Tutup & Selesaikan Evaluasi Driver */}
+      {closeModalIntern && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-card border border-border p-6 md:p-8 rounded-3xl w-full max-w-lg shadow-2xl space-y-5 relative overflow-hidden">
+            <div className="flex items-center justify-between border-b border-border pb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+                  <ClipboardCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-foreground">
+                    Selesaikan Evaluasi Driver
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Driver: <span className="font-bold text-white">{closeModalIntern.name}</span>
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCloseModalIntern(null)}
+                className="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitCloseEvaluation} className="space-y-4">
+              <div className="p-3.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-xs text-indigo-300 space-y-1">
+                <div className="font-bold flex items-center gap-1.5 text-indigo-400">
+                  <ShieldCheck className="w-4 h-4" /> Insentif KPI Payroll Manager
+                </div>
+                <p className="text-indigo-200/80 leading-relaxed">
+                  Menutup evaluasi ini akan menghapus channel Discord evaluasi secara otomatis dan memberikan <strong className="text-amber-400">+2 Poin KPI Payroll</strong> kepada Anda.
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-foreground">
+                  Alasan Penutupan (Close Reason) <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={closeReason}
+                  onChange={(e) => setCloseReason(e.target.value)}
+                  placeholder="Contoh: Sesi review berkala selesai, siap ikut konvoi"
+                  className="w-full bg-black/30 border border-border rounded-xl px-3.5 py-2.5 text-foreground text-xs outline-none focus:border-indigo-500 transition-colors"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-foreground">
+                  Catatan / Hasil Evaluasi <span className="text-rose-500">*</span>
+                </label>
+                <textarea
+                  required
+                  rows={4}
+                  value={evaluationNotes}
+                  onChange={(e) => setEvaluationNotes(e.target.value)}
+                  placeholder="Tuliskan hasil evaluasi driver magang secara rinci (etika berkendara, komitmen, pemahaman aturan VTC, poin perbaikan, dll) agar dapat dilihat seluruh manajer..."
+                  className="w-full bg-black/30 border border-border rounded-xl p-3 text-foreground text-xs outline-none focus:border-indigo-500 transition-colors resize-none leading-relaxed"
+                />
+                <span className="text-[11px] text-muted-foreground block">
+                  Catatan ini akan tersimpan permanen dan dapat ditinjau oleh seluruh jajaran manajemen.
+                </span>
+              </div>
+
+              <div className="flex gap-3 pt-3 border-t border-border">
+                <button
+                  type="button"
+                  onClick={() => setCloseModalIntern(null)}
+                  className="flex-1 py-2.5 bg-card hover:bg-muted text-foreground font-bold text-xs rounded-xl border border-border transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingClose}
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl font-bold text-xs transition-all shadow-md disabled:opacity-50 flex items-center justify-center gap-1.5"
+                >
+                  {isSubmittingClose ? "Menyimpan..." : "Tutup & Klaim 2 Poin"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Riwayat Hasil Evaluasi Driver */}
+      {historyModalIntern && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-card border border-border p-6 md:p-8 rounded-3xl w-full max-w-2xl shadow-2xl space-y-5 relative max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-border pb-4 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-foreground">
+                    Riwayat Hasil Evaluasi
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Driver: <span className="font-bold text-white">{historyModalIntern.name}</span> ({historyModalIntern.evaluation?.history?.length || 0} Sesi Evaluasi)
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setHistoryModalIntern(null)}
+                className="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+              {historyModalIntern.evaluation?.history?.length === 0 ? (
+                <div className="text-center py-10 text-muted-foreground text-xs">
+                  Belum ada catatan evaluasi sebelumnya.
+                </div>
+              ) : (
+                historyModalIntern.evaluation?.history?.map((evalItem: any, idx: number) => (
+                  <div
+                    key={evalItem._id || idx}
+                    className="p-4 rounded-2xl bg-black/20 border border-border/80 space-y-3"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/50 pb-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase tracking-wider">
+                          Selesai
+                        </span>
+                        <span className="text-xs font-bold text-white">
+                          Dievaluasi oleh: {evalItem.closedByManagerName || "Manager"}
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-muted-foreground">
+                        {evalItem.closedAt
+                          ? `${new Date(evalItem.closedAt).toLocaleString("id-ID", {
+                              timeZone: "Asia/Jakarta",
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })} WIB`
+                          : "-"}
+                      </span>
+                    </div>
+
+                    <div className="space-y-1 text-xs">
+                      <div className="text-muted-foreground">
+                        <span className="font-semibold text-gray-400">Alasan Penutupan: </span>
+                        <span className="text-white">{evalItem.closeReason}</span>
+                      </div>
+                      <div className="pt-2">
+                        <span className="font-semibold text-indigo-400 block mb-1">
+                          Catatan & Hasil Evaluasi:
+                        </span>
+                        <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5 text-gray-200 text-xs leading-relaxed whitespace-pre-wrap">
+                          {evalItem.evaluationNotes || "Tidak ada catatan evaluasi tambahan."}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="pt-3 border-t border-border shrink-0">
+              <button
+                type="button"
+                onClick={() => setHistoryModalIntern(null)}
+                className="w-full py-2.5 bg-card hover:bg-muted text-foreground font-bold text-xs rounded-xl border border-border transition-colors"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </main>

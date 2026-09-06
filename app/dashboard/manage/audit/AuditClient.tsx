@@ -1530,7 +1530,7 @@ export default function AuditClient({
               Panduan Manajemen & Mekanisme Audit
             </h2>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Standar operasional integritas data antara Discord, Trucky, dan Web Database Nismara Logistics.
+              Standar operasional integritas data antara Discord, Trucky, dan Web Database Nismara Transport.
             </p>
           </div>
 
@@ -1541,7 +1541,7 @@ export default function AuditClient({
                 Kebijakan Target Minimum 2.500 KM & Penalti (+5 PTS)
               </h3>
               <p className="text-muted-foreground leading-relaxed">
-                Setiap driver resmi VTC Nismara Logistics diwajibkan mencapai minimal 2.500 KM jarak tempuh setiap bulan kalender (terhitung dari tanggal 1 pukul 00:00:00 WIB hingga akhir bulan 23:59:59 WIB). Driver yang tidak memenuhi target akan dikenakan sanksi +5 Poin Penalti (PTS). Sistem dilengkapi kunci atomik (anti-race condition) untuk mencegah penalti ganda.
+                Setiap driver resmi VTC Nismara Transport diwajibkan mencapai minimal 2.500 KM jarak tempuh setiap bulan kalender (terhitung dari tanggal 1 pukul 00:00:00 WIB hingga akhir bulan 23:59:59 WIB). Driver yang tidak memenuhi target akan dikenakan sanksi +5 Poin Penalti (PTS). Sistem dilengkapi kunci atomik (anti-race condition) untuk mencegah penalti ganda.
               </p>
             </div>
 

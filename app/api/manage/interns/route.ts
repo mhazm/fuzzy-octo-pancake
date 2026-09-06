@@ -6,6 +6,11 @@ import clientPromise from "@/lib/mongodb";
 import { getCompanyMembersMap } from "@/lib/trucky";
 
 import dbConnect from "@/lib/mongoose";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
@@ -247,6 +252,29 @@ export async function GET() {
     const achievementMap: any = {};
     achievementStats.forEach(a => { achievementMap[a._id] = a; });
 
+    // Driver Evaluations
+    const evaluationDocs = await db
+      .collection("driverevaluations")
+      .find({ driverId: { $in: discordIds } })
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    const evaluationMap: any = {};
+    discordIds.forEach((id) => {
+      evaluationMap[id] = {
+        active: null,
+        history: [],
+      };
+    });
+
+    evaluationDocs.forEach((doc) => {
+      if (doc.status === "active" && !evaluationMap[doc.driverId].active) {
+        evaluationMap[doc.driverId].active = doc;
+      } else if (doc.status === "closed") {
+        evaluationMap[doc.driverId].history.push(doc);
+      }
+    });
+
     // Build intern data
     const interns = internUsers.map(user => {
       const did = user.discordId;
@@ -260,6 +288,7 @@ export async function GET() {
       const convoy = convoyMap[did] || { interested: 0, joined: 0 };
       const achievement = achievementMap[did] || {};
       const quiz = quizMap[did] || null;
+      const evaluation = evaluationMap[did] || { active: null, history: [] };
       const userFleets = fleetMap[user._id?.toString()] || [];
       const driverLink = driverLinkMap[did];
 
@@ -341,13 +370,26 @@ export async function GET() {
         },
 
         quiz: quiz,
+        evaluation: evaluation,
       };
     });
 
     // Sort by daysSinceJoin descending (longest first)
     interns.sort((a: any, b: any) => b.daysSinceJoin - a.daysSinceJoin);
 
-    return NextResponse.json({ success: true, interns });
+    return NextResponse.json(
+      {
+        success: true,
+        interns,
+        guildId: process.env.DISCORD_GUILD_ID || "863959415702028318",
+      },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+          Pragma: "no-cache",
+        },
+      }
+    );
   } catch (error) {
     console.error("GET Intern Monitor Error:", error);
     return NextResponse.json({ error: "Gagal mengambil data intern" }, { status: 500 });

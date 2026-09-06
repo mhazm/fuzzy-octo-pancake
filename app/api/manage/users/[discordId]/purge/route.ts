@@ -219,6 +219,19 @@ export async function DELETE(
         }
       : { $or: [{ discordId: discordId }, { userId: discordId }] };
 
+    // Bersihkan Channel Evaluasi Discord jika masih aktif
+    const activeEval = await db.collection("driverevaluations").findOne({ driverId: discordId, status: "active" });
+    if (activeEval?.channelId && process.env.DISCORD_BOT_TOKEN) {
+      try {
+        await fetch(`https://discord.com/api/v10/channels/${activeEval.channelId}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}` },
+        });
+      } catch (e) {
+        console.error("Purge: failed to delete discord evaluation channel", e);
+      }
+    }
+
     // --- User Core & Auth ---
     deletePromises.push(db.collection("users").deleteMany({ discordId }));
     if (userIdObj) {
@@ -352,6 +365,8 @@ export async function DELETE(
     deletePromises.push(db.collection("collectibles").deleteMany({ discordId }));
     deletePromises.push(db.collection("survey_responses").deleteMany({ discordId }));
     deletePromises.push(db.collection("quizattempts").deleteMany({ discordId }));
+    deletePromises.push(db.collection("internpromotions").deleteMany({ internDiscordId: discordId }));
+    deletePromises.push(db.collection("driverevaluations").deleteMany({ driverId: discordId }));
     deletePromises.push(db.collection("aichathistories").deleteMany({ discordId }));
     deletePromises.push(db.collection("securityalerts").deleteMany({ discordId }));
     deletePromises.push(db.collection("lottotickets").deleteMany({ discordId }));

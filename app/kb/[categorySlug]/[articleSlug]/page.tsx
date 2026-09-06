@@ -19,7 +19,7 @@ export async function generateMetadata({
   const resolvedParams = await params;
 
   let articleTitle = resolvedParams.articleSlug;
-  let articleDescription = "Panduan dan informasi resmi seputar Nismara Logistics";
+  let articleDescription = "Panduan dan informasi resmi seputar Nismara Transport";
   let coverImage = "https://images.nismara.my.id/227300_188.jpg";
   
   try {

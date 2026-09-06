@@ -247,7 +247,7 @@ export default async function Home() {
               </defs>
               <text className="text-[42px] font-black fill-current uppercase tracking-[0.3em] text-foreground">
                 <textPath href="#textCircle" startOffset="0%" textLength="2199">
-                  NISMARA LOGISTICS • NISMARA TRANSPORT • NISMARA AIRLINES •
+                  NISMARA TRANSPORT • NISMARA COMMUNITY • NISMARA AIRLINES •
                   NISMARA RACING •
                 </textPath>
               </text>

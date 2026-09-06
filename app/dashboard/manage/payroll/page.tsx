@@ -12,7 +12,7 @@ import PayrollClient from "./PayrollClient";
 
 export const metadata = {
   title: "Manager Payroll & Performance - Manager Portal",
-  description: "Sistem gaji bulanan dan insentif performa berbasis pencapaian KPI Nismara Logistics.",
+  description: "Sistem gaji bulanan dan insentif performa berbasis pencapaian KPI Nismara Transport.",
 };
 
 export const dynamic = "force-dynamic";

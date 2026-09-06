@@ -61,7 +61,7 @@ export default function KBPortalClient({ session }: { session: any }) {
           Nismara <span className="text-gradient">Knowledge Base</span>
         </h1>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
-          Temukan panduan, aturan, dan informasi seputar VTC Nismara Logistics.
+          Temukan panduan, aturan, dan informasi seputar VTC Nismara Transport.
         </p>
       </div>
 

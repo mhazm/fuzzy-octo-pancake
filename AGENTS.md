@@ -6,11 +6,11 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 <!-- END:nextjs-agent-rules -->
 
-# Nismara Logistics - Project Context & Rules
+# Nismara Transport - Project Context & Rules
 
 ## 1. Project Overview
 
-Nismara Logistics is a web platform for a virtual trucking community (VTC). It integrates with Discord (for authentication and roles) and Trucky (for in-game data, `truckyId`, `truckyRank`). The platform includes features such as a Social Gallery, Market, Fuel Market, Cargo Market, Convoy management, and a Driver directory.
+Nismara Transport is a web platform for a virtual trucking community (VTC). It integrates with Discord (for authentication and roles) and Trucky (for in-game data, `truckyId`, `truckyRank`). The platform includes features such as a Social Gallery, Market, Fuel Market, Cargo Market, Convoy management, and a Driver directory.
 
 ## 2. Technology Stack
 
@@ -218,3 +218,9 @@ Setiap penambahan koleksi MongoDB baru, Mongoose model, atau fitur yang menyimpa
 - **Pembedaan Owner vs Driver:** Bedakan secara ketat antara aset milik pengguna (dihapus beserta file R2 dan slot garasi dibebaskan) vs aset yang hanya disewa/disetir (cukup unassign driver ke `null`).
 - **Array Footprint:** Untuk dokumen publik bersama, gunakan `$pull` agar dokumen induk tidak terhapus.
 - **Skill Reference:** Panduan implementasi, pola kode, dan checklist lengkap wajib merujuk ke `.agents/skills/user-purge-maintenance/SKILL.md`.
+
+## 17. Standar Penamaan Brand Resmi (Nismara Transport - DILARANG Nismara Logistics)
+
+- **PERINGATAN KERAS:** Nama resmi komunitas, portal, dan platform ini adalah **Nismara Transport**.
+- **DILARANG KERAS** bagi AI Agent maupun developer menulis atau menyebut entitas ini sebagai **Nismara Logistics** di teks UI, metadata, notifikasi web/Discord, dialog alert/modal, maupun dokumentasi baru.
+- Selalu gunakan **Nismara Transport** secara konsisten di seluruh antarmuka dan salinan teks pengguna.

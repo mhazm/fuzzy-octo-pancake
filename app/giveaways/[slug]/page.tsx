@@ -23,7 +23,7 @@ export async function generateMetadata({
   }
 
   const title = `${giveaway.title}`;
-  const description = giveaway.description || "Event giveaway resmi Nismara Logistics.";
+  const description = giveaway.description || "Event giveaway resmi Nismara Transport.";
   const banner = giveaway.bannerUrl || "https://images.nismara.my.id/227300_188.jpg";
   const pageUrl = `https://transport.nismara.web.id/giveaways/${slug}`;
 

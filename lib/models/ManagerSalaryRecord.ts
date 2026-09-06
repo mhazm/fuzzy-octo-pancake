@@ -21,6 +21,8 @@ export interface IManagerSalaryRecord extends Document {
     distancePoints: number;
     internPromotionsHandled?: number;
     internPromotionPoints?: number;
+    internEvaluationsHandled?: number;
+    internEvaluationPoints?: number;
   };
   rewardsGranted: {
     ncAmount: number;
@@ -66,6 +68,8 @@ const managerSalaryRecordSchema = new Schema<IManagerSalaryRecord>(
       distancePoints: { type: Number, default: 0 },
       internPromotionsHandled: { type: Number, default: 0 },
       internPromotionPoints: { type: Number, default: 0 },
+      internEvaluationsHandled: { type: Number, default: 0 },
+      internEvaluationPoints: { type: Number, default: 0 },
     },
     rewardsGranted: {
       ncAmount: { type: Number, default: 0 },
