@@ -99,6 +99,14 @@ export async function POST(request: Request) {
       );
     }
 
+    // Sanitasi: strip Discord mention dan batasi panjang karakter
+    const sanitize = (s: string, max: number) =>
+      s.trim().replace(/@(everyone|here)/gi, "[mention-removed]").slice(0, max);
+    const safeRecipientName    = sanitize(recipientName, 100);
+    const safeRecipientPhone   = sanitize(recipientPhone, 25);
+    const safeRecipientAddress = sanitize(recipientAddress, 500);
+    const safeShippingNotes    = sanitize(shippingNotes || "", 300);
+
     // 2. Validasi Musim dan Driver
     const season = await SeasonPass.findOne({
       seasonNumber: Number(seasonNumber),
@@ -250,22 +258,22 @@ export async function POST(request: Request) {
                       },
                       {
                         name: "👤 Nama Penerima",
-                        value: recipientName.trim(),
+                        value: safeRecipientName,
                         inline: true,
                       },
                       {
                         name: "📱 No. WhatsApp",
-                        value: recipientPhone.trim(),
+                        value: safeRecipientPhone,
                         inline: true,
                       },
                       {
                         name: "📍 Alamat Lengkap Pengiriman",
-                        value: recipientAddress.trim(),
+                        value: safeRecipientAddress,
                         inline: false,
                       },
                       {
                         name: "📝 Catatan Tambahan Driver",
-                        value: shippingNotes?.trim() || "-",
+                        value: safeShippingNotes || "-",
                         inline: false,
                       },
                       {
@@ -298,10 +306,10 @@ export async function POST(request: Request) {
       seasonNumber: Number(seasonNumber),
       prizeTitle:
         season.grandPrize?.title || `Hadiah Puncak Season ${seasonNumber}`,
-      recipientName: recipientName.trim(),
-      recipientPhone: recipientPhone.trim(),
-      recipientAddress: recipientAddress.trim(),
-      shippingNotes: shippingNotes?.trim() || "",
+      recipientName: safeRecipientName,
+      recipientPhone: safeRecipientPhone,
+      recipientAddress: safeRecipientAddress,
+      shippingNotes: safeShippingNotes,
       channelId: createdChannelId,
       status: "pending",
     });
@@ -309,10 +317,10 @@ export async function POST(request: Request) {
     // Update progress user
     progress.merchClaim = {
       claimedAt: new Date(),
-      recipientName: recipientName.trim(),
-      recipientPhone: recipientPhone.trim(),
-      recipientAddress: recipientAddress.trim(),
-      shippingNotes: shippingNotes?.trim() || "",
+      recipientName: safeRecipientName,
+      recipientPhone: safeRecipientPhone,
+      recipientAddress: safeRecipientAddress,
+      shippingNotes: safeShippingNotes,
       channelId: createdChannelId,
       status: "pending",
     };

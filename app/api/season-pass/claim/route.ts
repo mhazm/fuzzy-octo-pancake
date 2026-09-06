@@ -32,8 +32,17 @@ export async function POST(request: Request) {
       );
     }
 
-    const body = await request.json();
-    const { level, track, claimAll, seasonNumber = 1 } = body;
+    const body = await request.json().catch(() => ({}));
+    const { claimAll } = body;
+
+    // Validasi seasonNumber
+    const seasonNumber = Math.floor(Number(body.seasonNumber ?? 1));
+    if (!Number.isFinite(seasonNumber) || seasonNumber < 1 || seasonNumber > 10) {
+      return NextResponse.json(
+        { error: "seasonNumber tidak valid" },
+        { status: 400 }
+      );
+    }
 
     let result;
 
@@ -43,12 +52,24 @@ export async function POST(request: Request) {
         seasonNumber
       );
     } else {
-      if (!level || !track) {
+      // Validasi level
+      const level = Math.floor(Number(body.level));
+      if (!Number.isFinite(level) || level < 1 || level > 30) {
         return NextResponse.json(
-          { error: "Parameter level dan track (free/premium) wajib diisi" },
+          { error: "Parameter level tidak valid (harus angka 1-30)" },
           { status: 400 }
         );
       }
+
+      // Validasi track
+      const track = body.track;
+      if (track !== "free" && track !== "premium") {
+        return NextResponse.json(
+          { error: "Parameter track harus 'free' atau 'premium'" },
+          { status: 400 }
+        );
+      }
+
       result = await claimLevelReward(
         session.user.discordId,
         seasonNumber,

@@ -75,7 +75,16 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json().catch(() => ({}));
-    const { seasonNumber = 1, orderType = "PREMIUM_PASS", levelCount = 1 } = body;
+
+    // Validasi & cast input
+    const seasonNumber = Math.floor(Number(body.seasonNumber ?? 1));
+    if (!Number.isFinite(seasonNumber) || seasonNumber < 1 || seasonNumber > 10) {
+      return NextResponse.json({ error: "seasonNumber tidak valid" }, { status: 400 });
+    }
+
+    const orderType = body.orderType === "LEVEL_SKIP" ? "LEVEL_SKIP" : "PREMIUM_PASS";
+    const rawLevelCount = Math.floor(Number(body.levelCount ?? 1));
+    const levelCount = Number.isFinite(rawLevelCount) && rawLevelCount > 0 ? rawLevelCount : 1;
 
     const season = await SeasonPass.findOne({ seasonNumber });
     if (!season) {
