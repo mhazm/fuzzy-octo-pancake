@@ -98,6 +98,7 @@ export async function GET() {
           specialContractIncome: { $sum: { $cond: ["$isSpecialContract", "$nc.total", 0] } },
           hardcoreJobs: { $sum: { $cond: ["$isHardcore", 1, 0] } },
           hardcoreRatingSum: { $sum: { $cond: ["$isHardcore", "$hardcoreRating", 0] } },
+          lastJobCompletedAt: { $max: { $ifNull: ["$completedAt", "$updatedAt"] } },
         }
       }
     ]).toArray();
@@ -295,6 +296,29 @@ export async function GET() {
       const joinedAt = driverLink?.createdAt || user.createdAt;
       const daysSinceJoin = joinedAt ? Math.floor((Date.now() - new Date(joinedAt).getTime()) / (1000 * 60 * 60 * 24)) : 0;
 
+      const lastJobAt = jobs.lastJobCompletedAt || null;
+      const daysSinceLastJob = lastJobAt
+        ? Math.floor((Date.now() - new Date(lastJobAt).getTime()) / (1000 * 60 * 60 * 24))
+        : null;
+
+      let activityStatus: "active" | "warning" | "inactive" | "never" = "never";
+      if (daysSinceLastJob !== null) {
+        if (daysSinceLastJob <= 7) activityStatus = "active";
+        else if (daysSinceLastJob <= 20) activityStatus = "warning";
+        else activityStatus = "inactive";
+      }
+
+      const MAX_PROBATION_DAYS = 90;
+      const isOverdue = daysSinceJoin > MAX_PROBATION_DAYS;
+      const overdueDays = isOverdue ? daysSinceJoin - MAX_PROBATION_DAYS : 0;
+      const daysRemaining = Math.max(0, MAX_PROBATION_DAYS - daysSinceJoin);
+      const probationProgress = Math.min(100, Math.round((daysSinceJoin / MAX_PROBATION_DAYS) * 100));
+
+      let probationPhase: "month_1" | "month_2" | "month_3" | "overdue" = "month_1";
+      if (daysSinceJoin > MAX_PROBATION_DAYS) probationPhase = "overdue";
+      else if (daysSinceJoin > 60) probationPhase = "month_3";
+      else if (daysSinceJoin > 30) probationPhase = "month_2";
+
       return {
         _id: user._id,
         discordId: did,
@@ -311,6 +335,20 @@ export async function GET() {
         isBooster: user.isBooster || false,
         nismaraPlus: user.nismaraplus?.status || false,
 
+        lastJobAt,
+        daysSinceLastJob,
+        activityStatus,
+
+        probation: {
+          maxDays: MAX_PROBATION_DAYS,
+          daysSinceJoin,
+          daysRemaining,
+          isOverdue,
+          overdueDays,
+          phase: probationPhase,
+          progressPercent: probationProgress,
+        },
+
         jobs: {
           total: jobs.totalJobs || 0,
           ncEarned: Math.round(jobs.totalNcEarned || 0),
@@ -324,6 +362,8 @@ export async function GET() {
           hardcoreJobs: jobs.hardcoreJobs || 0,
           hardcoreRatingAvg: jobs.hardcoreJobs ? (jobs.hardcoreRatingSum / jobs.hardcoreJobs).toFixed(1) : "0",
           validatedJobs: validated.totalValidated || 0,
+          lastJobAt,
+          daysSinceLastJob,
         },
 
         lotto: {
