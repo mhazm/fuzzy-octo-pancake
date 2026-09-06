@@ -75,7 +75,13 @@ import {
 } from "@/components/ui/navigation-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-export default function NavbarClient({ session }: { session: any }) {
+export default function NavbarClient({
+  session,
+  isSeasonPassEnabled = true,
+}: {
+  session: any;
+  isSeasonPassEnabled?: boolean;
+}) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [currency, setCurrency] = useState<number | null>(null);
@@ -96,11 +102,15 @@ export default function NavbarClient({ session }: { session: any }) {
         .then((data) => setCurrency(data.balance))
         .catch((err) => console.error("Gagal mengambil currency:", err));
 
-      getSeasonPassSummary()
-        .then((data) => setSeasonPass(data))
-        .catch((err) => console.error("Gagal mengambil season pass:", err));
+      if (isSeasonPassEnabled) {
+        getSeasonPassSummary()
+          .then((data) => setSeasonPass(data))
+          .catch((err) => console.error("Gagal mengambil season pass:", err));
+      } else {
+        setSeasonPass(null);
+      }
     }
-  }, [mounted, session]);
+  }, [mounted, session, isSeasonPassEnabled]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -122,7 +132,7 @@ export default function NavbarClient({ session }: { session: any }) {
   ];
 
   // Mobile-specific menu items (flattened)
-  const mobileMenuItems = [
+  const rawMobileMenuItems = [
     { name: "Home", href: "/", icon: Home },
     { name: "Season Pass", href: "/dashboard/season-pass", icon: Trophy },
     { name: "Jobs Details", href: "/jobs", icon: Briefcase },
@@ -155,6 +165,10 @@ export default function NavbarClient({ session }: { session: any }) {
     { name: "Surveys", href: "/surveys", icon: ClipboardList },
     { name: "Coupons", href: "/coupons", icon: Ticket },
   ];
+
+  const mobileMenuItems = isSeasonPassEnabled
+    ? rawMobileMenuItems
+    : rawMobileMenuItems.filter((item) => item.href !== "/dashboard/season-pass");
 
   return (
     <>
@@ -729,79 +743,81 @@ export default function NavbarClient({ session }: { session: any }) {
                   {/* EXCLUSIVE MEMBERSHIP & PASS SECTION */}
                   <div className="px-1 py-1 space-y-1.5">
                     {/* SEASON PASS EXCLUSIVE CARD */}
-                    <DropdownMenuItem
-                      className={`cursor-pointer rounded-xl p-2.5 flex flex-col gap-1.5 group transition-all duration-200 ${
-                        seasonPass?.isPremium
-                          ? "bg-amber-500/10 hover:bg-amber-500/20 focus:bg-amber-500/20 border border-amber-500/30"
-                          : "bg-white/[0.03] hover:bg-white/[0.07] focus:bg-white/[0.07] border border-white/5 hover:border-amber-500/30"
-                      }`}
-                      render={
-                        <Link
-                          href="/dashboard/season-pass"
-                          className="block w-full"
-                        />
-                      }
-                    >
-                      <div className="flex items-center justify-between w-full">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div
-                            className={`p-1.5 rounded-lg shrink-0 transition-colors ${
-                              seasonPass?.isPremium
-                                ? "bg-amber-500/20 text-amber-400"
-                                : "bg-slate-800 text-slate-400 group-hover:text-amber-400 group-hover:bg-amber-500/10"
-                            }`}
-                          >
-                            <Trophy className="h-4 w-4" />
-                          </div>
-                          <div className="flex flex-col min-w-0">
-                            <span
-                              className={`text-xs font-bold truncate leading-tight ${
+                    {isSeasonPassEnabled && (
+                      <DropdownMenuItem
+                        className={`cursor-pointer rounded-xl p-2.5 flex flex-col gap-1.5 group transition-all duration-200 ${
+                          seasonPass?.isPremium
+                            ? "bg-amber-500/10 hover:bg-amber-500/20 focus:bg-amber-500/20 border border-amber-500/30"
+                            : "bg-white/[0.03] hover:bg-white/[0.07] focus:bg-white/[0.07] border border-white/5 hover:border-amber-500/30"
+                        }`}
+                        render={
+                          <Link
+                            href="/dashboard/season-pass"
+                            className="block w-full"
+                          />
+                        }
+                      >
+                        <div className="flex items-center justify-between w-full">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div
+                              className={`p-1.5 rounded-lg shrink-0 transition-colors ${
                                 seasonPass?.isPremium
-                                  ? "text-amber-400"
-                                  : "text-foreground group-hover:text-amber-400 transition-colors"
+                                  ? "bg-amber-500/20 text-amber-400"
+                                  : "bg-slate-800 text-slate-400 group-hover:text-amber-400 group-hover:bg-amber-500/10"
                               }`}
                             >
-                              Season Pass
-                            </span>
-                            <span className="text-[10px] text-muted-foreground font-medium leading-tight mt-0.5">
-                              {seasonPass
-                                ? `S${seasonPass.seasonNumber} • Level ${seasonPass.currentLevel}`
-                                : "Season 1 • Level 0"}
-                            </span>
+                              <Trophy className="h-4 w-4" />
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <span
+                                className={`text-xs font-bold truncate leading-tight ${
+                                  seasonPass?.isPremium
+                                    ? "text-amber-400"
+                                    : "text-foreground group-hover:text-amber-400 transition-colors"
+                                }`}
+                              >
+                                Season Pass
+                              </span>
+                              <span className="text-[10px] text-muted-foreground font-medium leading-tight mt-0.5">
+                                {seasonPass
+                                  ? `S${seasonPass.seasonNumber} • Level ${seasonPass.currentLevel}`
+                                  : "Season 1 • Level 0"}
+                              </span>
+                            </div>
                           </div>
+
+                          <span
+                            className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border shrink-0 ${
+                              seasonPass?.isPremium
+                                ? "bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-xs shadow-amber-500/20"
+                                : "bg-slate-800/80 text-slate-400 border-slate-700/60 group-hover:border-slate-600"
+                            }`}
+                          >
+                            {seasonPass?.isPremium ? "PREMIUM" : "FREE"}
+                          </span>
                         </div>
 
-                        <span
-                          className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border shrink-0 ${
-                            seasonPass?.isPremium
-                              ? "bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-xs shadow-amber-500/20"
-                              : "bg-slate-800/80 text-slate-400 border-slate-700/60 group-hover:border-slate-600"
-                          }`}
-                        >
-                          {seasonPass?.isPremium ? "PREMIUM" : "FREE"}
-                        </span>
-                      </div>
-
-                      {/* Mini progress bar (Level 0 - 30) */}
-                      <div className="w-full bg-slate-800/80 rounded-full h-1 overflow-hidden mt-0.5">
-                        <div
-                          className={`h-full rounded-full transition-all duration-500 ${
-                            seasonPass?.isPremium
-                              ? "bg-linear-to-r from-amber-500 to-yellow-400"
-                              : "bg-slate-600 group-hover:bg-amber-400"
-                          }`}
-                          style={{
-                            width: `${Math.min(
-                              100,
-                              Math.max(
-                                seasonPass?.currentLevel ? 4 : 2,
-                                Math.round(((seasonPass?.currentLevel ?? 0) / 30) * 100)
-                              )
-                            )}%`,
-                          }}
-                        />
-                      </div>
-                    </DropdownMenuItem>
+                        {/* Mini progress bar (Level 0 - 30) */}
+                        <div className="w-full bg-slate-800/80 rounded-full h-1 overflow-hidden mt-0.5">
+                          <div
+                            className={`h-full rounded-full transition-all duration-500 ${
+                              seasonPass?.isPremium
+                                ? "bg-linear-to-r from-amber-500 to-yellow-400"
+                                : "bg-slate-600 group-hover:bg-amber-400"
+                            }`}
+                            style={{
+                              width: `${Math.min(
+                                100,
+                                Math.max(
+                                  seasonPass?.currentLevel ? 4 : 2,
+                                  Math.round(((seasonPass?.currentLevel ?? 0) / 30) * 100)
+                                )
+                              )}%`,
+                            }}
+                          />
+                        </div>
+                      </DropdownMenuItem>
+                    )}
 
                     {/* NISMARA+ CARD */}
                     <DropdownMenuItem

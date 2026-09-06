@@ -4,7 +4,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import dbConnect from "@/lib/mongoose";
 import UserSeasonProgress from "@/lib/models/UserSeasonProgress";
-import { getLatestSeason } from "@/lib/seasonPass";
+import { getLatestSeason, getSeasonPassFeatureStatus } from "@/lib/seasonPass";
 
 export interface SeasonPassSummary {
   seasonNumber: number;
@@ -19,6 +19,9 @@ export async function getSeasonPassSummary(): Promise<SeasonPassSummary | null> 
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.discordId) return null;
+
+    const featureStatus = await getSeasonPassFeatureStatus();
+    if (!featureStatus.isEnabled) return null;
 
     await dbConnect();
 

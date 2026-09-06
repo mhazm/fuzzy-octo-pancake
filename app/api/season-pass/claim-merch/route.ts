@@ -7,6 +7,7 @@ import SeasonPassMerchClaim from "@/lib/models/SeasonPassMerchClaim";
 import UserSeasonProgress from "@/lib/models/UserSeasonProgress";
 import User from "@/lib/models/User";
 import { revalidatePath } from "next/cache";
+import { getSeasonPassFeatureStatus } from "@/lib/seasonPass";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -54,6 +55,15 @@ export async function POST(request: Request) {
     }
 
     await dbConnect();
+
+    const featureStatus = await getSeasonPassFeatureStatus();
+    if (!featureStatus.isEnabled) {
+      return NextResponse.json(
+        { error: featureStatus.disabledReason || "Fitur Season Pass sedang dinonaktifkan sementara." },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json().catch(() => ({}));
     const {
       seasonNumber = 1,

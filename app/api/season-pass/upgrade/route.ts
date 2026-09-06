@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import dbConnect from "@/lib/mongoose";
-import { upgradeToPremiumPass, getUserSeasonProgress } from "@/lib/seasonPass";
+import {
+  upgradeToPremiumPass,
+  getUserSeasonProgress,
+  getSeasonPassFeatureStatus,
+} from "@/lib/seasonPass";
 import { revalidatePath } from "next/cache";
 
 export const dynamic = "force-dynamic";
@@ -16,10 +20,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    await dbConnect();
+
+    const featureStatus = await getSeasonPassFeatureStatus();
+    if (!featureStatus.isEnabled) {
+      return NextResponse.json(
+        { error: featureStatus.disabledReason || "Fitur Season Pass sedang dinonaktifkan sementara." },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json().catch(() => ({}));
     const { seasonNumber = 1 } = body;
-
-    await dbConnect();
 
     const result = await upgradeToPremiumPass(
       session.user.discordId,

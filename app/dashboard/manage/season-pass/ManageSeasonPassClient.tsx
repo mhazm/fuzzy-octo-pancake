@@ -31,7 +31,10 @@ import {
   Fuel,
   Shield,
   Star,
+  Power,
+  Settings,
 } from "lucide-react";
+import Link from "next/link";
 import { showAlert, showConfirm } from "@/lib/dialog";
 import { useRouter } from "next/navigation";
 import SeasonFormModal from "./SeasonFormModal";
@@ -43,6 +46,7 @@ export default function ManageSeasonPassClient({
   initialStats,
   initialDriverProgress,
   initialOrders = [],
+  initialFeatureStatus,
   isOwner = false,
 }: {
   initialSeasons: any[];
@@ -50,6 +54,7 @@ export default function ManageSeasonPassClient({
   initialStats: any;
   initialDriverProgress: any[];
   initialOrders?: any[];
+  initialFeatureStatus?: any;
   isOwner?: boolean;
 }) {
   const router = useRouter();
@@ -58,6 +63,13 @@ export default function ManageSeasonPassClient({
   const [stats, setStats] = useState<any>(initialStats || {});
   const [driverProgress, setDriverProgress] = useState<any[]>(initialDriverProgress || []);
   const [orders, setOrders] = useState<any[]>(initialOrders || []);
+
+  const [featureStatus, setFeatureStatus] = useState<any>(
+    initialFeatureStatus || {
+      isEnabled: true,
+      disabledReason: "",
+    }
+  );
 
   const [activeTab, setActiveTab] = useState<"SEASONS" | "TEMPLATES" | "DRIVERS" | "ORDERS">("SEASONS");
   const [searchQuery, setSearchQuery] = useState("");
@@ -101,12 +113,17 @@ export default function ManageSeasonPassClient({
 
   const handleSelectSeason = async (seasonNum: number) => {
     try {
-      const res = await fetch(`/api/manage/season-pass?seasonNumber=${seasonNum}`);
+      const res = await fetch(`/api/manage/season-pass?seasonNumber=${seasonNum}`, {
+        cache: "no-store",
+      });
       const data = await res.json();
       if (res.ok) {
         setSelectedSeason(data.activeSeason);
         setStats(data.stats);
         setDriverProgress(data.driverProgress);
+        if (data.featureStatus) {
+          setFeatureStatus(data.featureStatus);
+        }
       }
     } catch (err) {
       console.error(err);
@@ -246,13 +263,18 @@ export default function ManageSeasonPassClient({
 
   const refreshData = async () => {
     try {
-      const res = await fetch(`/api/manage/season-pass?seasonNumber=${selectedSeason?.seasonNumber || 1}`);
+      const res = await fetch(`/api/manage/season-pass?seasonNumber=${selectedSeason?.seasonNumber || 1}`, {
+        cache: "no-store",
+      });
       const data = await res.json();
       if (res.ok) {
         setSeasons(data.seasons);
         setSelectedSeason(data.activeSeason);
         setStats(data.stats);
         setDriverProgress(data.driverProgress);
+        if (data.featureStatus) {
+          setFeatureStatus(data.featureStatus);
+        }
       }
       loadTemplates();
     } catch (err) {
@@ -268,13 +290,24 @@ export default function ManageSeasonPassClient({
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-950/40 via-card/90 to-purple-950/30 border border-amber-500/30 p-6 md:p-8 shadow-2xl backdrop-blur-xl">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-black uppercase tracking-wider flex items-center gap-1.5">
                 <Trophy size={14} /> Manajemen Musim & Seasonal Pass
               </span>
               <span className="px-3 py-1 rounded-full bg-card border border-border text-muted-foreground text-xs font-semibold">
                 Total {seasons.length} Musim • {templates.length} Template Hadiah
               </span>
+              <Link
+                href="/dashboard/manage/season-pass/setting"
+                className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 border transition-all hover:scale-105 ${
+                  featureStatus.isEnabled
+                    ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25"
+                    : "bg-rose-500/15 border-rose-500/30 text-rose-400 hover:bg-rose-500/25 animate-pulse"
+                }`}
+              >
+                <Power size={12} />
+                <span>{featureStatus.isEnabled ? "Fitur Publik Aktif" : "Fitur Nonaktif (Disembunyikan)"}</span>
+              </Link>
             </div>
             <h1 className="text-2xl md:text-4xl font-black text-foreground tracking-tight">
               Pusat Kendali Season Pass
@@ -284,7 +317,14 @@ export default function ManageSeasonPassClient({
             </p>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <Link
+              href="/dashboard/manage/season-pass/setting"
+              className="px-4 py-3 bg-card border border-border hover:border-amber-500/40 text-foreground font-bold text-xs uppercase tracking-wider rounded-2xl transition-all shadow-md flex items-center gap-2 group"
+            >
+              <Settings size={16} className="text-amber-400 group-hover:rotate-45 transition-transform duration-300" />
+              <span>Pengaturan Fitur</span>
+            </Link>
             <button
               onClick={handleCreateNewTemplate}
               className="px-4 py-3 bg-card border border-border hover:border-amber-500/40 text-foreground font-bold text-xs uppercase tracking-wider rounded-2xl transition-all shadow-md flex items-center gap-2"

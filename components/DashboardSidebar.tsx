@@ -59,14 +59,24 @@ const managementItems = [
   { name: "Manage Tickets", href: "/dashboard/manage/tickets", icon: FileText },
 ];
 
-export default function DashboardSidebar({ userRole }: { userRole?: string }) {
+export default function DashboardSidebar({
+  userRole,
+  isSeasonPassEnabled = true,
+}: {
+  userRole?: string;
+  isSeasonPassEnabled?: boolean;
+}) {
   const pathname = usePathname();
   const isManager = userRole === "manager" || userRole === "admin";
 
+  const effectiveMenuItems = isSeasonPassEnabled
+    ? menuItems
+    : menuItems.filter((item) => item.href !== "/dashboard/season-pass");
+
   // Konfigurasi untuk 4 menu yang tampil di Bottom Bar
   const primaryMobileHrefs = ["/dashboard", "/dashboard/garage", "/dashboard/jobs", "/dashboard/currency"];
-  const primaryMobileItems = menuItems.filter(item => primaryMobileHrefs.includes(item.href));
-  const secondaryMenuItems = menuItems.filter(item => !primaryMobileHrefs.includes(item.href));
+  const primaryMobileItems = effectiveMenuItems.filter(item => primaryMobileHrefs.includes(item.href));
+  const secondaryMenuItems = effectiveMenuItems.filter(item => !primaryMobileHrefs.includes(item.href));
 
   return (
     <>
@@ -81,7 +91,7 @@ export default function DashboardSidebar({ userRole }: { userRole?: string }) {
               Driver Menu
             </h2>
             <nav className="flex flex-col gap-2">
-              {menuItems.map((item) => {
+              {effectiveMenuItems.map((item) => {
                 const isActive = pathname === item.href;
                 const Icon = item.icon;
                 return (

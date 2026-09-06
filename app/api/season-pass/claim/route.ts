@@ -7,6 +7,7 @@ import {
   claimAllAvailableRewards,
   getActiveSeason,
   getUserSeasonProgress,
+  getSeasonPassFeatureStatus,
 } from "@/lib/seasonPass";
 import { revalidatePath } from "next/cache";
 
@@ -21,10 +22,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    await dbConnect();
+
+    const featureStatus = await getSeasonPassFeatureStatus();
+    if (!featureStatus.isEnabled) {
+      return NextResponse.json(
+        { error: featureStatus.disabledReason || "Fitur Season Pass sedang dinonaktifkan sementara." },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
     const { level, track, claimAll, seasonNumber = 1 } = body;
-
-    await dbConnect();
 
     let result;
 

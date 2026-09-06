@@ -6,7 +6,16 @@ import SeasonPass from "@/lib/models/SeasonPass";
 import SeasonPassTemplate from "@/lib/models/SeasonPassTemplate";
 import UserSeasonProgress from "@/lib/models/UserSeasonProgress";
 import User from "@/lib/models/User";
-import { SEASON_1_LEVELS, ensureSeasonInitialized } from "@/lib/seasonPass";
+import {
+  SEASON_1_LEVELS,
+  ensureSeasonInitialized,
+  getSeasonPassFeatureStatus,
+  setSeasonPassFeatureStatus,
+} from "@/lib/seasonPass";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 export async function GET(request: Request) {
   try {
@@ -55,18 +64,29 @@ export async function GET(request: Request) {
     const completedCount = progressList.filter((p) => p.currentLevel >= 30).length;
     const totalXpEarned = progressList.reduce((acc, p) => acc + (p.currentXp || 0), 0);
 
-    return NextResponse.json({
-      success: true,
-      seasons: JSON.parse(JSON.stringify(seasons)),
-      activeSeason: JSON.parse(JSON.stringify(activeSeason)),
-      stats: {
-        totalDrivers,
-        totalPremium,
-        completedCount,
-        totalXpEarned,
+    const featureStatus = await getSeasonPassFeatureStatus();
+
+    return NextResponse.json(
+      {
+        success: true,
+        featureStatus,
+        seasons: JSON.parse(JSON.stringify(seasons)),
+        activeSeason: JSON.parse(JSON.stringify(activeSeason)),
+        stats: {
+          totalDrivers,
+          totalPremium,
+          completedCount,
+          totalXpEarned,
+        },
+        driverProgress: JSON.parse(JSON.stringify(enrichedProgress)),
       },
-      driverProgress: JSON.parse(JSON.stringify(enrichedProgress)),
-    });
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+          Pragma: "no-cache",
+        },
+      }
+    );
   } catch (error: any) {
     console.error("Manage Season Pass GET Error:", error);
     return NextResponse.json(
@@ -250,6 +270,29 @@ export async function POST(request: Request) {
         message: `Season ${seasonNumber} sekarang aktif sebagai musim utama!`,
         season: activated,
       });
+    }
+
+    if (action === "TOGGLE_FEATURE") {
+      const { enabled, disabledReason } = body;
+      const status = await setSeasonPassFeatureStatus(
+        Boolean(enabled),
+        typeof disabledReason === "string" ? disabledReason.trim() : "",
+        String(session.user.discordId || "manager")
+      );
+
+      return NextResponse.json(
+        {
+          success: true,
+          message: `Fitur Season Pass berhasil di-${enabled ? "aktifkan" : "nonaktifkan"}!`,
+          featureStatus: status,
+        },
+        {
+          headers: {
+            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+            Pragma: "no-cache",
+          },
+        }
+      );
     }
 
     return NextResponse.json({ error: "Aksi tidak dikenali" }, { status: 400 });

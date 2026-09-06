@@ -8,6 +8,7 @@ import { grantVoucher } from "@/lib/voucher";
 import Achievement from "@/lib/models/Achievement";
 import UserAchievement from "@/lib/models/UserAchievement";
 import UserVoucher from "@/lib/models/UserVoucher";
+import SystemSetting from "@/lib/models/SystemSetting";
 
 export const SEASON_1_LEVELS: SeasonLevelConfig[] = [
   // TIER 1: STARTER ZONE (Level 1 - 10)
@@ -1344,4 +1345,82 @@ export async function applySeasonLevelSkip(
     message: `Berhasil meningkatkan ${count} level ke Level ${progress.currentLevel}!`,
   };
 }
+
+export interface SeasonPassFeatureStatus {
+  isEnabled: boolean;
+  disabledReason: string;
+  updatedAt?: Date;
+  updatedBy?: string;
+}
+
+/**
+ * Mengambil status aktif/nonaktif fitur Season Pass secara global
+ */
+export async function getSeasonPassFeatureStatus(): Promise<SeasonPassFeatureStatus> {
+  try {
+    await dbConnect();
+    const setting = await SystemSetting.findOne({ key: "season_pass" }).lean();
+    if (!setting || setting.value === undefined) {
+      return {
+        isEnabled: true,
+        disabledReason: "",
+      };
+    }
+
+    if (typeof setting.value === "boolean") {
+      return {
+        isEnabled: setting.value,
+        disabledReason: setting.description || "",
+        updatedAt: setting.updatedAt,
+        updatedBy: setting.updatedBy,
+      };
+    }
+
+    return {
+      isEnabled: Boolean(setting.value.isEnabled ?? true),
+      disabledReason: setting.value.disabledReason || "",
+      updatedAt: setting.updatedAt,
+      updatedBy: setting.updatedBy,
+    };
+  } catch (error) {
+    console.error("Gagal mengambil status fitur Season Pass:", error);
+    return {
+      isEnabled: true,
+      disabledReason: "",
+    };
+  }
+}
+
+/**
+ * Mengubah status aktif/nonaktif fitur Season Pass secara global
+ */
+export async function setSeasonPassFeatureStatus(
+  isEnabled: boolean,
+  disabledReason: string = "",
+  updatedBy: string = ""
+): Promise<SeasonPassFeatureStatus> {
+  await dbConnect();
+  const updated = await SystemSetting.findOneAndUpdate(
+    { key: "season_pass" },
+    {
+      $set: {
+        value: {
+          isEnabled: Boolean(isEnabled),
+          disabledReason: disabledReason || "",
+        },
+        description: disabledReason || (isEnabled ? "Fitur Season Pass Aktif" : "Fitur Season Pass Dinonaktifkan"),
+        updatedBy: updatedBy || "manager",
+      },
+    },
+    { upsert: true, new: true }
+  ).lean();
+
+  return {
+    isEnabled: Boolean(updated?.value?.isEnabled ?? isEnabled),
+    disabledReason: updated?.value?.disabledReason || disabledReason,
+    updatedAt: updated?.updatedAt,
+    updatedBy: updated?.updatedBy,
+  };
+}
+
 

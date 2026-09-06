@@ -6,13 +6,17 @@ import SeasonPass from "@/lib/models/SeasonPass";
 import SeasonPassOrder from "@/lib/models/SeasonPassOrder";
 import UserSeasonProgress from "@/lib/models/UserSeasonProgress";
 import User from "@/lib/models/User";
-import { ensureSeasonInitialized } from "@/lib/seasonPass";
+import { ensureSeasonInitialized, getSeasonPassFeatureStatus } from "@/lib/seasonPass";
 import ManageSeasonPassClient from "./ManageSeasonPassClient";
 
 export const metadata = {
   title: "Kelola Seasonal Pass - Manager Portal",
   description: "Pusat manajemen dan konfigurasi musim Nismara Seasonal Pass.",
 };
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 export default async function ManageSeasonPassPage() {
   const session = await getServerSession(authOptions);
@@ -69,10 +73,13 @@ export default async function ManageSeasonPassPage() {
     pendingOrdersCount: pendingOrdersDoc.filter((o) => o.status === "pending").length,
   };
 
+  const featureStatusDoc = await getSeasonPassFeatureStatus();
+
   const seasons = JSON.parse(JSON.stringify(seasonsDoc));
   const activeSeason = JSON.parse(JSON.stringify(activeSeasonDoc));
   const driverProgress = JSON.parse(JSON.stringify(enrichedProgress));
   const orders = JSON.parse(JSON.stringify(pendingOrdersDoc));
+  const featureStatus = JSON.parse(JSON.stringify(featureStatusDoc));
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-6 max-w-7xl mx-auto">
@@ -82,6 +89,7 @@ export default async function ManageSeasonPassPage() {
         initialStats={stats}
         initialDriverProgress={driverProgress}
         initialOrders={orders}
+        initialFeatureStatus={featureStatus}
         isOwner={isOwner}
       />
     </div>

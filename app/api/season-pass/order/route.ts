@@ -6,7 +6,11 @@ import SeasonPass from "@/lib/models/SeasonPass";
 import SeasonPassOrder from "@/lib/models/SeasonPassOrder";
 import UserSeasonProgress from "@/lib/models/UserSeasonProgress";
 import User from "@/lib/models/User";
-import { getUserSeasonProgress, calculateLevelFromXp } from "@/lib/seasonPass";
+import {
+  getUserSeasonProgress,
+  calculateLevelFromXp,
+  getSeasonPassFeatureStatus,
+} from "@/lib/seasonPass";
 import { revalidatePath } from "next/cache";
 
 export const dynamic = "force-dynamic";
@@ -61,6 +65,14 @@ export async function POST(request: Request) {
     }
 
     await dbConnect();
+
+    const featureStatus = await getSeasonPassFeatureStatus();
+    if (!featureStatus.isEnabled) {
+      return NextResponse.json(
+        { error: featureStatus.disabledReason || "Fitur Season Pass sedang dinonaktifkan sementara." },
+        { status: 403 }
+      );
+    }
 
     const body = await request.json().catch(() => ({}));
     const { seasonNumber = 1, orderType = "PREMIUM_PASS", levelCount = 1 } = body;
