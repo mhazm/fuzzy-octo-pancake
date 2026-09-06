@@ -220,9 +220,16 @@ export default async function DashboardPage() {
     .limit(5)
     .toArray();
 
-  const dLink = await db
+  let dLink = await db
     .collection("driverlinks")
     .findOne({ userId: discordId, guildId: GUILD_ID });
+
+  if (!dLink && truckyId) {
+    dLink = await db.collection("driverlinks").findOne({
+      $or: [{ truckyId: truckyId }, { truckyId: Number(truckyId) }],
+      guildId: GUILD_ID,
+    });
+  }
 
   const pointPenalties = await db
     .collection("pointhistories") // Sesuaikan collection
@@ -233,6 +240,9 @@ export default async function DashboardPage() {
     .sort({ createdAt: -1 })
     .limit(5)
     .toArray();
+
+  const driverJoinDate =
+    dLink?.createdAt || (dLink?._id ? dLink._id.getTimestamp() : null);
 
   const stats = {
     rankName: memberData?.rank?.name || "Driver",
@@ -245,8 +255,10 @@ export default async function DashboardPage() {
       memberData?.points?.toLocaleString() ||
       "0",
     userNc: userNC?.totalNC?.toLocaleString() || "0",
-    joinDate: dLink?.createdAt
-      ? new Date(dLink.createdAt).toLocaleDateString("id-ID")
+    joinDate: driverJoinDate
+      ? new Date(driverJoinDate).toLocaleDateString("id-ID", {
+          timeZone: "Asia/Jakarta",
+        })
       : "-",
   };
 

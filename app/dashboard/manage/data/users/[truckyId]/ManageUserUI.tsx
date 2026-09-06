@@ -161,8 +161,15 @@ export default function ManageUserUI({
     setIsResetModalOpen(false);
   };
 
-  const joinDate = driverLink?.createdAt
-    ? new Date(driverLink.createdAt).toLocaleDateString("id-ID")
+  const rawJoinDate =
+    driverLink?.createdAt ||
+    (typeof driverLink?._id === "string" && driverLink._id.length === 24
+      ? new Date(parseInt(driverLink._id.substring(0, 8), 16) * 1000)
+      : null);
+  const joinDate = rawJoinDate
+    ? new Date(rawJoinDate).toLocaleDateString("id-ID", {
+        timeZone: "Asia/Jakarta",
+      })
     : "-";
 
   const StatCard = ({ icon: Icon, label, value, sub, color = "text-white" }: any) => (

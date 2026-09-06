@@ -52,7 +52,10 @@ export default async function ManageUsersPage() {
           : truckyData?.role || "Driver",
       isWebActive: !!webData,
       isOnLeave: webData?.isOnLeave || false,
-      joinDate: truckyData.joinDate || link.createdAt,
+      joinDate:
+        link.createdAt ||
+        (link._id ? link._id.getTimestamp() : null) ||
+        truckyData.joinDate,
     };
   });
 

@@ -6,8 +6,79 @@ import { ObjectId } from "mongodb";
 import { getCompanyMemberStats } from "@/lib/trucky";
 import { redis } from "@/lib/redis";
 
+const baseAdapter = MongoDBAdapter(clientPromise);
+
+const customAdapter: any = {
+  ...baseAdapter,
+  async getUserByAccount(provider_providerAccountId: {
+    provider: string;
+    providerAccountId: string;
+  }) {
+    const userByAccount =
+      await baseAdapter.getUserByAccount!(provider_providerAccountId);
+    if (userByAccount) return userByAccount;
+
+    // Fallback: Jika belum ada di `accounts`, tapi sudah ada di `users` dengan discordId ini
+    if (provider_providerAccountId.provider === "discord") {
+      const client = await clientPromise;
+      const db = client.db();
+      const discordId = String(provider_providerAccountId.providerAccountId);
+      const existing = await db.collection("users").findOne({
+        $or: [{ discordId: discordId }, { id: discordId }],
+      });
+      if (existing) {
+        return {
+          id: existing._id.toString(),
+          name: existing.name || "Driver",
+          email: existing.email || "",
+          image: existing.image || null,
+          emailVerified: existing.emailVerified || null,
+        };
+      }
+    }
+    return null;
+  },
+  async createUser(data: any) {
+    const client = await clientPromise;
+    const db = client.db();
+    const discordId = data.id || data.discordId;
+
+    const existing = await db.collection("users").findOne({
+      $or: [
+        ...(discordId
+          ? [{ discordId: String(discordId) }, { id: String(discordId) }]
+          : []),
+        ...(data.email ? [{ email: data.email }] : []),
+      ],
+    });
+
+    if (existing) {
+      await db.collection("users").updateOne(
+        { _id: existing._id },
+        {
+          $set: {
+            email: data.email || existing.email,
+            image: data.image || existing.image,
+            discordId: discordId ? String(discordId) : existing.discordId,
+            updatedAt: new Date(),
+          },
+        },
+      );
+      return {
+        id: existing._id.toString(),
+        name: existing.name || data.name,
+        email: data.email || existing.email,
+        image: data.image || existing.image,
+        emailVerified: existing.emailVerified || null,
+      };
+    }
+
+    return baseAdapter.createUser!(data);
+  },
+};
+
 export const authOptions: NextAuthOptions = {
-  adapter: MongoDBAdapter(clientPromise),
+  adapter: customAdapter,
   session: {
     strategy: "database",
     maxAge: 7 * 24 * 60 * 60,
@@ -54,7 +125,7 @@ export const authOptions: NextAuthOptions = {
       let userRole: "user" | "manager" | "admin" = "user";
       let isBooster = false;
       let nismaraplus: any = null;
-      const guildId = "863959415702028318";
+      const guildId = process.env.DISCORD_GUILD_ID || "863959415702028318";
       const managerRoleId = "1406574228794507354";
 
       // 1. Ambil data User dari DB terlebih dahulu
@@ -204,6 +275,10 @@ export const authOptions: NextAuthOptions = {
           };
 
           const updateData: any = { truckyId: driverLink.truckyId, isDriver: true };
+
+          if (driverLink.createdAt && !dbUser?.createdAt) {
+            updateData.createdAt = driverLink.createdAt;
+          }
 
           // --- SYNC TRUCKY RANK (12 Hour Throttle) ---
           const lastTruckySync = dbUser?.lastTruckySync
