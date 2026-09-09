@@ -7,6 +7,7 @@ import GiveawayTicket from "@/lib/models/GiveawayTicket";
 import User from "@/lib/models/User";
 import UserVoucher from "@/lib/models/UserVoucher";
 import Garage from "@/lib/models/Garage";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 const GUILD_ID = process.env.DISCORD_GUILD_ID || "863959415702028318";
 
@@ -212,22 +213,83 @@ export async function getUserGiveawayProgress(
 }
 
 /**
- * Generator nomor tiket berikutnya secara urut dan rapi (misal #0001, #0002)
+ * Menerbitkan satu tiket undian dengan perlindungan benturan konkurensi (Concurrency Collision Retry).
+ * Jika ada 2+ user mengklaim/membeli di milidetik yang sama sehingga terjadi duplicate key error (E11000),
+ * sistem akan secara otomatis mencoba nomor urut berikutnya hingga 5 kali tanpa menggagalkan transaksi user.
  */
-async function generateNextTicketNumber(giveawayId: string): Promise<string> {
-  const count = await GiveawayTicket.countDocuments({ giveawayId });
-  const nextNum = count + 1;
-  return `TK-${nextNum.toString().padStart(4, "0")}`;
+async function issueTicketWithRetry(
+  giveawayId: string,
+  discordId: string,
+  sourceType: "QUEST" | "NC_PURCHASE" | "ADMIN_GRANT",
+  costNC: number = 0,
+  questId: string | null = null,
+  maxRetries: number = 5
+): Promise<string> {
+  let lastError: any = null;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    // Ambil nomor tiket kandidat berdasarkan jumlah tiket yang ada + offset attempt
+    const count = await GiveawayTicket.countDocuments({ giveawayId });
+    const nextNum = count + 1 + attempt;
+    const candidateNumber = `TK-${nextNum.toString().padStart(4, "0")}`;
+
+    try {
+      await GiveawayTicket.create({
+        giveawayId,
+        discordId: String(discordId),
+        ticketNumber: candidateNumber,
+        sourceType,
+        questId: questId ? String(questId) : null,
+        costNC,
+      });
+      return candidateNumber;
+    } catch (err: any) {
+      lastError = err;
+      if (err.code === 11000) {
+        const errMsg = err.message || "";
+        const keyPattern = err.keyPattern || {};
+
+        // Jika benturan pada questId (user sudah pernah klaim quest ini), langsung hentikan (jangan retry)
+        if (keyPattern.questId || errMsg.includes("questId")) {
+          throw new Error("Anda sudah pernah mengklaim tiket untuk quest ini.");
+        }
+
+        // Jika benturan pada ticketNumber (ada user lain yang baru saja dapat nomor yang sama), lanjutkan retry
+        if (keyPattern.ticketNumber || errMsg.includes("ticketNumber")) {
+          continue;
+        }
+      }
+      throw err;
+    }
+  }
+
+  // Fallback: Jika setelah 5x retry tetap benturan sangat tinggi, gunakan nomor acak unik terjamin
+  const fallbackNumber = `TK-${Date.now().toString().slice(-4)}${crypto.randomInt(10, 99)}`;
+  await GiveawayTicket.create({
+    giveawayId,
+    discordId: String(discordId),
+    ticketNumber: fallbackNumber,
+    sourceType,
+    questId: questId ? String(questId) : null,
+    costNC,
+  });
+  return fallbackNumber;
 }
 
 /**
  * Klaim tiket undian gratis dari penyelesaian Quest Pengantaran
+ * Dilengkapi Rate Limit, Concurrency Retry, dan Proteksi Rollback.
  */
 export async function claimGiveawayQuestTicket(
   giveawayId: string,
   questId: string,
   discordId: string
 ): Promise<{ success: boolean; error?: string; ticketNumber?: string }> {
+  // 0. UX Guard: Rate Limiting
+  if (!checkRateLimit(discordId, "giveaway-claim-quest", 1000)) {
+    return { success: false, error: "Mohon tunggu 1 detik sebelum mengklaim tiket kembali." };
+  }
+
   const giveaway = await Giveaway.findById(giveawayId);
   if (!giveaway) {
     return { success: false, error: "Giveaway tidak ditemukan." };
@@ -268,35 +330,59 @@ export async function claimGiveawayQuestTicket(
     };
   }
 
-  // 3. Terbitkan tiket undian secara aman
-  const ticketNumber = await generateNextTicketNumber(giveawayId);
+  // 3. Terbitkan tiket undian secara aman dengan mekanisme Concurrency Collision Retry
+  let ticketNumber: string;
+  try {
+    ticketNumber = await issueTicketWithRetry(
+      giveawayId,
+      String(discordId),
+      "QUEST",
+      0,
+      String(questId)
+    );
+  } catch (err: any) {
+    console.error("[Giveaway] Error issuing quest ticket:", err);
+    return {
+      success: false,
+      error: err.message || "Gagal menerbitkan tiket misi. Silakan coba kembali.",
+    };
+  }
 
-  await GiveawayTicket.create({
-    giveawayId,
-    discordId: String(discordId),
-    ticketNumber,
-    sourceType: "QUEST",
-    questId: String(questId),
-    costNC: 0,
-  });
+  // 4. Update statistik giveaway dengan proteksi rollback jika update counter gagal
+  try {
+    const totalUserTickets = await GiveawayTicket.countDocuments({ giveawayId, discordId: String(discordId) });
+    const isFirstTicket = totalUserTickets === 1;
 
-  // 4. Update statistik giveaway
-  const totalUserTickets = await GiveawayTicket.countDocuments({ giveawayId, discordId: String(discordId) });
-  const isFirstTicket = totalUserTickets === 1;
-
-  await Giveaway.updateOne(
-    { _id: giveawayId },
-    {
-      $inc: {
-        "stats.totalTickets": 1,
-        ...(isFirstTicket ? { "stats.totalParticipants": 1 } : {}),
-      },
-    }
-  );
+    await Giveaway.updateOne(
+      { _id: giveawayId },
+      {
+        $inc: {
+          "stats.totalTickets": 1,
+          ...(isFirstTicket ? { "stats.totalParticipants": 1 } : {}),
+        },
+      }
+    );
+  } catch (statErr) {
+    console.error("[Giveaway] Failed to update giveaway stats, rolling back ticket:", statErr);
+    // Rollback tiket agar konsistensi counter & status tetap terjaga utuh
+    try {
+      await GiveawayTicket.deleteOne({
+        giveawayId,
+        discordId: String(discordId),
+        ticketNumber,
+      });
+    } catch (_) {}
+    return {
+      success: false,
+      error: "Terjadi gangguan sistem saat memperbarui data giveaway. Silakan coba kembali.",
+    };
+  }
 
   // Invalidate Redis cache
   if (redis) {
-    await redis.del(`giveaway:user:${giveawayId}:${discordId}`);
+    try {
+      await redis.del(`giveaway:user:${giveawayId}:${discordId}`);
+    } catch (_) {}
   }
 
   return { success: true, ticketNumber };
@@ -304,13 +390,18 @@ export async function claimGiveawayQuestTicket(
 
 /**
  * Membeli tiket undian ekstra menggunakan Nismara Coin (Burn NC)
- * Dilengkapi Pola Atomic Gate & Rollback anti-race condition.
+ * Dilengkapi Pola Atomic Gate, Pembersihan Tiket Parsial, dan Rollback anti-race condition.
  */
 export async function buyGiveawayTickets(
   giveawayId: string,
   discordId: string,
   quantity: number = 1
 ): Promise<{ success: boolean; error?: string; ticketNumbers?: string[]; totalCost?: number }> {
+  // 0. UX Guard: Rate Limiting
+  if (!checkRateLimit(discordId, "giveaway-buy-ticket", 1000)) {
+    return { success: false, error: "Mohon tunggu 1 detik sebelum membeli tiket kembali." };
+  }
+
   if (quantity <= 0 || !Number.isInteger(quantity)) {
     return { success: false, error: "Jumlah tiket harus berupa angka bulat minimal 1." };
   }
@@ -388,24 +479,35 @@ export async function buyGiveawayTickets(
     createdAt: new Date(),
   });
 
-  // 5. Terbitkan tiket undian secara berurutan dengan penanganan rollback aman
+  // 5. Terbitkan tiket undian secara berurutan dengan penanganan rollback aman & pembersihan parsial
   const issuedTickets: string[] = [];
   try {
     for (let i = 0; i < quantity; i++) {
-      const ticketNumber = await generateNextTicketNumber(giveawayId);
-      await GiveawayTicket.create({
+      const ticketNumber = await issueTicketWithRetry(
         giveawayId,
-        discordId: String(discordId),
-        ticketNumber,
-        sourceType: "NC_PURCHASE",
-        costNC: unitPrice,
-      });
+        String(discordId),
+        "NC_PURCHASE",
+        unitPrice
+      );
       issuedTickets.push(ticketNumber);
     }
   } catch (err: any) {
-    console.error("[Giveaway] Error issuing tickets, rolling back currency deduction:", err);
+    console.error("[Giveaway] Error issuing tickets, rolling back currency deduction and issued tickets:", err);
 
-    // Rollback NC jika terjadi kegagalan sistem
+    // Rollback tiket yang sempat terbit (Pembersihan Parsial Zero-Orphan)
+    if (issuedTickets.length > 0) {
+      try {
+        await GiveawayTicket.deleteMany({
+          giveawayId,
+          discordId: String(discordId),
+          ticketNumber: { $in: issuedTickets },
+        });
+      } catch (delErr) {
+        console.error("[Giveaway Rollback] Error deleting partial tickets:", delErr);
+      }
+    }
+
+    // Rollback NC ke saldo user
     await db.collection("currencies").updateOne(
       { userId: String(discordId), guildId: GUILD_ID },
       { $inc: { totalNC: totalCost } }
@@ -422,7 +524,32 @@ export async function buyGiveawayTickets(
     return { success: false, error: "Terjadi gangguan saat menerbitkan tiket undian. Saldo NC telah dikembalikan." };
   }
 
-  // 6. Update statistik giveaway
+  // 6. Catat riwayat transaksi belanja (transactions collection) untuk audit user
+  try {
+    await db.collection("transactions").insertOne({
+      trxId: `TRX-GW-${Date.now()}-${crypto.randomBytes(3).toString("hex").toUpperCase()}`,
+      discordId: String(discordId),
+      userId: (user as any)?._id || null,
+      title: `Beli ${quantity}x Tiket Giveaway: ${giveaway.title}`,
+      category: "others",
+      amount: totalCost,
+      currency: "NC",
+      status: "success",
+      metadata: {
+        giveawayId: String(giveaway._id),
+        giveawayTitle: giveaway.title,
+        quantity,
+        ticketNumbers: issuedTickets,
+        unitPrice,
+      },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+  } catch (trxErr) {
+    console.error("[Giveaway] Warning: Failed to insert user transaction log:", trxErr);
+  }
+
+  // 7. Update statistik giveaway
   const totalUserTickets = await GiveawayTicket.countDocuments({ giveawayId, discordId: String(discordId) });
   const isFirstTicket = totalUserTickets === quantity;
 
@@ -439,7 +566,9 @@ export async function buyGiveawayTickets(
 
   // Invalidate Redis cache
   if (redis) {
-    await redis.del(`giveaway:user:${giveawayId}:${discordId}`);
+    try {
+      await redis.del(`giveaway:user:${giveawayId}:${discordId}`);
+    } catch (_) {}
   }
 
   return { success: true, ticketNumbers: issuedTickets, totalCost };
