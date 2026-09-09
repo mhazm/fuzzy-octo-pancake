@@ -506,9 +506,26 @@ export default async function FleetDetailPage({
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-black text-emerald-500 text-sm">
-                        +{job.nc?.total?.toLocaleString("id-ID") || 0} NC
-                      </p>
+                      {(() => {
+                        const val =
+                          typeof job.revenue === "number"
+                            ? job.revenue
+                            : (job.nc?.total ?? 0);
+                        return (
+                          <p
+                            className={`font-black text-sm ${
+                              val < 0
+                                ? "text-red-400"
+                                : val > 0
+                                  ? "text-emerald-500"
+                                  : "text-muted-foreground"
+                            }`}
+                          >
+                            {val > 0 ? "+" : ""}
+                            {val.toLocaleString("id-ID")} NC
+                          </p>
+                        );
+                      })()}
                       <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
                         {new Date(job.completedAt).toLocaleDateString("id-ID")}
                       </p>

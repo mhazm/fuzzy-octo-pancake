@@ -101,7 +101,7 @@ export default function PopupManageClient({ initialConfig }: { initialConfig: an
     <div className="p-6 max-w-5xl mx-auto space-y-8 animate-in fade-in duration-700">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-4xl font-black text-foreground tracking-tighter uppercase italic">
+          <h1 className="text-4xl font-black text-foreground tracking-tighter uppercase">
             Global Popup
           </h1>
           <p className="text-foreground/50 font-bold uppercase text-[10px] tracking-[0.2em]">
@@ -113,7 +113,7 @@ export default function PopupManageClient({ initialConfig }: { initialConfig: an
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="space-y-6 bg-card border border-border p-8 rounded-[2.5rem] shadow-xl">
           <div className="flex items-center justify-between border-b border-border pb-4">
-            <h2 className="text-xl font-black uppercase italic flex items-center gap-2">
+            <h2 className="text-xl font-black uppercase flex items-center gap-2">
               <LayoutTemplate className="text-primary" /> Configuration
             </h2>
             <button
@@ -229,7 +229,7 @@ export default function PopupManageClient({ initialConfig }: { initialConfig: an
 
         {/* Live Preview */}
         <div className="space-y-6 flex flex-col items-center">
-          <h2 className="text-xl font-black text-foreground uppercase italic self-start w-full border-b border-border pb-4">
+          <h2 className="text-xl font-black text-foreground uppercase self-start w-full border-b border-border pb-4">
             Live Preview
           </h2>
           <div className="w-full max-w-[400px] border border-border bg-background rounded-3xl overflow-hidden shadow-2xl relative">

@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import FleetBrand from "@/lib/models/FleetBrand";
+import { revalidatePath } from "next/cache";
 
 import dbConnect from "@/lib/mongoose";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 export async function GET() {
   try {
@@ -36,6 +39,14 @@ export async function POST(request: Request) {
       name: data.name,
       logo_url: data.logo_url || "",
     });
+
+    try {
+      revalidatePath("/dashboard/manage/fleet/brand");
+      revalidatePath("/dashboard/manage/fleet/store");
+      revalidatePath("/dashboard/garage/fleet/buy");
+    } catch (e) {
+      console.error("Failed to revalidate fleet brand paths", e);
+    }
 
     return NextResponse.json({ success: true, message: "Brand berhasil ditambahkan!", data: newBrand });
   } catch (error) {

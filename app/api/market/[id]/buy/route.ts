@@ -151,7 +151,8 @@ export async function POST(
 
     try {
       revalidatePath("/dashboard/library");
-      revalidatePath("/api/market/library");
+      revalidatePath("/dashboard/transactions");
+      revalidatePath("/market");
       revalidatePath(`/market/${item.slug}`);
       revalidatePath(`/market/${item._id}`);
     } catch(e) {

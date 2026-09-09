@@ -13,24 +13,39 @@ export async function generateMetadata({ params }: any): Promise<Metadata> {
   const event = await db
     .collection("ncevents")
     .findOne({ slug: resolvedParams.slug });
-  if (!event) return { title: "Event Not Found" };
+  if (!event) return { title: "Event Tidak Ditemukan" };
 
-  const metadata: Metadata = {
-    title: `${event.nameEvent} - Nismara Transport`,
-    description: `Ikuti event ${event.nameEvent} dan dapatkan bonus multiplier sebesar ${event.multiplier}x!`,
-  };
+  const title = `${event.nameEvent}`;
+  const description = `Ikuti event ${event.nameEvent} dan dapatkan bonus multiplier sebesar +${Math.round(Number(event.multiplier || 0) * 100)}% NC!`;
+  const imageUrl = event.imageUrl || "https://images.nismara.my.id/227300_188.jpg";
+  const pageUrl = `https://transport.nismara.web.id/currency-boost/${resolvedParams.slug}`;
 
-  if (event.imageUrl) {
-    metadata.openGraph = {
-      images: [event.imageUrl],
-    };
-    metadata.twitter = {
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: pageUrl,
+      siteName: "Nismara Transport",
+      locale: "id_ID",
+      type: "website",
+      images: [
+        {
+          url: imageUrl,
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
+    },
+    twitter: {
       card: "summary_large_image",
-      images: [event.imageUrl],
-    };
-  }
-
-  return metadata;
+      title,
+      description,
+      images: [imageUrl],
+    },
+  };
 }
 
 export default async function CurrencyBoostDetailPage({ params }: any) {
@@ -66,6 +81,7 @@ export default async function CurrencyBoostDetailPage({ params }: any) {
       isBooster: user?.isBooster,
       isNismaraPlus: user?.nismaraplus?.status === true,
       nismaraPlusStartedAt: user?.nismaraplus?.startedAt,
+      topManager: user?.topManager || null,
     };
   });
 
@@ -99,6 +115,7 @@ export default async function CurrencyBoostDetailPage({ params }: any) {
         isBooster: p.isBooster,
         isNismaraPlus: p.isNismaraPlus,
         nismaraPlusStartedAt: p.nismaraPlusStartedAt,
+        topManager: p.topManager,
       }))
       .sort((a: any, b: any) => b.totalEarned - a.totalEarned),
   };

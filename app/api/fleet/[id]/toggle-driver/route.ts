@@ -3,8 +3,13 @@ import mongoose from "mongoose";
 import Fleet from "@/lib/models/Fleet";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { revalidatePath } from "next/cache";
 
 import dbConnect from "@/lib/mongoose";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -61,6 +66,14 @@ export async function POST(
     }
 
     await fleet.save();
+
+    try {
+      revalidatePath("/dashboard/garage/fleet");
+      revalidatePath(`/dashboard/garage/fleet/${id}`);
+      revalidatePath("/dashboard/manage/fleet/assign");
+    } catch (e) {
+      console.error("Failed to revalidate toggle-driver paths", e);
+    }
 
     return NextResponse.json({ success: true, message: message, data: fleet });
   } catch (error) {

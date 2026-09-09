@@ -139,6 +139,7 @@ export default function GalleryIndexClient({
                         isNismaraPlus={post.user.isNismaraPlus} 
                         nismaraPlusStartedAt={post.user.nismaraPlusStartedAt}
                         truckyRank={post.user.truckyRank}
+                        topManager={post.user.topManager}
                       />
                     </div>
                   </div>
@@ -183,6 +184,7 @@ export default function GalleryIndexClient({
           profileNismaraPlusStartedAt={selectedPost.user?.nismaraPlusStartedAt}
           profileIsBooster={selectedPost.user?.isBooster}
           profileRole={selectedPost.user?.role}
+          profileTopManager={selectedPost.user?.topManager}
           isManager={isManager}
           onPostUpdate={(updated) => {
             // Kita perlu mempertahankan data user yang ada karena updated mungkin tidak memilikinya (jika like/comment)

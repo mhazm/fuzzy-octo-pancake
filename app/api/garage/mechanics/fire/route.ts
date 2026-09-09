@@ -4,8 +4,13 @@ import clientPromise from "@/lib/mongodb";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import Garage from "@/lib/models/Garage";
 import mongoose from "mongoose";
+import { revalidatePath } from "next/cache";
 
 import dbConnect from "@/lib/mongoose";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -36,6 +41,12 @@ export async function POST(request: Request) {
     // Explicitly tell mongoose we modified it
     garage.markModified('mechanics');
     await garage.save();
+
+    try {
+      revalidatePath("/dashboard/garage");
+    } catch (e) {
+      console.error("Failed to revalidate mechanics-fire paths", e);
+    }
 
     return NextResponse.json({ 
       success: true, 

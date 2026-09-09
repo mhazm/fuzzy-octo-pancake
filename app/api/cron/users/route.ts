@@ -20,18 +20,20 @@ export async function GET(request: Request) {
     await dbConnect();
     const now = new Date();
 
-    // Find users where any of the 3 expiration dates is less than `now` AND their status is currently `true`
+    // Find users where any expiration dates is less than `now` AND their status is currently `true`
     const expiredUsers = await User.find({
       $or: [
         { "nismaraplus.status": true, "nismaraplus.expiredAt": { $lte: now } },
         { "insurance.status": true, "insurance.expiredAt": { $lte: now } },
         { "galleryBan.status": true, "galleryBan.expiredAt": { $lte: now } },
+        { "topManager.status": true, "topManager.expiredAt": { $lte: now } },
       ],
     });
 
     let nismaraPlusCount = 0;
     let insuranceCount = 0;
     let galleryBanCount = 0;
+    let topManagerCount = 0;
 
     for (const user of expiredUsers) {
       let isModified = false;
@@ -98,6 +100,21 @@ export async function GET(request: Request) {
         );
       }
 
+      // 4. Check Top Manager Expiry
+      if (user.topManager?.status === true && user.topManager.expiredAt && user.topManager.expiredAt <= now) {
+        user.topManager.status = false;
+        isModified = true;
+        topManagerCount++;
+
+        await sendPersonalNotification(
+          user.discordId,
+          "Masa Gelar Top Manager Berakhir 👑",
+          "Masa aktif gelar Top Manager Anda untuk periode sebelumnya telah berakhir. Capai kembali 100 poin di bulan ini untuk mempertahankan mahkota dan badge Anda!",
+          "info",
+          "/dashboard/manage/payroll"
+        );
+      }
+
       if (isModified) {
         await user.save();
       }
@@ -109,6 +126,7 @@ export async function GET(request: Request) {
         nismaraPlusExpiring: nismaraPlusCount,
         insuranceExpiring: insuranceCount,
         galleryBanLifting: galleryBanCount,
+        topManagerExpiring: topManagerCount,
       }
     });
 

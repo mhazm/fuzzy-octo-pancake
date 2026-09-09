@@ -1,6 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
+
+const NO_CACHE_HEADERS = {
+  "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0, s-maxage=0",
+  "CDN-Cache-Control": "no-store",
+  "Vercel-CDN-Cache-Control": "no-store",
+  "Pragma": "no-cache",
+  "Expires": "0",
+};
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -21,27 +33,30 @@ export async function GET(request: NextRequest) {
       if (!article) {
         return NextResponse.json(
           { error: `Artikel KB dengan slug '${slug}' tidak ditemukan.` },
-          { status: 404 }
+          { status: 404, headers: NO_CACHE_HEADERS }
         );
       }
 
-      return NextResponse.json({
-        success: true,
-        article: {
-          id: article._id.toString(),
-          title: article.title,
-          slug: article.slug,
-          category: article.category,
-          categorySlug: article.categorySlug,
-          description: article.description,
-          content: article.content || "",
-          accessLevel: article.accessLevel,
-          views: article.views || 0,
-          createdAt: article.createdAt,
-          updatedAt: article.updatedAt,
-          url: `https://transport.nismara.web.id/kb/${article.categorySlug}/${article.slug}`,
+      return NextResponse.json(
+        {
+          success: true,
+          article: {
+            id: article._id.toString(),
+            title: article.title,
+            slug: article.slug,
+            category: article.category,
+            categorySlug: article.categorySlug,
+            description: article.description,
+            content: article.content || "",
+            accessLevel: article.accessLevel,
+            views: article.views || 0,
+            createdAt: article.createdAt,
+            updatedAt: article.updatedAt,
+            url: `https://transport.nismara.web.id/kb/${article.categorySlug}/${article.slug}`,
+          },
         },
-      });
+        { headers: NO_CACHE_HEADERS }
+      );
     }
 
     // 2. Filter list artikel
@@ -110,17 +125,20 @@ export async function GET(request: NextRequest) {
       url: `https://transport.nismara.web.id/kb/${c.slug}`,
     }));
 
-    return NextResponse.json({
-      success: true,
-      total: formattedArticles.length,
-      categories: formattedCategories,
-      articles: formattedArticles,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        total: formattedArticles.length,
+        categories: formattedCategories,
+        articles: formattedArticles,
+      },
+      { headers: NO_CACHE_HEADERS }
+    );
   } catch (error) {
     console.error("GET MCP KB Error:", error);
     return NextResponse.json(
       { error: "Gagal mengambil data Knowledge Base untuk MCP" },
-      { status: 500 }
+      { status: 500, headers: NO_CACHE_HEADERS }
     );
   }
 }

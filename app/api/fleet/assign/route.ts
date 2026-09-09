@@ -4,10 +4,13 @@ import Fleet from "@/lib/models/Fleet";
 import "@/lib/models/FleetStore"; // Ensure it's registered for populate
 import "@/lib/models/User"; // Ensure it's registered for populate
 import "@/lib/models/FleetBrand";
+import { revalidatePath } from "next/cache";
 
 import dbConnect from "@/lib/mongoose";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 export async function GET() {
   try {
@@ -80,6 +83,14 @@ export async function POST(request: Request) {
       status: data.status || "active",
       has_insurance: data.has_insurance || false,
     });
+
+    try {
+      revalidatePath("/dashboard/garage");
+      revalidatePath("/dashboard/garage/fleet");
+      revalidatePath("/dashboard/manage/fleet/assign");
+    } catch (e) {
+      console.error("Failed to revalidate fleet assign paths", e);
+    }
 
     return NextResponse.json({
       success: true,

@@ -156,6 +156,36 @@ export async function PATCH(
           { upsert: true },
         );
 
+        // 3.5 Inisialisasi rekening awal Currencies & Points jika belum ada
+        await Promise.all([
+          db.collection("currencies").updateOne(
+            { guildId: GUILD_ID, userId: registration.userId },
+            {
+              $setOnInsert: {
+                guildId: GUILD_ID,
+                userId: registration.userId,
+                totalNC: 0,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              },
+            },
+            { upsert: true },
+          ),
+          db.collection("points").updateOne(
+            { guildId: GUILD_ID, userId: registration.userId },
+            {
+              $setOnInsert: {
+                guildId: GUILD_ID,
+                userId: registration.userId,
+                totalPoints: 0,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              },
+            },
+            { upsert: true },
+          ),
+        ]);
+
         // 4. Assign intern role & send DM
         if (DISCORD_BOT_TOKEN) {
           if (INTERN_ROLE_ID && GUILD_ID) {

@@ -5,11 +5,22 @@ import clientPromise from "@/lib/mongodb";
 import dbConnect from "@/lib/mongoose";
 import FuelPrice from "@/lib/models/FuelPrice";
 import FuelTransaction from "@/lib/models/FuelTransaction";
+import { revalidatePath } from "next/cache";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 export async function POST(request: Request) {
+  let isBuyerNCDeducted = false;
+  let isBuyerFuelAdded = false;
+  let roundedCost = 0;
+  let buyerDiscordId: string | null = null;
+  let fuelAmount = 0;
+
   try {
     const session = await getServerSession(authOptions);
-    if (!session || !session.user) {
+    if (!session?.user?.discordId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -19,7 +30,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Jumlah BBM (Liter) tidak valid dan harus berupa bilangan bulat lebih dari 0" }, { status: 400 });
     }
 
-    const buyerDiscordId = session.user.discordId;
+    buyerDiscordId = String(session.user.discordId);
+    fuelAmount = amount;
 
     await dbConnect();
     
@@ -39,7 +51,7 @@ export async function POST(request: Request) {
     // Kalkulasi Biaya (Harga + 5% Fee)
     const baseCost = amount * pricePerLiter;
     const totalCost = baseCost * 1.05; // Fee 5% dibebankan ke pembeli
-    const roundedCost = Math.ceil(totalCost); 
+    roundedCost = Math.ceil(totalCost); 
 
     // Cek Pembeli
     const buyerCurrency = await db.collection("currencies").findOne({ userId: buyerDiscordId, guildId: GUILD_ID });
@@ -77,6 +89,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Transaksi gagal, saldo NC Anda tidak mencukupi." }, { status: 400 });
     }
 
+    isBuyerNCDeducted = true;
+
     // 2. Tambah BBM ke pembeli dengan pengaman kapasitas atomik
     const garageUpdateResult = await db.collection("garages").updateOne(
       {
@@ -97,8 +111,11 @@ export async function POST(request: Request) {
         { userId: buyerDiscordId, guildId: GUILD_ID },
         { $inc: { totalNC: roundedCost } }
       );
+      isBuyerNCDeducted = false;
       return NextResponse.json({ error: "Kapasitas tangki Anda tidak muat atau telah penuh." }, { status: 400 });
     }
+
+    isBuyerFuelAdded = true;
 
     // 3. Catat histori pembeli (Currency)
     await db.collection("currencyhistories").insertOne({
@@ -124,10 +141,52 @@ export async function POST(request: Request) {
     });
     await fuelTx.save();
 
-    return NextResponse.json({ success: true, message: "Pembelian BBM dari sistem berhasil!" });
+    // Revalidasi cache
+    try {
+      revalidatePath("/fuel-market");
+      revalidatePath("/dashboard/garage");
+      revalidatePath("/dashboard/currency");
+    } catch (e) {
+      console.error("Failed to revalidate fuel market paths:", e);
+    }
+
+    return NextResponse.json({ 
+      success: true, 
+      message: "Pembelian BBM dari sistem berhasil!" 
+    }, {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        "CDN-Cache-Control": "no-store",
+        "Vercel-CDN-Cache-Control": "no-store",
+      }
+    });
 
   } catch (error: any) {
     console.error("Error buying fuel from system:", error);
+
+    // 🛡️ Comprehensive Rollback
+    try {
+      const client = await clientPromise;
+      const db = client.db();
+      const GUILD_ID = process.env.GUILD_ID || "863959415702028318";
+
+      if (isBuyerNCDeducted && buyerDiscordId && roundedCost > 0) {
+        await db.collection("currencies").updateOne(
+          { userId: buyerDiscordId, guildId: GUILD_ID },
+          { $inc: { totalNC: roundedCost } }
+        );
+      }
+
+      if (isBuyerFuelAdded && buyerDiscordId && fuelAmount > 0) {
+        await db.collection("garages").updateOne(
+          { discordId: buyerDiscordId },
+          { $inc: { fuelStock: -fuelAmount } }
+        );
+      }
+    } catch (rollbackErr) {
+      console.error("Critical Rollback Error in System Fuel Buy:", rollbackErr);
+    }
+
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

@@ -8,9 +8,21 @@ import { Briefcase, Save, ArrowLeft, Loader2 } from "lucide-react";
 export default function EditContractForm({ contract }: { contract: any }) {
   const [loading, setLoading] = useState(false);
 
+  // Format tanggal ISO ke format datetime-local (YYYY-MM-DDTHH:mm)
+  const formatForDateTimeInput = (dateString?: string) => {
+    if (!dateString) return "";
+    const d = new Date(dateString);
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
   // Format tanggal ISO ke YYYY-MM-DD untuk default value input type="date"
   const initialDate = contract.endAt
     ? new Date(contract.endAt).toISOString().split("T")[0]
+    : "";
+
+  const initialStartDate = contract.startDate
+    ? formatForDateTimeInput(contract.startDate)
     : "";
 
   const [formData, setFormData] = useState({
@@ -19,6 +31,8 @@ export default function EditContractForm({ contract }: { contract: any }) {
     imageUrl: contract.imageUrl || "",
     gameId: contract.gameId || "1",
     endAt: initialDate,
+    isScheduled: contract.isScheduled === true,
+    startDate: initialStartDate,
   });
 
   return (
@@ -106,6 +120,42 @@ export default function EditContractForm({ contract }: { contract: any }) {
               placeholder="Nama Perusahaan (Client)"
             />
           </div>
+        </div>
+
+        <div className="space-y-3 bg-black/10 p-6 rounded-[2rem] border border-white/5">
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              name="isScheduled"
+              value="true"
+              className="w-5 h-5 accent-accent-lilac rounded-md border-white/10"
+              checked={formData.isScheduled}
+              onChange={(e) =>
+                setFormData({ ...formData, isScheduled: e.target.checked })
+              }
+            />
+            <span className="text-sm font-bold text-foreground">
+              Jadwalkan Kontrak (Scheduled Contract)
+            </span>
+          </label>
+
+          {formData.isScheduled && (
+            <div className="space-y-2 mt-4 animate-in slide-in-from-top-2 duration-300">
+              <label className="text-xs font-black text-accent-lilac uppercase tracking-widest ml-2">
+                Start Date (Waktu Mulai)
+              </label>
+              <input
+                type="datetime-local"
+                name="startDate"
+                required={formData.isScheduled}
+                value={formData.startDate}
+                onChange={(e) =>
+                  setFormData({ ...formData, startDate: e.target.value })
+                }
+                className="w-full bg-black/20 border border-white/10 rounded-2xl p-4 text-foreground text-sm outline-none focus:border-accent-lilac transition-all [color-scheme:dark]"
+              />
+            </div>
+          )}
         </div>
 
         <div className="space-y-2">

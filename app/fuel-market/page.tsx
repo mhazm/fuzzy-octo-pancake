@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
@@ -15,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import Swal from "sweetalert2";
 
 export default function FuelMarketPage() {
+  const router = useRouter();
   const { data: session } = useSession();
   const [activeTab, setActiveTab] = useState("system");
   
@@ -52,7 +54,10 @@ export default function FuelMarketPage() {
   const fetchSystemMarket = async (range: number) => {
     setChartLoading(true);
     try {
-      const sysRes = await fetch(`/api/fuel-market/system?range=${range}&t=${Date.now()}`);
+      const sysRes = await fetch(`/api/fuel-market/system?range=${range}&t=${Date.now()}`, {
+        cache: "no-store",
+        headers: { "Pragma": "no-cache", "Cache-Control": "no-cache" }
+      });
       const sysData = await sysRes.json();
       if (sysData.success) {
         setSystemPrice(sysData.currentPrice);
@@ -73,14 +78,20 @@ export default function FuelMarketPage() {
       await fetchSystemMarket(chartRange);
 
       // Fetch P2P Listings
-      const p2pRes = await fetch(`/api/fuel-market/p2p?t=${Date.now()}`);
+      const p2pRes = await fetch(`/api/fuel-market/p2p?t=${Date.now()}`, {
+        cache: "no-store",
+        headers: { "Pragma": "no-cache", "Cache-Control": "no-cache" }
+      });
       const p2pData = await p2pRes.json();
       if (p2pData.success) {
         setListings(p2pData.listings);
       }
 
       // Fetch User Garage Data
-      const garageRes = await fetch(`/api/garage/me?t=${Date.now()}`);
+      const garageRes = await fetch(`/api/garage/me?t=${Date.now()}`, {
+        cache: "no-store",
+        headers: { "Pragma": "no-cache", "Cache-Control": "no-cache" }
+      });
       const garageData = await garageRes.json();
       if (garageData.success) {
         setGarage(garageData.garage);
@@ -99,7 +110,10 @@ export default function FuelMarketPage() {
   const fetchHistory = async (page: number) => {
     setLoadingHistory(true);
     try {
-      const res = await fetch(`/api/fuel-market/history?page=${page}&limit=10&t=${Date.now()}`);
+      const res = await fetch(`/api/fuel-market/history?page=${page}&limit=10&t=${Date.now()}`, {
+        cache: "no-store",
+        headers: { "Pragma": "no-cache", "Cache-Control": "no-cache" }
+      });
       const data = await res.json();
       if (data.success) {
         setHistory(data.history);
@@ -166,7 +180,11 @@ export default function FuelMarketPage() {
     try {
       const res = await fetch(apiPath, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Pragma": "no-cache",
+          "Cache-Control": "no-cache",
+        },
         body: JSON.stringify(body),
       });
 
@@ -182,6 +200,7 @@ export default function FuelMarketPage() {
         }
         await fetchData(); // Refresh data
         if (activeTab === "history") fetchHistory(1);
+        router.refresh();
       } else {
         setError(data.error);
       }
@@ -207,7 +226,7 @@ export default function FuelMarketPage() {
     });
 
     if (newPrice) {
-      handleAction("/api/fuel-market/p2p", { listingId, action: "edit", newPrice }, `Yakin ingin mengubah harga menjadi ${newPrice} NC?`);
+      handleAction("/api/fuel-market/p2p/edit", { listingId, newPrice }, `Yakin ingin mengubah harga menjadi ${newPrice} NC?`);
     }
   };
 
@@ -576,6 +595,7 @@ export default function FuelMarketPage() {
                                       isNismaraPlus={item.sellerId?.nismaraplus?.status} 
                                       nismaraPlusStartedAt={item.sellerId?.nismaraplus?.startedAt}
                                       truckyRank={item.sellerId?.truckyRank}
+                                      topManager={item.sellerId?.topManager}
                                       className="w-3.5 h-3.5" 
                                     />
                                   </div>

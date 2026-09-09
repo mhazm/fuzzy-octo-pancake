@@ -6,15 +6,35 @@ import { Grid3X3 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "Galeri",
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Galeri Foto & Dokumentasi Komunitas",
   description:
-    "Kumpulan foto perjalanan, armada, dan momen terbaik dari komunitas driver Nismara Transport.",
+    "Kumpulan foto perjalanan, modifikasi armada truk, pemandangan rute, dan momen terbaik dari ratusan driver Nismara Transport.",
   openGraph: {
-    title: "Galeri",
+    title: "Galeri Foto & Dokumentasi Komunitas",
     description:
       "Jelajahi karya visual dan dokumentasi konvoi dari ratusan driver Nismara Transport.",
+    url: "https://transport.nismara.web.id/gallery",
+    siteName: "Nismara Transport",
+    locale: "id_ID",
     type: "website",
+    images: [
+      {
+        url: "https://images.nismara.my.id/227300_188.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Galeri Foto Nismara Transport",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Galeri Foto & Dokumentasi Komunitas",
+    description:
+      "Jelajahi karya visual dan dokumentasi konvoi dari ratusan driver Nismara Transport.",
+    images: ["https://images.nismara.my.id/227300_188.jpg"],
   },
 };
 
@@ -82,7 +102,8 @@ export default async function GlobalGalleryPage() {
             isNismaraPlus: "$uploader.nismaraplus.status",
             nismaraPlusStartedAt: "$uploader.nismaraplus.startedAt",
             isBooster: "$uploader.isBooster",
-            role: "$uploader.discordRole"
+            role: "$uploader.discordRole",
+            topManager: "$uploader.topManager",
           },
         },
       },

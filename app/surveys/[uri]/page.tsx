@@ -31,24 +31,39 @@ export async function generateMetadata({ params }: any): Promise<Metadata> {
   const survey = await db
     .collection("surveys")
     .findOne({ uri: resolvedParams.uri });
-  if (!survey) return { title: "Survey Not Found" };
+  if (!survey) return { title: "Survei Tidak Ditemukan" };
 
-  const metadata: Metadata = {
-    title: survey.title,
-    description: survey.description,
-  };
+  const title = `${survey.title}`;
+  const description = survey.description || "Isi survei resmi Nismara Transport dan dapatkan reward partisipasi.";
+  const imageUrl = survey.imageUrl || "https://images.nismara.my.id/227300_188.jpg";
+  const pageUrl = `https://transport.nismara.web.id/surveys/${resolvedParams.uri}`;
 
-  if (survey.imageUrl) {
-    metadata.openGraph = {
-      images: [survey.imageUrl],
-    };
-    metadata.twitter = {
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: pageUrl,
+      siteName: "Nismara Transport",
+      locale: "id_ID",
+      type: "website",
+      images: [
+        {
+          url: imageUrl,
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
+    },
+    twitter: {
       card: "summary_large_image",
-      images: [survey.imageUrl],
-    };
-  }
-
-  return metadata;
+      title,
+      description,
+      images: [imageUrl],
+    },
+  };
 }
 
 export const dynamic = "force-dynamic";

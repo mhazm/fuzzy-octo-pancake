@@ -6,7 +6,6 @@ import AchievementSection from "@/components/profile/AchievementSection";
 import CollectibleSection from "@/components/profile/CollectibleSection";
 import UserBadges from "@/components/icons/UserBadges";
 import { notFound } from "next/navigation";
-import { getCompanyMembersMap } from "@/lib/trucky";
 import {
   Truck,
   MapPin,
@@ -37,9 +36,88 @@ import Link from "next/link";
 import { formatDistanceToNow, format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 
-export const metadata = {
-  title: "Profile Detail",
-};
+import type { Metadata } from "next";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
+
+export async function generateMetadata(props: {
+  params: Promise<{ truckyId: string }>;
+}): Promise<Metadata> {
+  const { truckyId } = await props.params;
+  
+  try {
+    const client = await clientPromise;
+    const db = client.db();
+    const GUILD_ID = process.env.DISCORD_GUILD_ID || "863959415702028318";
+    
+    let user = await db.collection("users").findOne({
+      $or: [{ truckyId: truckyId }, { truckyId: Number(truckyId) }],
+    });
+
+    if (!user) {
+      const driverLink = await db.collection("driverlinks").findOne({
+        $or: [{ truckyId: truckyId }, { truckyId: Number(truckyId) }],
+        guildId: GUILD_ID,
+      });
+      if (driverLink) {
+        user = {
+          name: driverLink.truckyName || `Driver #${truckyId}`,
+          image: `https://cdn.truckyapp.com/public/users/${truckyId}/avatar.png`,
+          discordRole: "user",
+        } as any;
+      }
+    }
+
+    if (user) {
+      const name = user.name || "Driver";
+      const title = `Profil ${name} (@${truckyId})`;
+      const roleText = user.role === "manager" || user.role === "admin" || user.discordRole === "manager"
+        ? "Staff Nismara Transport" 
+        : user.nismaraplus?.status 
+        ? "Driver Nismara+" 
+        : "Driver Nismara Transport";
+      const description = `Lihat profil resmi, statistik pengiriman, pencapaian, dan armada truk ${name} (${roleText}) di Nismara Transport.`;
+      const avatarUrl = user.image || "https://images.nismara.my.id/227300_188.jpg";
+      const profileUrl = `https://transport.nismara.web.id/profile/${truckyId}`;
+
+      return {
+        title,
+        description,
+        openGraph: {
+          title,
+          description,
+          url: profileUrl,
+          siteName: "Nismara Transport",
+          locale: "id_ID",
+          type: "profile",
+          images: [
+            {
+              url: avatarUrl,
+              width: 500,
+              height: 500,
+              alt: name,
+            },
+          ],
+        },
+        twitter: {
+          card: "summary_large_image",
+          title,
+          description,
+          images: [avatarUrl],
+        },
+      };
+    }
+  } catch (error) {
+    console.error("Error generating profile metadata:", error);
+  }
+
+  return {
+    title: `Profil Driver #${truckyId}`,
+    description: `Profil pengemudi virtual trucking di Nismara Transport.`,
+  };
+}
 
 export default async function PublicProfilePage(props: {
   params: Promise<{ truckyId: string }>;
@@ -47,25 +125,88 @@ export default async function PublicProfilePage(props: {
   const { truckyId } = await props.params;
   const client = await clientPromise;
   const db = client.db();
-  const GUILD_ID = "863959415702028318";
+  const GUILD_ID = process.env.DISCORD_GUILD_ID || "863959415702028318";
 
   const session = await getServerSession(authOptions);
   const isManager =
     session?.user?.role === "manager" || session?.user?.role === "admin";
 
-  // 1. Fetch from MongoDB
-  const user = await db.collection("users").findOne({
-    $or: [{ truckyId: truckyId }, { truckyId: Number(truckyId) }],
-  });
+  // 1. Fetch user & driverLink in parallel
+  let [initialUser, driverLink] = await Promise.all([
+    db.collection("users").findOne({
+      $or: [{ truckyId: truckyId }, { truckyId: Number(truckyId) }],
+    }),
+    db.collection("driverlinks").findOne({
+      $or: [{ truckyId: truckyId }, { truckyId: Number(truckyId) }],
+      guildId: GUILD_ID,
+    }),
+  ]);
+
+  if (!driverLink && initialUser?.discordId) {
+    driverLink = await db.collection("driverlinks").findOne({
+      userId: initialUser.discordId,
+      guildId: GUILD_ID,
+    });
+  }
+
+  if (!initialUser && driverLink?.userId) {
+    initialUser = await db.collection("users").findOne({
+      $or: [{ discordId: driverLink.userId }, { id: driverLink.userId }],
+    });
+  }
+
+  if (!initialUser && !driverLink) notFound();
+
+  let user: any = initialUser;
+  if (!user && driverLink) {
+    user = {
+      _id: driverLink._id,
+      discordId: driverLink.userId,
+      truckyId: Number(driverLink.truckyId) || driverLink.truckyId,
+      name: driverLink.truckyName || `Driver #${truckyId}`,
+      image: `https://cdn.truckyapp.com/public/users/${truckyId}/avatar.png`,
+      discordRole: "user",
+      truckyRank: "Driver",
+      truckyRankColor: "#64748b",
+      truckyRole: "Driver",
+      isDriver: true,
+      nationality: "Indonesia",
+      createdAt:
+        driverLink.createdAt ||
+        (driverLink._id ? driverLink._id.getTimestamp() : new Date()),
+    };
+
+    // Auto-heal / provision in background
+    db.collection("users")
+      .updateOne(
+        { discordId: driverLink.userId },
+        { $setOnInsert: { ...user, updatedAt: new Date() } },
+        { upsert: true },
+      )
+      .catch((err) => console.error("Auto provision user failed:", err));
+  }
 
   if (!user) notFound();
 
-  const driverLink = await db.collection("driverlinks").findOne({
-    $or: [{ truckyId: truckyId }, { truckyId: Number(truckyId) }],
-  });
+  // Self-heal: jika user di database belum memiliki createdAt, sinkronkan dari driverLink
+  if (driverLink?.createdAt && user?._id && !user.createdAt) {
+    user.createdAt = driverLink.createdAt;
+    db.collection("users")
+      .updateOne(
+        { _id: user._id },
+        { $set: { createdAt: driverLink.createdAt } },
+      )
+      .catch((err) => console.error("Auto sync user createdAt failed:", err));
+  }
 
-  if (!driverLink) notFound();
-  const userDiscordId = driverLink.userId;
+  // Waktu bergabung driver resmi diambil dari dokumen driverlinks
+  const joinedDate =
+    driverLink?.createdAt ||
+    (driverLink?._id ? driverLink._id.getTimestamp() : null) ||
+    user.createdAt ||
+    (user._id ? user._id.getTimestamp() : null);
+
+  const userDiscordId = driverLink?.userId || user.discordId;
 
   const loggedInDiscordId = session?.user?.id || session?.user?.discordId;
   const isOwner = loggedInDiscordId === userDiscordId;
@@ -141,6 +282,24 @@ export default async function PublicProfilePage(props: {
             totalCanceled: {
               $sum: { $cond: [{ $eq: ["$jobStatus", "CANCELED"] }, 1, 0] },
             },
+            totalDrivenDistanceKm: {
+              $sum: {
+                $cond: [
+                  { $eq: ["$jobStatus", "COMPLETED"] },
+                  { $ifNull: ["$distanceKm", 0] },
+                  0,
+                ],
+              },
+            },
+            totalCargoMassT: {
+              $sum: {
+                $cond: [
+                  { $eq: ["$jobStatus", "COMPLETED"] },
+                  { $ifNull: ["$cargoMass", 0] },
+                  0,
+                ],
+              },
+            },
             recentDuration: {
               $sum: {
                 $cond: [
@@ -169,15 +328,15 @@ export default async function PublicProfilePage(props: {
   const jobStats = jobStatsRaw[0] || {
     totalCompleted: 0,
     totalCanceled: 0,
+    totalDrivenDistanceKm: 0,
+    totalCargoMassT: 0,
     recentDuration: 0,
   };
   const recentHours = Math.floor(jobStats.recentDuration / 3600);
-  const membersMap = await getCompanyMembersMap(35643);
-  const member = membersMap[Number(truckyId)];
 
   // Helper formatting
   const formatNum = (num: number) => num?.toLocaleString("id-ID") || "0";
-  const rankColor = member?.rank?.color || "#7e57c2";
+  const rankColor = user.truckyRankColor || "#8e24aa";
 
   // XP & Level calculations
   const xpMultiplier = 500;
@@ -246,10 +405,9 @@ export default async function PublicProfilePage(props: {
                 <img
                   src={
                     user.image ||
-                    member?.avatar_url ||
                     "/placeholder-avatar.png"
                   }
-                  alt={user.name || member?.name || "Driver"}
+                  alt={user.name || "Driver"}
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -261,20 +419,22 @@ export default async function PublicProfilePage(props: {
                 <div>
                   <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
                     <h1 className="text-3xl md:text-5xl font-black text-foreground tracking-tight drop-shadow-md">
-                      {user.name || member?.name || "Driver"}
+                      {user.name || "Driver"}
                     </h1>
                     <UserBadges
                       role={user.discordRole}
                       isBooster={user.isBooster === true}
                       isNismaraPlus={user.nismaraplus?.status === true}
                       nismaraPlusStartedAt={user.nismaraplus?.startedAt}
+                      isTopManager={user.topManager?.status === true && (!user.topManager?.expiredAt || new Date(user.topManager.expiredAt) > new Date())}
+                      topManagerMonth={user.topManager?.month}
                       truckyRank={user.truckyRank}
                       className="w-7 h-7 md:w-9 md:h-9"
                     />
                   </div>
                   <p className="text-muted-foreground font-medium mt-1 md:mt-2 text-sm md:text-base flex items-center justify-center md:justify-start gap-2">
                     <MapPin className="w-4 h-4" />{" "}
-                    {member?.language || "Indonesian"}
+                    {user.nationality || "Indonesia"}
                   </p>
                 </div>
 
@@ -306,7 +466,7 @@ export default async function PublicProfilePage(props: {
                     backgroundColor: `${rankColor}11`,
                   }}
                 >
-                  {member?.rank?.name || user.discordRole || "Intern / Driver"}
+                  {user.truckyRank || user.discordRole || "Driver"}
                 </span>
                 {user.nismaraplus?.status && (
                   <span className="group relative px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-md bg-linear-to-r from-amber-500/20 to-orange-500/20 text-amber-500 border border-amber-500/30 flex items-center gap-1 cursor-help">
@@ -377,7 +537,7 @@ export default async function PublicProfilePage(props: {
                     <div className="flex flex-wrap items-center gap-6 mt-4">
                       <div>
                         <p className="text-3xl font-light text-foreground">
-                          {formatNum(member?.total_driven_distance_km || 0)}
+                          {formatNum(jobStats.totalDrivenDistanceKm || 0)}
                         </p>
                         <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold mt-1">
                           KM Driven
@@ -448,7 +608,7 @@ export default async function PublicProfilePage(props: {
                 <div className="bg-card/40 backdrop-blur-sm p-5 rounded-2xl border border-border/50 text-center hover:bg-card/60 transition-colors">
                   <Package className="w-6 h-6 mx-auto mb-2 text-emerald-500" />
                   <p className="text-xl font-black text-foreground">
-                    {formatNum(member?.total_cargo_mass_t || 0)}
+                    {formatNum(jobStats.totalCargoMassT || 0)}
                   </p>
                   <p className="text-[10px] font-bold text-muted-foreground uppercase mt-1">
                     Total Kargo (t)
@@ -527,9 +687,26 @@ export default async function PublicProfilePage(props: {
                                   )
                                 : "Baru saja"}
                             </p>
-                            <p className="font-black text-primary text-xl">
-                              +{formatNum(job.nc?.total || job.revenue || 0)} NC
-                            </p>
+                            {(() => {
+                              const val =
+                                typeof job.revenue === "number"
+                                  ? job.revenue
+                                  : (job.nc?.total ?? 0);
+                              return (
+                                <p
+                                  className={`font-black text-xl ${
+                                    val < 0
+                                      ? "text-red-400"
+                                      : val > 0
+                                        ? "text-primary"
+                                        : "text-muted-foreground"
+                                  }`}
+                                >
+                                  {val > 0 ? "+" : ""}
+                                  {formatNum(val)} NC
+                                </p>
+                              );
+                            })()}
                           </div>
                         </div>
                       </Link>
@@ -562,9 +739,11 @@ export default async function PublicProfilePage(props: {
                       Bergabung
                     </span>
                     <span className="text-sm font-bold text-foreground bg-background/50 px-2 py-1 rounded border border-border/50">
-                      {new Date(
-                        member?.created_at || user.createdAt || Date.now(),
-                      ).toLocaleDateString("id-ID")}
+                      {joinedDate
+                        ? new Date(joinedDate).toLocaleDateString("id-ID", {
+                            timeZone: "Asia/Jakarta",
+                          })
+                        : "-"}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
@@ -572,7 +751,7 @@ export default async function PublicProfilePage(props: {
                       Role
                     </span>
                     <span className="text-sm font-bold text-foreground">
-                      {member?.role?.name || user.discordRole || "Member"}
+                      {user.truckyRole || (user.discordRole === "manager" ? "Staff / Manager" : "Member")}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
@@ -715,14 +894,15 @@ export default async function PublicProfilePage(props: {
               isOwner={isOwner}
               discordId={String(loggedInDiscordId || "")}
               loggedInUserTruckyId={loggedInUserTruckyId}
-              profileName={user.name || member?.name || "Pemilik"}
+              profileName={user.name || "Pemilik"}
               profileAvatar={
-                user.image || member?.avatar_url || "/placeholder-avatar.png"
+                user.image || "/placeholder-avatar.png"
               }
               profileDiscordId={userDiscordId}
               profileIsNismaraPlus={user.nismaraplus?.status === true}
               profileIsBooster={user.isBooster === true}
               profileRole={user.discordRole || "user"}
+              profileTopManager={user.topManager}
               isManager={isManager}
             />
           </div>

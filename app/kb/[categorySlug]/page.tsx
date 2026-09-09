@@ -5,11 +5,17 @@ import KBCategoryClient from "@/components/kb/KBCategoryClient";
 import clientPromise from "@/lib/mongodb";
 import { notFound, redirect } from "next/navigation";
 
+import type { Metadata } from "next";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
+
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ categorySlug: string }>;
-}) {
+}): Promise<Metadata> {
   const resolvedParams = await params;
   
   let categoryName = resolvedParams.categorySlug;
@@ -24,8 +30,35 @@ export async function generateMetadata({
     console.error("Error fetching category metadata:", error);
   }
 
+  const title = `Panduan ${categoryName} | Knowledge Base`;
+  const description = `Kumpulan artikel panduan, dokumentasi, dan informasi resmi untuk kategori ${categoryName} di Nismara Transport.`;
+  const pageUrl = `https://transport.nismara.web.id/kb/${resolvedParams.categorySlug}`;
+
   return {
-    title: `Kategori: ${categoryName} - Knowledge Base`,
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: pageUrl,
+      siteName: "Nismara Transport",
+      locale: "id_ID",
+      type: "website",
+      images: [
+        {
+          url: "https://images.nismara.my.id/227300_188.jpg",
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: ["https://images.nismara.my.id/227300_188.jpg"],
+    },
   };
 }
 

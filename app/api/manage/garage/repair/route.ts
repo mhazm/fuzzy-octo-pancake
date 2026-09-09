@@ -7,10 +7,17 @@ import FleetMaintenanceOrder from "@/lib/models/FleetMaintenanceOrder";
 import Fleet from "@/lib/models/Fleet";
 import User from "@/lib/models/User";
 import { sendPersonalNotification } from "@/lib/services/NotificationService";
+import { revalidatePath } from "next/cache";
 
 import dbConnect from "@/lib/mongoose";
 
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
+
+function normalizeGameId(raw: any): "ets2" | "ats" {
+  const g = String(raw || "").toLowerCase();
+  if (g === "2" || g.includes("ats")) return "ats";
+  return "ets2";
+}
 
 export async function POST(request: Request) {
   try {
@@ -36,22 +43,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Slot dalam kondisi baik" }, { status: 400 });
     }
 
-    // Repair the slot
+    // Repair the slot & clean stale references
     slot.condition = 100;
     slot.status = "available";
+    slot.currentOrderId = null;
+    slot.fleetId = null;
     await slot.save();
 
     // Check waiting list to automatically fill the repaired slot
     const allWaiting = await FleetMaintenanceOrder.find({ status: "waiting" }).sort({ createdAt: 1 });
-    let matchedWaiting = null;
+    let matchedWaiting: any = null;
     
     for (const w of allWaiting) {
       const wFleet = await Fleet.findById(w.fleetId).populate("model");
       if (wFleet) {
-        let rawGameId = wFleet.model?.game_id ?? wFleet.game_id;
-        let wGameId = String(rawGameId).toLowerCase();
-        if (wGameId === "1" || wGameId.includes("ets")) wGameId = "ets2";
-        if (wGameId === "2" || wGameId.includes("ats")) wGameId = "ats";
+        const rawGameId = wFleet.model?.game_id ?? wFleet.game_id;
+        const wGameId = normalizeGameId(rawGameId);
         
         if (wGameId === slot.game_id) {
           if (slot.type === "vip") {
@@ -69,47 +76,53 @@ export async function POST(request: Request) {
     }
 
     if (matchedWaiting) {
+      const startAt = new Date();
+      const endAt = new Date(startAt.getTime() + matchedWaiting.serviceDuration * 24 * 60 * 60 * 1000);
+
       matchedWaiting.status = "in_service";
       matchedWaiting.slotNumber = slot.slotId;
-      matchedWaiting.maintenanceStartAt = new Date();
-      
-      const endAt = new Date();
-      endAt.setTime(endAt.getTime() + matchedWaiting.serviceDuration * 24 * 60 * 60 * 1000);
+      matchedWaiting.maintenanceStartAt = startAt;
       matchedWaiting.maintenanceEndAt = endAt;
-      
       await matchedWaiting.save();
 
-      await Fleet.findByIdAndUpdate(matchedWaiting.fleetId, {
+      const updatedFleet = await Fleet.findByIdAndUpdate(matchedWaiting.fleetId, {
         status: "onservice",
-        maintenance_start_date: new Date(),
+        maintenance_start_date: startAt,
         maintenance_end_date: endAt
-      });
+      }, { returnDocument: "after" });
 
       slot.status = "in_use";
       slot.currentOrderId = matchedWaiting._id;
       slot.fleetId = matchedWaiting.fleetId;
       await slot.save();
 
-      await sendPersonalNotification(
+      sendPersonalNotification(
         matchedWaiting.discordId,
         "Kendaraan Masuk Garasi 🛠️",
-        `Peralatan Garasi Slot ${slot.slotId} telah diperbaiki. Kendaraan Anda kini masuk ke Garasi dari daftar tunggu. Estimasi selesai pada ${endAt.toLocaleDateString("id-ID")}.`,
+        `Peralatan Garasi Slot ${slot.slotId} telah diperbaiki. Kendaraan Anda kini masuk ke Garasi dari daftar tunggu. Estimasi selesai pada ${endAt.toLocaleString("id-ID", { timeZone: "Asia/Jakarta", day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })} WIB.`,
         "info",
-        `/dashboard/garage/fleet/${matchedWaiting.fleetId}`
-      );
+        `/dashboard/garage/fleet/${updatedFleet?.get("id") || matchedWaiting.fleetId}`
+      ).catch((err) => console.error("Notification Error:", err));
 
       if (DISCORD_BOT_TOKEN && matchedWaiting.discordChannelId) {
-        await fetch(`https://discord.com/api/v10/channels/${matchedWaiting.discordChannelId}/messages`, {
+        fetch(`https://discord.com/api/v10/channels/${matchedWaiting.discordChannelId}/messages`, {
           method: "POST",
           headers: {
             "Authorization": `Bot ${DISCORD_BOT_TOKEN}`,
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            content: `✅ Garasi Slot ${slot.slotId} telah diperbaiki oleh tim. Kendaraan Anda kini masuk ke garasi. Estimasi selesai pada ${endAt.toLocaleDateString("id-ID")}.`
+            content: `✅ Garasi Slot ${slot.slotId} telah diperbaiki oleh tim. Kendaraan Anda kini masuk ke garasi. Estimasi selesai pada **${endAt.toLocaleString("id-ID", { timeZone: "Asia/Jakarta", day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })} WIB**.`
           })
         }).catch(console.error);
       }
+    }
+
+    try {
+      revalidatePath("/dashboard/manage/fleet/service");
+      revalidatePath("/dashboard/garage/fleet");
+    } catch (e) {
+      console.error("Failed to revalidate garage repair paths", e);
     }
 
     return NextResponse.json({ success: true, message: "Peralatan garasi berhasil diperbaiki" });

@@ -11,7 +11,9 @@ import { revalidatePath } from "next/cache";
 
 import dbConnect from "@/lib/mongoose";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 export async function GET(
   request: Request,
@@ -43,6 +45,7 @@ export async function GET(
       itemWithSeller.sellerNismaraPlusStartedAt = seller.nismaraplus?.startedAt || null;
       itemWithSeller.sellerIsBooster = seller.isBooster === true;
       itemWithSeller.sellerRole = seller.discordRole || seller.role;
+      itemWithSeller.sellerTopManager = seller.topManager || null;
     } else {
       itemWithSeller.sellerName = "Unknown Seller";
       itemWithSeller.sellerImage = null;
@@ -50,6 +53,7 @@ export async function GET(
       itemWithSeller.sellerIsNismaraPlus = false;
       itemWithSeller.sellerNismaraPlusStartedAt = null;
       itemWithSeller.sellerIsBooster = false;
+      itemWithSeller.sellerTopManager = null;
     }
 
     return NextResponse.json(itemWithSeller, {

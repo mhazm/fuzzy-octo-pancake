@@ -49,7 +49,7 @@ export default async function EditContractPage({
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent-sky/10 border border-accent-sky/20 text-accent-sky text-xs font-bold uppercase tracking-widest w-fit">
           <FileEdit className="w-4 h-4" /> Edit Mode
         </div>
-        <h1 className="text-3xl md:text-4xl font-black text-foreground tracking-tighter uppercase italic">
+        <h1 className="text-3xl md:text-4xl font-black text-foreground tracking-tighter uppercase">
           Edit Contract
         </h1>
         <p className="text-foreground/50 font-bold uppercase text-[10px] tracking-[0.2em]">

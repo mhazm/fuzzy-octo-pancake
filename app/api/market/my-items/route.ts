@@ -5,6 +5,11 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/route";
 
 import dbConnect from "@/lib/mongoose";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
+
 export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -22,7 +27,13 @@ export async function GET(request: Request) {
       .sort({ createdAt: -1 })
       .lean();
 
-    return NextResponse.json(items);
+    return NextResponse.json(items, {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        "CDN-Cache-Control": "no-store",
+        "Vercel-CDN-Cache-Control": "no-store",
+      },
+    });
   } catch (error) {
     console.error("GET MyItems Error:", error);
     return NextResponse.json(

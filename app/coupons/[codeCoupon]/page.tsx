@@ -25,33 +25,58 @@ interface DetailPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-export async function generateMetadata(props: DetailPageProps): Promise<Metadata> {
+export async function generateMetadata(
+  props: DetailPageProps,
+): Promise<Metadata> {
   const resolvedParams = await props.params;
   const codeCoupon = resolvedParams.codeCoupon;
-  
+
   try {
     const client = await clientPromise;
     const db = client.db();
-    
-    const query = { codeCoupon: { $regex: new RegExp(`^${codeCoupon}$`, "i") } };
+
+    const query = {
+      codeCoupon: { $regex: new RegExp(`^${codeCoupon}$`, "i") },
+    };
     let coupon = await db.collection("coupons").findOne(query);
 
     if (coupon) {
-      const meta: Metadata = {
-        title: `Kupon ${coupon.nameCoupon}`,
-      };
+      const title = `Kupon ${coupon.nameCoupon}`;
+      const rewardText =
+        coupon.type === "PENALTY_TICKET"
+          ? "Tiket Hapus Poin Penalti"
+          : `${coupon.minAmount}-${coupon.maxAmount} NC`;
+      const description = `Klaim kode kupon ${coupon.codeCoupon} untuk mendapatkan ${rewardText} di Nismara Transport!`;
+      const imageUrl =
+        coupon.imageUrl || "https://images.nismara.my.id/227300_188.jpg";
+      const pageUrl = `https://transport.nismara.web.id/coupons/${codeCoupon}`;
 
-      if (coupon.imageUrl) {
-        meta.openGraph = {
-          images: [{ url: coupon.imageUrl }],
-        };
-        meta.twitter = {
+      return {
+        title,
+        description,
+        openGraph: {
+          title,
+          description,
+          url: pageUrl,
+          siteName: "Nismara Transport",
+          locale: "id_ID",
+          type: "website",
+          images: [
+            {
+              url: imageUrl,
+              width: 1200,
+              height: 630,
+              alt: title,
+            },
+          ],
+        },
+        twitter: {
           card: "summary_large_image",
-          images: [coupon.imageUrl],
-        };
-      }
-
-      return meta;
+          title,
+          description,
+          images: [imageUrl],
+        },
+      };
     }
   } catch (error) {
     console.error("Error fetching coupon metadata:", error);
@@ -59,6 +84,7 @@ export async function generateMetadata(props: DetailPageProps): Promise<Metadata
 
   return {
     title: "Detail Kupon",
+    description: "Klaim kode kupon hadiah resmi di Nismara Transport.",
   };
 }
 
@@ -107,8 +133,10 @@ export default async function CouponDetailPage(props: DetailPageProps) {
     notFound();
   }
 
-  const isPending = coupon.isScheduled && new Date() < new Date(coupon.startDate);
-  const isExpired = (!coupon.isActive && !isPending) || new Date() > new Date(coupon.endDate);
+  const isPending =
+    coupon.isScheduled && new Date() < new Date(coupon.startDate);
+  const isExpired =
+    (!coupon.isActive && !isPending) || new Date() > new Date(coupon.endDate);
   const hasClaimed = session.user?.discordId
     ? (coupon.driverClaims || []).some(
         (c: any) => c.discordId === session.user.discordId,
@@ -150,6 +178,7 @@ export default async function CouponDetailPage(props: DetailPageProps) {
           isBooster: 1,
           nismaraplus: 1,
           truckyRank: 1,
+          topManager: 1,
         },
       },
     )
@@ -226,11 +255,15 @@ export default async function CouponDetailPage(props: DetailPageProps) {
                   isPending
                     ? "bg-orange-500/10 text-orange-500 border-orange-500/30"
                     : coupon.isActive
-                    ? "bg-green-500/10 text-green-500 border-green-500/30"
-                    : "bg-muted text-foreground/50 border-border"
+                      ? "bg-green-500/10 text-green-500 border-green-500/30"
+                      : "bg-muted text-foreground/50 border-border"
                 }`}
               >
-                {isPending ? "Kupon Belum Dimulai" : coupon.isActive ? "Kupon Aktif" : "Kupon Selesai"}
+                {isPending
+                  ? "Kupon Belum Dimulai"
+                  : coupon.isActive
+                    ? "Kupon Aktif"
+                    : "Kupon Selesai"}
               </span>
               <span className="px-4 py-1.5 text-sm font-bold rounded-full bg-primary/10 text-primary border border-primary/30">
                 {isNC ? "Hadiah Nismara Coin" : "Tiket Hapus Penalti"}
@@ -350,8 +383,11 @@ export default async function CouponDetailPage(props: DetailPageProps) {
                               role={claim.user.discordRole || claim.user.role}
                               isBooster={claim.user.isBooster}
                               isNismaraPlus={claim.user.nismaraplus?.status}
-                              nismaraPlusStartedAt={claim.user.nismaraplus?.startedAt}
+                              nismaraPlusStartedAt={
+                                claim.user.nismaraplus?.startedAt
+                              }
                               truckyRank={claim.user.truckyRank}
+                              topManager={claim.user.topManager}
                               className="w-4 h-4"
                             />
                           )}

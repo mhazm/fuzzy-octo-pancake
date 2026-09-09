@@ -36,12 +36,33 @@ export async function generateMetadata(
   const imageUrl =
     convoyData?.imageUrl || "https://images.nismara.my.id/227300_188.jpg";
 
+  const title = `${convoyName}`;
+  const description = `${convoyName} akan berlangsung dari ${sourceCity} menuju ${destinationCity} dengan membawa cargo ${cargo}. Perjalanan ini akan menempuh jarak ${plannedDistance} km.`;
+  const pageUrl = `https://transport.nismara.web.id/convoy/${convoyUri}`;
+
   return {
-    title: `${convoyName}`,
-    description: `${convoyName} akan berlangsung dari ${sourceCity} menuju ${destinationCity} dengan membawa cargo ${cargo}. Perjalanan ini akan menempuh jarak ${plannedDistance} km.`,
+    title,
+    description,
     openGraph: {
-      title: `${convoyName}`,
-      description: `${convoyName} akan berlangsung dari ${sourceCity} menuju ${destinationCity} dengan membawa cargo ${cargo}. Perjalanan ini akan menempuh jarak ${plannedDistance} km.`,
+      title,
+      description,
+      url: pageUrl,
+      siteName: "Nismara Transport",
+      locale: "id_ID",
+      type: "article",
+      images: [
+        {
+          url: imageUrl,
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
       images: [imageUrl],
     },
     robots: {

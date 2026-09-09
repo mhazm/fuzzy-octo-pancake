@@ -52,6 +52,7 @@ export async function GET(
           nismaraPlusStartedAt: user && user.nismaraplus ? user.nismaraplus.startedAt : null,
           isBooster: user ? user.isBooster : false,
           isManager: user ? (user.discordRole === "manager" || user.discordRole === "admin") : false,
+          topManager: user ? user.topManager : null,
         }
       });
     }

@@ -3,8 +3,33 @@ import Image from "next/image";
 import clientPromise from "@/lib/mongodb";
 import CouponClientCard from "./CouponClientCard";
 
-export const metadata = {
-  title: "Coupons",
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Kupon Hadiah & Kode Promo Driver",
+  description: "Klaim kupon berhadiah Nismara Coin (NC) gratis dan tiket penghapusan poin penalti resmi Nismara Transport!",
+  openGraph: {
+    title: "Kupon Hadiah & Kode Promo Driver",
+    description: "Klaim kupon berhadiah Nismara Coin (NC) gratis dan tiket penghapusan poin penalti resmi Nismara Transport!",
+    url: "https://transport.nismara.web.id/coupons",
+    siteName: "Nismara Transport",
+    locale: "id_ID",
+    type: "website",
+    images: [
+      {
+        url: "https://images.nismara.my.id/227300_188.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Kupon Hadiah Nismara Transport",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Kupon Hadiah & Kode Promo Driver",
+    description: "Klaim kupon berhadiah Nismara Coin (NC) gratis dan tiket penghapusan poin penalti resmi Nismara Transport!",
+    images: ["https://images.nismara.my.id/227300_188.jpg"],
+  },
 };
 
 export const revalidate = 300;

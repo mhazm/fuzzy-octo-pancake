@@ -51,9 +51,7 @@ export default function NismaraPlusClaimClient({ lastClaimAt }: NismaraPlusClaim
         setMessage(data.message);
         setIsReady(false);
         setDaysRemaining(30);
-        setTimeout(() => {
-          router.refresh();
-        }, 3000);
+        router.refresh();
       } else {
         setClaimStatus("error");
         setMessage(data.error || "Gagal melakukan klaim bulanan.");

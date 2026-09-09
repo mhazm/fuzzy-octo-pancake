@@ -19,6 +19,7 @@ import {
   SearchX,
   ShieldAlert,
   Loader2,
+  Clock,
 } from "lucide-react";
 import { getCompanyMembersMap } from "@/lib/trucky";
 
@@ -37,20 +38,43 @@ export default async function SpecialContractsPage({
 
   const guildId = process.env.DISCORD_GUILD_ID;
 
-  // Ambil kontrak aktif (ongoing)
+  const now = new Date();
+
+  // 1. Ambil kontrak aktif (ongoing)
   const activeContracts = await db
     .collection("contracts")
     .find({ guildId, isActive: true })
     .toArray();
 
-  // Ambil history kontrak, dengan paginasi
-  const totalHistoryCount = await db.collection("contracts").countDocuments({ guildId, isActive: false });
+  // 2. Ambil kontrak terjadwal (upcoming / scheduled)
+  const scheduledContracts = await db
+    .collection("contracts")
+    .find({
+      guildId,
+      isActive: false,
+      isScheduled: true,
+      startDate: { $gt: now },
+    })
+    .sort({ startDate: 1 })
+    .toArray();
+
+  // 3. Ambil history kontrak (selesai / arsip), dengan paginasi
+  const historyFilter = {
+    guildId,
+    isActive: false,
+    $or: [
+      { isScheduled: { $ne: true } },
+      { startDate: { $lte: now } },
+    ],
+  };
+
+  const totalHistoryCount = await db.collection("contracts").countDocuments(historyFilter);
   const totalPages = Math.ceil(totalHistoryCount / limit) || 1;
   const offset = (page - 1) * limit;
 
   const historyContracts = await db
     .collection("contracts")
-    .find({ guildId, isActive: false })
+    .find(historyFilter)
     .sort({ endAt: -1 })
     .skip(offset)
     .limit(limit)
@@ -88,10 +112,28 @@ export default async function SpecialContractsPage({
       ? new Date(dateInput.$date)
       : new Date(dateInput);
     return date.toLocaleDateString("id-ID", {
+      timeZone: "Asia/Jakarta",
       day: "numeric",
       month: "long",
       year: "numeric",
     });
+  };
+
+  const formatDateTime = (dateInput: any) => {
+    if (!dateInput) return "-";
+    const date = dateInput.$date
+      ? new Date(dateInput.$date)
+      : new Date(dateInput);
+    return (
+      date.toLocaleString("id-ID", {
+        timeZone: "Asia/Jakarta",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }) + " WIB"
+    );
   };
 
   const getGameName = (gameId: string) => {
@@ -124,7 +166,7 @@ export default async function SpecialContractsPage({
         </div>
 
         {/* SECTION 1: KONTRAK AKTIF */}
-        <section className="mb-24">
+        <section className="mb-20">
           <div className="flex items-center gap-2 mb-8">
             <div className="w-2 h-8 bg-primary rounded-full" />
             <h2 className="text-2xl font-bold text-foreground">Kontrak Berjalan</h2>
@@ -194,6 +236,90 @@ export default async function SpecialContractsPage({
             </div>
           )}
         </section>
+
+        {/* SECTION 1.5: KONTRAK TERJADWAL (UPCOMING SPECIAL CONTRACTS) */}
+        {scheduledContracts.length > 0 && (
+          <section className="mb-20">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="p-2 bg-amber-500/20 rounded-lg">
+                <Clock className="w-6 h-6 text-amber-400 animate-pulse" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-amber-400 flex items-center gap-2">
+                  Segera Dimulai <Sparkles className="w-5 h-5 text-amber-400" />
+                </h2>
+                <p className="text-xs text-muted-foreground font-medium mt-0.5">
+                  Kontrak logistik yang telah dijadwalkan dan akan resmi dibuka pada waktu berikut.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {scheduledContracts.map((contract) => (
+                <Link
+                  key={contract._id.toString()}
+                  href={`/special-contracts/${slugify(contract.contractName)}`}
+                  className="group"
+                >
+                  <div className="relative glass-panel rounded-[2.5rem] overflow-hidden border-amber-500/30 hover:border-amber-500/60 bg-gradient-to-br from-amber-500/5 via-transparent to-transparent transition-all duration-500 shadow-2xl p-8 flex flex-col md:flex-row gap-8">
+                    <div className="w-full md:w-48 h-48 rounded-3xl overflow-hidden bg-card border border-amber-500/20 shrink-0 relative">
+                      <img
+                        src={contract.imageUrl || "https://i.imgur.com/iMTOi8Z.png"}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                        alt={contract.contractName}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                      <span className="absolute bottom-3 left-3 right-3 text-center px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider bg-amber-500/90 text-black shadow-md">
+                        Scheduled
+                      </span>
+                    </div>
+
+                    <div className="flex-1 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center gap-2 mb-3">
+                          <span
+                            className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase border inline-block ${contract.gameId === "1" ? "bg-blue-500/10 text-blue-400 border-blue-500/30" : "bg-orange-500/10 text-orange-400 border-orange-500/30"}`}
+                          >
+                            {getGameName(contract.gameId)}
+                          </span>
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-1">
+                            <Clock className="w-3 h-3" /> Terjadwal
+                          </span>
+                        </div>
+
+                        <h3 className="text-2xl font-bold text-foreground mb-1 group-hover:text-amber-400 transition-colors">
+                          {contract.contractName}
+                        </h3>
+                        <p className="text-accent-sky font-medium mb-4 flex items-center gap-2 text-sm uppercase">
+                          <Anchor className="w-4 h-4" /> {contract.companyName}
+                        </p>
+
+                        <div className="space-y-1.5 py-3 px-4 rounded-xl bg-card/60 border border-border/50 text-xs mb-4">
+                          <div className="flex items-center justify-between text-muted-foreground">
+                            <span>Waktu Mulai:</span>
+                            <span className="font-bold text-amber-400">
+                              {formatDateTime(contract.startDate)}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-muted-foreground">
+                            <span>Target Selesai:</span>
+                            <span className="font-bold text-foreground">
+                              {formatDateTime(contract.endAt)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="w-full py-3.5 bg-amber-500/10 hover:bg-amber-500 text-amber-400 hover:text-black font-bold rounded-2xl flex items-center justify-center gap-2 transition-all border border-amber-500/30 shadow-lg">
+                        Pratinjau Detail Kontrak <ChevronRight className="w-4 h-4" />
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* SECTION 2: ACHIEVEMENT HALL (RIWAYAT) */}
         <section>

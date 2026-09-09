@@ -2,10 +2,12 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Plus, Edit, Trash2, BookOpen, ExternalLink } from "lucide-react";
 import { showConfirm, showAlert } from "@/lib/dialog";
 
 export default function ManagerKBDashboard() {
+  const router = useRouter();
   const [articles, setArticles] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -25,7 +27,10 @@ export default function ManagerKBDashboard() {
 
   const fetchCategories = async () => {
     try {
-      const res = await fetch("/api/kb/categories");
+      const res = await fetch("/api/kb/categories", {
+        cache: "no-store",
+        headers: { "Pragma": "no-cache", "Cache-Control": "no-cache" },
+      });
       const data = await res.json();
       if (data.success) {
         setCategories(data.categories);
@@ -44,7 +49,10 @@ export default function ManagerKBDashboard() {
         category: categoryFilter,
         sort: sortOption
       });
-      const res = await fetch(`/api/manager/kb?${params}`);
+      const res = await fetch(`/api/manager/kb?${params}`, {
+        cache: "no-store",
+        headers: { "Pragma": "no-cache", "Cache-Control": "no-cache" },
+      });
       const data = await res.json();
       if (data.success) {
         setArticles(data.articles);
@@ -60,11 +68,16 @@ export default function ManagerKBDashboard() {
   const handleDelete = async (id: string, title: string) => {
     if (await showConfirm(`Yakin ingin menghapus artikel "${title}"?`)) {
       try {
-        const res = await fetch(`/api/manager/kb/${id}`, { method: "DELETE" });
+        const res = await fetch(`/api/manager/kb/${id}`, {
+          method: "DELETE",
+          headers: { "Pragma": "no-cache", "Cache-Control": "no-cache" },
+        });
         const data = await res.json();
         if (data.success) {
           setArticles(articles.filter(a => a._id !== id));
           showAlert("Artikel berhasil dihapus!");
+          fetchArticles();
+          router.refresh();
         } else {
           showAlert(`Gagal: ${data.error}`, "error");
         }

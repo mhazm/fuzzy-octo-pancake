@@ -6,8 +6,13 @@ import Garage from "@/lib/models/Garage";
 import { getMechanicConfig, generateMechanicName, MechanicSpecialty } from "@/lib/constants/mechanics";
 import mongoose from "mongoose";
 import { checkRateLimit } from "@/lib/rateLimit";
+import { revalidatePath } from "next/cache";
 
 import dbConnect from "@/lib/mongoose";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 const GUILD_ID = "863959415702028318";
 
 export async function POST(request: Request) {
@@ -96,6 +101,13 @@ export async function POST(request: Request) {
       extendAt: extendAt,
     };
     await garage.save();
+
+    try {
+      revalidatePath("/dashboard/garage");
+      revalidatePath("/dashboard/currency");
+    } catch (e) {
+      console.error("Failed to revalidate mechanics-hire paths", e);
+    }
 
     return NextResponse.json({ 
       success: true, 

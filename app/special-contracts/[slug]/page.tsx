@@ -12,13 +12,10 @@ import {
   Crown,
   Sparkles,
   Users,
+  Clock,
 } from "lucide-react";
 import { getCompanyMembersMap } from "@/lib/trucky";
 import UserBadges from "@/components/icons/UserBadges";
-
-
-
-
 
 export default async function ContractDetailPage(props: {
   params: Promise<{ slug: string }>;
@@ -39,8 +36,25 @@ export default async function ContractDetailPage(props: {
     notFound();
   }
 
-  const isHistory = !!contract.closedAt;
+  const now = new Date();
+  const isPending = Boolean(contract.isScheduled && new Date(contract.startDate) > now);
+  const isHistory = Boolean(!contract.isActive && !isPending);
   const rawContributors = contract.contributors || [];
+
+  const formatDateTime = (dateInput: any) => {
+    if (!dateInput) return "-";
+    const date = dateInput.$date ? new Date(dateInput.$date) : new Date(dateInput);
+    return (
+      date.toLocaleString("id-ID", {
+        timeZone: "Asia/Jakarta",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }) + " WIB"
+    );
+  };
 
   // =========================================================================
   // 2. ENRICH DATA (Sinkronisasi Discord ID -> Trucky ID -> Profil API)
@@ -102,6 +116,7 @@ export default async function ContractDetailPage(props: {
       role: mongoUser?.role || null,
       serverBooster: mongoUser?.serverBooster || false,
       truckyRank: truckyData?.role?.name || truckyData?.role || null,
+      topManager: mongoUser?.topManager || null,
     };
   });
 
@@ -115,6 +130,24 @@ export default async function ContractDetailPage(props: {
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
           Kembali ke Daftar Special Contract
         </Link>
+
+        {/* Banner Peringatan jika Kontrak Masih Terjadwal */}
+        {isPending && (
+          <div className="p-6 mb-8 rounded-3xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-4 shadow-xl">
+            <div className="p-3 rounded-2xl bg-amber-500/20 text-amber-400 shrink-0">
+              <Clock className="w-6 h-6 animate-pulse" />
+            </div>
+            <div>
+              <h4 className="text-base font-bold text-amber-400 mb-1 flex items-center gap-2">
+                Special Contract Belum Dimulai (Terjadwal)
+              </h4>
+              <p className="text-sm text-gray-300 leading-relaxed">
+                Kontrak ini telah dijadwalkan dan akan resmi dibuka pada{" "}
+                <strong className="text-amber-400">{formatDateTime(contract.startDate)}</strong>. Pengiriman muatan dari atau menuju ke <strong className="text-white">{contract.companyName}</strong> baru akan mulai dihitung ke papan kontribusi setelah waktu tersebut dimulai.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Hero Banner Kontrak */}
         <div className="glass-panel rounded-[3rem] overflow-hidden border-primary/20 mb-12 shadow-2xl relative">
@@ -139,6 +172,11 @@ export default async function ContractDetailPage(props: {
                     ? "Euro Truck Simulator 2"
                     : "American Truck Simulator"}
                 </span>
+                {isPending && (
+                  <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 text-[10px] font-bold border border-amber-500/30 uppercase flex items-center gap-1 shadow-lg">
+                    <Clock className="w-3 h-3" /> Scheduled
+                  </span>
+                )}
                 {isHistory && (
                   <span className="px-3 py-1 rounded-full bg-card/80 text-gray-400 text-[10px] font-bold border border-border uppercase">
                     Archive
@@ -257,6 +295,7 @@ export default async function ContractDetailPage(props: {
                                 nismaraPlusStartedAt={driver.nismaraplus?.startedAt}
                                 isBooster={driver.serverBooster}
                                 truckyRank={driver.truckyRank}
+                                topManager={driver.topManager}
                                 className="w-5 h-5"
                               />
                             </div>

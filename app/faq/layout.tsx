@@ -2,11 +2,28 @@ import type { Metadata } from "next";
 import React from "react";
 
 export const metadata: Metadata = {
-  title: "FAQ",
+  title: "Pusat Bantuan & Pertanyaan Umum (FAQ)",
   description:
-    "Temukan jawaban dari pertanyaan yang sering diajukan seputar Nismara Transport, sistem driver, pengiriman barang, event, dan layanan logistik.",
+    "Temukan jawaban dari pertanyaan yang sering diajukan seputar Nismara Transport, pendaftaran driver, pengiriman kargo, event mabar, dan sistem reward.",
   openGraph: {
-    title: "FAQ",
+    title: "Pusat Bantuan & Pertanyaan Umum (FAQ)",
+    description: "Pusat bantuan dan pertanyaan umum resmi Nismara Transport.",
+    url: "https://transport.nismara.web.id/faq",
+    siteName: "Nismara Transport",
+    locale: "id_ID",
+    type: "website",
+    images: [
+      {
+        url: "https://images.nismara.my.id/227300_188.jpg",
+        width: 1200,
+        height: 630,
+        alt: "FAQ Nismara Transport",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Pusat Bantuan & Pertanyaan Umum (FAQ)",
     description: "Pusat bantuan dan pertanyaan umum resmi Nismara Transport.",
     images: ["https://images.nismara.my.id/227300_188.jpg"],
   },

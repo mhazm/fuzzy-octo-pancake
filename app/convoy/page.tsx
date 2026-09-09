@@ -1,6 +1,37 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+
 export const dynamic = "force-dynamic";
 
-import Link from "next/link";
+export const metadata: Metadata = {
+  title: "Jadwal & Agenda Konvoi Driver",
+  description:
+    "Ikuti jadwal mabar konvoi resmi Euro Truck Simulator 2 dan American Truck Simulator bersama seluruh driver Nismara Transport.",
+  openGraph: {
+    title: "Jadwal & Agenda Konvoi Driver",
+    description:
+      "Ikuti jadwal mabar konvoi resmi Euro Truck Simulator 2 dan American Truck Simulator bersama seluruh driver Nismara Transport.",
+    url: "https://transport.nismara.web.id/convoy",
+    siteName: "Nismara Transport",
+    locale: "id_ID",
+    type: "website",
+    images: [
+      {
+        url: "https://images.nismara.my.id/227300_188.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Jadwal Konvoi Nismara Transport",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Jadwal & Agenda Konvoi Driver",
+    description:
+      "Ikuti jadwal mabar konvoi resmi Euro Truck Simulator 2 dan American Truck Simulator bersama seluruh driver Nismara Transport.",
+    images: ["https://images.nismara.my.id/227300_188.jpg"],
+  },
+};
 import clientPromise from "@/lib/mongodb";
 import {
   Calendar,

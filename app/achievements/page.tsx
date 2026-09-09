@@ -4,9 +4,33 @@ import { Medal, Trophy, Calendar, Sparkles } from "lucide-react";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Galeri Achievement",
+  title: "Galeri Achievement & Lencana Driver",
   description:
-    "Daftar seluruh achievement dan lencana kebanggaan yang dapat diraih oleh driver Nismara Transport.",
+    "Daftar seluruh achievement, medali kehormatan, dan lencana kebanggaan yang dapat diraih oleh driver Nismara Transport.",
+  openGraph: {
+    title: "Galeri Achievement & Lencana Driver",
+    description:
+      "Daftar seluruh achievement, medali kehormatan, dan lencana kebanggaan yang dapat diraih oleh driver Nismara Transport.",
+    url: "https://transport.nismara.web.id/achievements",
+    siteName: "Nismara Transport",
+    locale: "id_ID",
+    type: "website",
+    images: [
+      {
+        url: "https://images.nismara.my.id/227300_188.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Galeri Achievement Nismara Transport",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Galeri Achievement & Lencana Driver",
+    description:
+      "Daftar seluruh achievement, medali kehormatan, dan lencana kebanggaan yang dapat diraih oleh driver Nismara Transport.",
+    images: ["https://images.nismara.my.id/227300_188.jpg"],
+  },
 };
 
 const categoryLabels: Record<string, string> = {

@@ -8,8 +8,30 @@ import CommunityGoalsTabsClient from "./CommunityGoalsTabsClient";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Community Goals",
-  description: "Daftar pencapaian komunitas pengemudi Nismara Transport.",
+  title: "Target Komunitas & Community Goals",
+  description: "Daftar target dan misi kolektif komunitas pengemudi Nismara Transport. Capai target bersama dan raih hadiah NC eksklusif!",
+  openGraph: {
+    title: "Target Komunitas & Community Goals",
+    description: "Daftar target dan misi kolektif komunitas pengemudi Nismara Transport. Capai target bersama dan raih hadiah NC eksklusif!",
+    url: "https://transport.nismara.web.id/community-goals",
+    siteName: "Nismara Transport",
+    locale: "id_ID",
+    type: "website",
+    images: [
+      {
+        url: "https://images.nismara.my.id/227300_188.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Community Goals Nismara Transport",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Target Komunitas & Community Goals",
+    description: "Daftar target dan misi kolektif komunitas pengemudi Nismara Transport.",
+    images: ["https://images.nismara.my.id/227300_188.jpg"],
+  },
 };
 
 export default async function CommunityGoalsPage() {

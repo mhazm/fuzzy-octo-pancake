@@ -9,11 +9,18 @@ import Garage from "@/lib/models/Garage";
 import "@/lib/models/FleetStore";
 import "@/lib/models/User";
 import "@/lib/models/FleetBrand";
+import "@/lib/models/UserVoucher";
 import { getCurrencyDataLogic } from "@/lib/currency";
+import { validateVoucher, calculateVoucherDiscount, consumeVoucher } from "@/lib/voucher";
 import Transaction from "@/lib/models/Transaction";
+import { revalidatePath } from "next/cache";
 import crypto from "crypto";
 
 import dbConnect from "@/lib/mongoose";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const GUILD_ID = process.env.DISCORD_GUILD_ID;
 const CATEGORY_ID = process.env.DISCORD_SERVICE_FLEET_CATEGORY_ID; // Or any specific category for maintenance
@@ -27,7 +34,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { fleetId, type } = body; // type can be 'maintenance' or 'replace'
+    const { fleetId, type, voucherId } = body; // type can be 'maintenance' or 'replace'
 
     if (!fleetId) {
       return NextResponse.json(
@@ -53,9 +60,9 @@ export async function POST(request: Request) {
     }
 
     // Verify ownership
-    if (String(fleet.driver) !== String(user._id)) {
+    if (String(fleet.owner || fleet.driver) !== String(user._id)) {
       return NextResponse.json(
-        { error: "Anda bukan driver kendaraan ini" },
+        { error: "Anda bukan pemilik/driver kendaraan ini" },
         { status: 403 },
       );
     }
@@ -133,7 +140,29 @@ export async function POST(request: Request) {
         (needsBrakes ? maintenanceCost.brakes : 0);
 
     const adminFee = 500;
-    const totalPrice = totalComponentCost + adminFee;
+
+    // Voucher handling (Applies to component costs only, Admin Fee remains 500 NC)
+    let appliedVoucher: any = null;
+    let voucherDiscount = 0;
+
+    if (voucherId) {
+      const vRes = await validateVoucher(
+        voucherId,
+        session.user.discordId,
+        "FLEET_MAINTENANCE",
+        totalComponentCost
+      );
+
+      if (!vRes.valid) {
+        return NextResponse.json({ error: vRes.error }, { status: 400 });
+      }
+
+      appliedVoucher = vRes.voucher;
+      voucherDiscount = calculateVoucherDiscount(totalComponentCost, appliedVoucher);
+    }
+
+    const finalComponentCost = Math.max(0, totalComponentCost - voucherDiscount);
+    const totalPrice = finalComponentCost + adminFee;
 
     // Fetch garage to check mechanics
     const garage = await Garage.findOne({ discordId: session.user.discordId });
@@ -268,6 +297,15 @@ export async function POST(request: Request) {
                   value: `${totalComponentCost.toLocaleString("id-ID")} NC`,
                   inline: false,
                 },
+                ...(voucherDiscount > 0 && appliedVoucher
+                  ? [
+                      {
+                        name: "🎟️ Diskon Voucher",
+                        value: `-${voucherDiscount.toLocaleString("id-ID")} NC (${appliedVoucher.title})`,
+                        inline: false,
+                      },
+                    ]
+                  : []),
                 {
                   name: "Biaya Admin",
                   value: `${adminFee.toLocaleString("id-ID")} NC`,
@@ -302,11 +340,18 @@ export async function POST(request: Request) {
       },
       basePrice: totalComponentCost,
       adminFee,
+      voucherId: appliedVoucher?._id || null,
+      voucherDiscount,
       totalPrice,
       serviceDuration,
     });
 
-    // 4. Create Pending Transaction
+    // 4. Consume Voucher if used
+    if (appliedVoucher) {
+      await consumeVoucher(appliedVoucher._id, newOrder._id, user.discordId);
+    }
+
+    // 5. Create Pending Transaction
     await Transaction.create({
       trxId: `TRX-${crypto.randomBytes(4).toString("hex").toUpperCase()}`,
       discordId: user.discordId,
@@ -318,9 +363,19 @@ export async function POST(request: Request) {
       status: "pending",
       metadata: {
         orderId: newOrder._id,
-        fleetId: fleet._id
+        fleetId: fleet._id,
+        voucherId: appliedVoucher?._id || null,
+        voucherDiscount,
       }
     });
+
+    try {
+      revalidatePath("/dashboard/garage/fleet");
+      revalidatePath("/dashboard/manage/fleet/service");
+      revalidatePath("/dashboard/transactions");
+    } catch (e) {
+      console.error("Failed to revalidate maintenance paths", e);
+    }
 
     return NextResponse.json({ success: true, order: newOrder });
   } catch (error) {

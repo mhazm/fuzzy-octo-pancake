@@ -4,9 +4,33 @@ import { getCompanyMembersMap } from "@/lib/trucky";
 import DriversClient from "./DriversClient";
 
 export const metadata: Metadata = {
-  title: "Daftar Driver",
+  title: "Daftar Driver & Anggota Armada",
   description:
-    "Lihat daftar lengkap seluruh armada pengemudi yang tergabung dalam Nismara Transport.",
+    "Lihat daftar lengkap seluruh armada pengemudi profesional yang tergabung dalam Nismara Transport.",
+  openGraph: {
+    title: "Daftar Driver & Anggota Armada",
+    description:
+      "Lihat daftar lengkap seluruh armada pengemudi profesional yang tergabung dalam Nismara Transport.",
+    url: "https://transport.nismara.web.id/drivers",
+    siteName: "Nismara Transport",
+    locale: "id_ID",
+    type: "website",
+    images: [
+      {
+        url: "https://images.nismara.my.id/227300_188.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Daftar Driver Nismara Transport",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Daftar Driver & Anggota Armada",
+    description:
+      "Lihat daftar lengkap seluruh armada pengemudi profesional yang tergabung dalam Nismara Transport.",
+    images: ["https://images.nismara.my.id/227300_188.jpg"],
+  },
 };
 
 export const revalidate = 1800; // Cache 30 menit

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Ticket, Plus, Star, CheckCircle, XCircle, AlertCircle, MessageSquare, ChevronLeft, ChevronRight } from "lucide-react";
 import { showAlert } from "@/lib/dialog";
@@ -8,6 +9,7 @@ import TurnstileWidget from "@/components/ui/TurnstileWidget";
 
 
 export default function TicketPage() {
+  const router = useRouter();
   const { data: session } = useSession();
   const [tickets, setTickets] = useState<any[]>([]);
   const [stats, setStats] = useState({ opened: 0, resolved: 0, rejected: 0 });
@@ -45,8 +47,14 @@ export default function TicketPage() {
         ...(status !== "all" && { status }),
       });
       const [ticketsRes, catsRes] = await Promise.all([
-        fetch(`/api/tickets?${params}`),
-        fetch("/api/manage/tickets/category")
+        fetch(`/api/tickets?${params}`, {
+          cache: "no-store",
+          headers: { "Pragma": "no-cache", "Cache-Control": "no-cache" },
+        }),
+        fetch("/api/manage/tickets/category", {
+          cache: "no-store",
+          headers: { "Pragma": "no-cache", "Cache-Control": "no-cache" },
+        })
       ]);
       const ticketsData = await ticketsRes.json();
       const catsData = await catsRes.json();
@@ -159,6 +167,7 @@ export default function TicketPage() {
         setDescription("");
         setTurnstileToken(null);
         fetchData(1, filterStatus);
+        router.refresh();
       } else {
         // Reset token so user re-solves if Turnstile failed
         if (data.error?.includes("Turnstile") || data.error?.includes("verifikasi keamanan")) {
@@ -185,6 +194,7 @@ export default function TicketPage() {
       if (data.success) {
         setRatingData(null);
         fetchData(currentPage, filterStatus);
+        router.refresh();
       } else {
         await showAlert(data.error);
       }

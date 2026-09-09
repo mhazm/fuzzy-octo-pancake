@@ -5,6 +5,9 @@ import { authOptions } from "../api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getDriverStats, getCompanyMemberStats } from "@/lib/trucky";
+import DriverMonthlyJobAnalytics, {
+  MonthlyJobStatItem,
+} from "@/components/dashboard/DriverMonthlyJobAnalytics";
 import {
 
   Truck,
@@ -28,6 +31,10 @@ import {
 export const metadata = {
   title: "Dashboard",
 };
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 
 
@@ -111,6 +118,99 @@ export default async function DashboardPage() {
     .find({ driverId: discordId, guildId: GUILD_ID })
     .toArray();
 
+  // 4b. Analisis Pekerjaan Month-by-Month (ETS2 & ATS + Tempat Bermain)
+  const rawMonthlyJobStats = await db
+    .collection("jobhistories")
+    .aggregate([
+      {
+        $match: {
+          driverId: String(discordId),
+          jobStatus: { $in: ["COMPLETED", "CANCELED"] },
+        },
+      },
+      {
+        $project: {
+          month: {
+            $dateToString: {
+              date: { $ifNull: ["$completedAt", "$createdAt"] },
+              timezone: "Asia/Jakarta",
+              format: "%Y-%m",
+            },
+          },
+          game: {
+            $cond: [
+              {
+                $or: [
+                  { $eq: ["$gameId", "2"] },
+                  {
+                    $regexMatch: {
+                      input: { $ifNull: ["$game", ""] },
+                      regex: /american/i,
+                    },
+                  },
+                ],
+              },
+              "ATS",
+              "ETS2",
+            ],
+          },
+          gameMode: {
+            $cond: [
+              {
+                $regexMatch: {
+                  input: { $ifNull: ["$gameMode", ""] },
+                  regex: /truckersmp/i,
+                },
+              },
+              "truckersmp",
+              "sp",
+            ],
+          },
+          jobStatus: 1,
+          distanceKm: { $ifNull: ["$distanceKm", 0] },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            month: "$month",
+            game: "$game",
+            gameMode: "$gameMode",
+          },
+          totalCompleted: {
+            $sum: { $cond: [{ $eq: ["$jobStatus", "COMPLETED"] }, 1, 0] },
+          },
+          totalCanceled: {
+            $sum: { $cond: [{ $eq: ["$jobStatus", "CANCELED"] }, 1, 0] },
+          },
+          totalDistanceKm: {
+            $sum: {
+              $cond: [{ $eq: ["$jobStatus", "COMPLETED"] }, "$distanceKm", 0],
+            },
+          },
+        },
+      },
+      {
+        $sort: {
+          "_id.month": -1,
+          "_id.game": 1,
+          "_id.gameMode": 1,
+        },
+      },
+    ])
+    .toArray();
+
+  const monthlyJobStats: MonthlyJobStatItem[] = rawMonthlyJobStats.map(
+    (item: any) => ({
+      month: item._id.month,
+      game: item._id.game,
+      gameMode: item._id.gameMode,
+      totalCompleted: item.totalCompleted || 0,
+      totalCanceled: item.totalCanceled || 0,
+      totalDistanceKm: item.totalDistanceKm || 0,
+    })
+  );
+
   // 5. Ambil Data Insights Riwayat NC (Earn) & Poin Penalty
   // Ganti "histories" dengan nama collection riwayat Anda
   const ncIncomes = await db
@@ -120,9 +220,16 @@ export default async function DashboardPage() {
     .limit(5)
     .toArray();
 
-  const dLink = await db
+  let dLink = await db
     .collection("driverlinks")
     .findOne({ userId: discordId, guildId: GUILD_ID });
+
+  if (!dLink && truckyId) {
+    dLink = await db.collection("driverlinks").findOne({
+      $or: [{ truckyId: truckyId }, { truckyId: Number(truckyId) }],
+      guildId: GUILD_ID,
+    });
+  }
 
   const pointPenalties = await db
     .collection("pointhistories") // Sesuaikan collection
@@ -133,6 +240,9 @@ export default async function DashboardPage() {
     .sort({ createdAt: -1 })
     .limit(5)
     .toArray();
+
+  const driverJoinDate =
+    dLink?.createdAt || (dLink?._id ? dLink._id.getTimestamp() : null);
 
   const stats = {
     rankName: memberData?.rank?.name || "Driver",
@@ -145,8 +255,10 @@ export default async function DashboardPage() {
       memberData?.points?.toLocaleString() ||
       "0",
     userNc: userNC?.totalNC?.toLocaleString() || "0",
-    joinDate: dLink?.createdAt
-      ? new Date(dLink.createdAt).toLocaleDateString("id-ID")
+    joinDate: driverJoinDate
+      ? new Date(driverJoinDate).toLocaleDateString("id-ID", {
+          timeZone: "Asia/Jakarta",
+        })
       : "-",
   };
 
@@ -228,6 +340,9 @@ export default async function DashboardPage() {
         </div>
       </div>
 
+      {/* --- SECTION: Analisis Pekerjaan Month-by-Month (ETS2 & ATS) --- */}
+      <DriverMonthlyJobAnalytics stats={monthlyJobStats} />
+
       {/* --- SECTION: Insights Pekerjaan (Jobs) --- */}
       <div className="flex items-center justify-between mb-6 mt-12">
         <h2 className="text-xl font-bold flex items-center gap-2 text-foreground">
@@ -305,9 +420,26 @@ export default async function DashboardPage() {
                     <p className="font-medium text-sm text-foreground truncate">
                       {`Job #${job?.jobId}` || "Kargo Selesai"}
                     </p>
-                    <p className="text-xs text-green-500/80 mt-1">
-                      +{job?.nc?.total || 0} NC
-                    </p>
+                    {(() => {
+                      const val =
+                        typeof job?.revenue === "number"
+                          ? job.revenue
+                          : (job?.nc?.total ?? 0);
+                      return (
+                        <p
+                          className={`text-xs mt-1 font-semibold ${
+                            val < 0
+                              ? "text-red-400"
+                              : val > 0
+                                ? "text-green-500/80"
+                                : "text-gray-400"
+                          }`}
+                        >
+                          {val > 0 ? "+" : ""}
+                          {val.toLocaleString("id-ID")} NC
+                        </p>
+                      );
+                    })()}
                     <p className="text-xs text-gray-400 mt-1">
                       {job?.game || 0}
                     </p>

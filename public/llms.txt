@@ -1,4 +1,4 @@
-# Nismara Transport (Nismara Logistics)
+# Nismara Transport
 > Platform manajemen logistik dan virtual trucking indonesia resmi untuk komunitas simulasi Nismara.
 
 ## Tentang Nismara Transport
@@ -72,3 +72,17 @@ Berikut adalah platform resmi VTC Nismara Transport:
 - **Instagram:** https://link.nismara.web.id/instagram
 - **Youtube:** https://link.nismara.web.id/youtube
 - **Discord:** https://link.nismara.web.id/discord
+
+## Struktur Organisasi Nismara Transport
+- **President Director:** MzIchan
+- **Director of Operations:** Upie
+- **Director of IT:** Lemper
+- **General Manager:** AmatoMasaki
+- **Deputy General Manager:** Rains
+- **Staff:**
+  - Misro
+  - Ciminyaw
+  - Codename_Zero
+  - Frankenstein
+  - Legensegerr
+  - Reza

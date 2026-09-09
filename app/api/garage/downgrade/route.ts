@@ -4,8 +4,13 @@ import clientPromise from "@/lib/mongodb";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import Garage from "@/lib/models/Garage";
 import mongoose from "mongoose";
+import { revalidatePath } from "next/cache";
 
 import dbConnect from "@/lib/mongoose";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 const DOWNGRADE_COST = 500;
 const GUILD_ID = process.env.GUILD_ID || "863959415702028318";
 
@@ -76,6 +81,14 @@ export async function POST(request: Request) {
     garage.operational_cost = garage.fleet_operational_cost + fuelCost;
     
     await garage.save();
+
+    try {
+      revalidatePath("/dashboard/garage");
+      revalidatePath("/dashboard/garage/fleet");
+      revalidatePath("/dashboard/currency");
+    } catch (e) {
+      console.error("Failed to revalidate garage paths", e);
+    }
 
     return NextResponse.json({ 
       success: true, 

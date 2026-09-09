@@ -50,9 +50,38 @@ export async function generateMetadata({
 
   const gameName =
     gameId === 1 ? "Euro Truck Simulator 2" : "American Truck Simulator";
+  const title = `${cargo.name} (${gameName})`;
+  const demandText = typeof cargo.market_demand === "number"
+    ? (cargo.market_demand > 0 ? `+${cargo.market_demand.toFixed(1)}%` : `${cargo.market_demand.toFixed(1)}%`)
+    : "0%";
+  const description = `Analisis pasar komoditas kargo ${cargo.name} di ${gameName}. Market demand saat ini ${demandText}, berat dasar ${cargo.mass ? `${cargo.mass} kg` : "standar"}.`;
+  const pageUrl = `https://transport.nismara.web.id/cargo-market/${gameId}/${inGameId}`;
 
   return {
-    title: `${cargo.name} ${gameName}`,
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: pageUrl,
+      siteName: "Nismara Transport",
+      locale: "id_ID",
+      type: "website",
+      images: [
+        {
+          url: "https://images.nismara.my.id/227300_188.jpg",
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: ["https://images.nismara.my.id/227300_188.jpg"],
+    },
   };
 }
 
@@ -390,6 +419,7 @@ export default async function CargoDetailPage({
                                   isNismaraPlus={driverUser?.nismaraplus?.status} 
                                   nismaraPlusStartedAt={driverUser?.nismaraplus?.startedAt}
                                   truckyRank={driverUser?.truckyRank}
+                                  topManager={driverUser?.topManager}
                                   className="w-3.5 h-3.5" 
                                 />
                               </div>

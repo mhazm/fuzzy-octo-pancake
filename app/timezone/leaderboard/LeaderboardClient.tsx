@@ -19,6 +19,7 @@ type LeaderboardEntry = {
     nismaraPlusStartedAt?: string | null;
     isManager: boolean;
     truckyRank?: string;
+    topManager?: any;
   };
 };
 
@@ -211,6 +212,7 @@ export default function LeaderboardClient() {
                             isManager={entry.user.isManager}
                             role={entry.user.isManager ? "manager" : "user"}
                             truckyRank={entry.user.truckyRank}
+                            topManager={entry.user.topManager}
                           />
                         </div>
                       </div>

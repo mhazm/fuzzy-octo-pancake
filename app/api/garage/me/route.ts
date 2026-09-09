@@ -4,6 +4,8 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 export async function GET() {
   try {
@@ -23,6 +25,12 @@ export async function GET() {
       success: true, 
       garage: garage || null,
       balance: currency?.totalNC || 0
+    }, {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        "CDN-Cache-Control": "no-store",
+        "Vercel-CDN-Cache-Control": "no-store",
+      },
     });
   } catch (error: any) {
     console.error("Error fetching garage data:", error);

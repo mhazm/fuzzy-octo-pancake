@@ -65,15 +65,27 @@ export async function createPurchaseTicket(months: number) {
     const allowPermissions = (1024 + 2048 + 65536).toString();
     const denyPermissions = (1024).toString();
 
+    const owner1 = process.env.OWNER_DISCORD_ID || "338418945620967434";
+    const owner2 = process.env.NISMARA_OWNER_DISCORD_ID || "560419724249530369";
+
     const permissionOverwrites = [
       { id: guildId, type: 0, allow: "0", deny: denyPermissions },
       { id: discordId, type: 1, allow: allowPermissions, deny: "0" },
     ];
 
-    if (managerRoleId) {
+    if (owner1) {
       permissionOverwrites.push({
-        id: managerRoleId,
-        type: 0,
+        id: owner1,
+        type: 1,
+        allow: allowPermissions,
+        deny: "0",
+      });
+    }
+
+    if (owner2 && owner2 !== owner1) {
+      permissionOverwrites.push({
+        id: owner2,
+        type: 1,
         allow: allowPermissions,
         deny: "0",
       });
@@ -120,7 +132,7 @@ export async function createPurchaseTicket(months: number) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          content: `<@${discordId}> | <@&${managerRoleId || ""}>`,
+          content: `<@${discordId}> | <@${owner1}> <@${owner2}>`,
           embeds: [
             {
               title: "✨ Permintaan Aktivasi Nismara+",

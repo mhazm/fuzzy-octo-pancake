@@ -24,14 +24,36 @@ export async function generateMetadata({ params }: any): Promise<Metadata> {
     const goal = await db.collection("communitygoals").findOne(query);
     if (!goal) return { title: "Goal Tidak Ditemukan" };
     
+    const title = `${goal.title}`;
+    const description = goal.description || "Target dan misi bersama komunitas pengemudi Nismara Transport.";
+    const imageUrl = goal.imageUrl || "https://images.nismara.my.id/227300_188.jpg";
+    const pageUrl = `https://transport.nismara.web.id/community-goals/${resolvedParams.slug}`;
+
     return {
-      title: `${goal.title} - Community Goals`,
-      description: goal.description,
+      title,
+      description,
       openGraph: {
-        title: `${goal.title} - Community Goals`,
-        description: goal.description,
-        images: [goal.imageUrl || "https://images.nismara.my.id/nismara-logo.png"],
-      }
+        title,
+        description,
+        url: pageUrl,
+        siteName: "Nismara Transport",
+        locale: "id_ID",
+        type: "website",
+        images: [
+          {
+            url: imageUrl,
+            width: 1200,
+            height: 630,
+            alt: title,
+          },
+        ],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title,
+        description,
+        images: [imageUrl],
+      },
     };
   } catch {
     return { title: "Error" };
@@ -61,14 +83,14 @@ export default async function GoalDetailPage({ params }: any) {
   // Get Creator data
   const creator = await db.collection("users").findOne(
     { discordId: goal.creatorId },
-    { projection: { name: 1, image: 1, avatarUrl: 1, discordRole: 1, truckyRank: 1, isBooster: 1, nismaraplus: 1, truckyId: 1 } }
+    { projection: { name: 1, image: 1, avatarUrl: 1, discordRole: 1, truckyRank: 1, isBooster: 1, nismaraplus: 1, truckyId: 1, topManager: 1 } }
   );
 
   // Get Participants Data
   const participantIds = goal.participants?.map((p: any) => p.discordId) || [];
   const participantUsers = await db.collection("users").find(
     { discordId: { $in: participantIds } },
-    { projection: { discordId: 1, name: 1, image: 1, avatarUrl: 1, discordRole: 1, nismaraplus: 1, truckyRank: 1, isBooster: 1, truckyId: 1 } }
+    { projection: { discordId: 1, name: 1, image: 1, avatarUrl: 1, discordRole: 1, nismaraplus: 1, truckyRank: 1, isBooster: 1, truckyId: 1, topManager: 1 } }
   ).toArray();
 
   const enrichedParticipants = (goal.participants || []).map((p: any) => {
@@ -82,6 +104,7 @@ export default async function GoalDetailPage({ params }: any) {
       truckyRank: u?.truckyRank || null,
       isBooster: u?.isBooster || false,
       truckyId: u?.truckyId || null,
+      topManager: u?.topManager || null,
     };
   }).sort((a: any, b: any) => b.contributed - a.contributed);
 
@@ -117,7 +140,8 @@ export default async function GoalDetailPage({ params }: any) {
       nismaraplus: creator.nismaraplus,
       truckyRank: creator.truckyRank,
       truckyId: creator.truckyId,
-      discordId: goal.creatorId
+      discordId: goal.creatorId,
+      topManager: creator.topManager || null,
     } : { name: "Unknown", discordId: goal.creatorId },
     participants: enrichedParticipants,
   };

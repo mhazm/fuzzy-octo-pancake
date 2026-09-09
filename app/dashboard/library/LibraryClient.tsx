@@ -18,7 +18,13 @@ export default function MyLibrary() {
 
   const fetchLibrary = async () => {
     try {
-      const res = await fetch("/api/market/library");
+      const res = await fetch("/api/market/library", {
+        cache: "no-store",
+        headers: {
+          "Pragma": "no-cache",
+          "Cache-Control": "no-cache",
+        },
+      });
       const data = await res.json();
       setPurchases(Array.isArray(data) ? data : []);
     } catch (error) {

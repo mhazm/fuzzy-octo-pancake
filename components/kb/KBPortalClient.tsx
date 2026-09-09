@@ -16,7 +16,10 @@ export default function KBPortalClient({ session }: { session: any }) {
   const fetchCategories = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch("/api/kb"); // Reusing the main endpoint that returns both, or use categories
+      const res = await fetch("/api/kb", {
+        cache: "no-store",
+        headers: { "Pragma": "no-cache", "Cache-Control": "no-cache" },
+      });
       const data = await res.json();
       if (data.success && data.categories) {
         setCategories(data.categories);
@@ -58,7 +61,7 @@ export default function KBPortalClient({ session }: { session: any }) {
           Nismara <span className="text-gradient">Knowledge Base</span>
         </h1>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
-          Temukan panduan, aturan, dan informasi seputar VTC Nismara Logistics.
+          Temukan panduan, aturan, dan informasi seputar VTC Nismara Transport.
         </p>
       </div>
 

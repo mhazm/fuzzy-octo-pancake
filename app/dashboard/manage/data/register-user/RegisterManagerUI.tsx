@@ -65,7 +65,7 @@ export default function RegisterManagerUI({ initialData, guildId, currentUserDis
       {data.length === 0 ? (
         <div className="p-20 text-center glass-panel rounded-[3rem] border-dashed border-2 border-border opacity-30">
           <ClipboardList size={48} className="mx-auto mb-4" />
-          <p className="font-black uppercase italic tracking-widest">
+          <p className="font-black uppercase tracking-widest">
             No pending applications
           </p>
         </div>
@@ -82,10 +82,10 @@ export default function RegisterManagerUI({ initialData, guildId, currentUserDis
                   <User size={24} />
                 </div>
                 <div>
-                  <h3 className="font-black text-(-primary-foreground) uppercase italic leading-none mb-1">
+                  <h3 className="font-black text-(-primary-foreground) uppercase leading-none mb-1">
                     {reg.username}
                   </h3>
-                  <p className="text-[9px] font-bold text-foreground/20 uppercase tracking-widest italic">
+                  <p className="text-[9px] font-bold text-foreground/20 uppercase tracking-widest">
                     {reg.status}
                   </p>
                 </div>

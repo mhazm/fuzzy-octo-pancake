@@ -26,8 +26,33 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 
-export const metadata = {
-  title: "Surveys",
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Survei & Kuisioner Driver",
+  description: "Suarakan aspirasi dan masukan Anda untuk perkembangan komunitas Nismara Transport. Isi survei dan dapatkan reward NC!",
+  openGraph: {
+    title: "Survei & Kuisioner Driver",
+    description: "Suarakan aspirasi dan masukan Anda untuk perkembangan komunitas Nismara Transport. Isi survei dan dapatkan reward NC!",
+    url: "https://transport.nismara.web.id/surveys",
+    siteName: "Nismara Transport",
+    locale: "id_ID",
+    type: "website",
+    images: [
+      {
+        url: "https://images.nismara.my.id/227300_188.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Survei Driver Nismara Transport",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Survei & Kuisioner Driver",
+    description: "Suarakan aspirasi dan masukan Anda untuk perkembangan komunitas Nismara Transport.",
+    images: ["https://images.nismara.my.id/227300_188.jpg"],
+  },
 };
 
 

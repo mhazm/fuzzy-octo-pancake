@@ -16,8 +16,9 @@ export const metadata = {
   title: "Garage",
 };
 
-
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 export default async function GarageDashboardPage() {
   const session = await getServerSession(authOptions);

@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
+import { revalidatePath } from "next/cache";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 const CAPACITY_DECREASE = 1000;
 const MIN_CAPACITY = 2000;
@@ -110,6 +115,14 @@ export async function POST(request: Request) {
         }
       }
     );
+
+    try {
+      revalidatePath("/dashboard/garage");
+      revalidatePath("/dashboard/fuel-market");
+      revalidatePath("/dashboard/currency");
+    } catch (e) {
+      console.error("Failed to revalidate fuel-downgrade paths", e);
+    }
 
     return NextResponse.json({ success: true, message: `Fuel tank berhasil di-downgrade ke Level ${newLevel}` });
 

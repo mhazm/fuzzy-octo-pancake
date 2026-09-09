@@ -25,6 +25,12 @@ declare module "next-auth" {
         expiredAt?: Date | string | null;
         lastClaimAt?: Date | string | null;
       };
+      topManager?: {
+        status: boolean;
+        month?: string | null;
+        awardedAt?: Date | string | null;
+        expiredAt?: Date | string | null;
+      } | null;
     } & DefaultSession["user"];
   }
 

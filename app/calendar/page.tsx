@@ -2,10 +2,35 @@ import clientPromise from "@/lib/mongodb";
 import FullGridCalendar from "@/components/FullGridCalendar";
 import type { CalendarEvent } from "@/components/HomeEventsCalendar";
 import { CalendarDays } from "lucide-react";
+import { slugify } from "@/lib/utils";
 
-export const metadata = {
-  title: "Community Calendar",
-  description: "Kalender event komunitas Nismara Transport",
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Kalender Kegiatan & Event Komunitas",
+  description: "Kalender terpadu jadwal konvoi mabar, event boost NC, rilis kupon, dan agenda komunitas Nismara Transport.",
+  openGraph: {
+    title: "Kalender Kegiatan & Event Komunitas",
+    description: "Kalender terpadu jadwal konvoi mabar, event boost NC, rilis kupon, dan agenda komunitas Nismara Transport.",
+    url: "https://transport.nismara.web.id/calendar",
+    siteName: "Nismara Transport",
+    locale: "id_ID",
+    type: "website",
+    images: [
+      {
+        url: "https://images.nismara.my.id/227300_188.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Kalender Kegiatan Nismara Transport",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Kalender Kegiatan & Event Komunitas",
+    description: "Kalender terpadu jadwal konvoi mabar, event boost NC, rilis kupon, dan agenda komunitas Nismara Transport.",
+    images: ["https://images.nismara.my.id/227300_188.jpg"],
+  },
 };
 
 export const dynamic = "force-dynamic";
@@ -41,14 +66,19 @@ export default async function CalendarPage() {
 
   // 2. SPECIAL CONTRACTS
   contracts.forEach((c) => {
-    if (c.endAt) {
+    const title = c.contractName || c.title || "Special Contract";
+    const slug = c.slug || slugify(title);
+    const startDate = c.startDate || c.startAt || c.setAt || c.createdAt || c.endAt;
+    const endDate = c.endAt || c.startDate || c.setAt || c.createdAt;
+
+    if (startDate || endDate) {
       events.push({
         id: c._id.toString(),
-        title: c.title || "Special Contract",
+        title,
         type: "contract",
-        date: new Date(c.startAt || c.endAt),
-        endDate: new Date(c.endAt),
-        href: `/special-contracts/${c.slug}`,
+        date: new Date(startDate || endDate),
+        endDate: endDate ? new Date(endDate) : undefined,
+        href: `/special-contracts/${slug}`,
         imageUrl: c.imageUrl,
       });
     }
@@ -56,14 +86,22 @@ export default async function CalendarPage() {
 
   // 3. NC BOOSTS
   boosts.forEach((b) => {
-    if (b.endAt) {
+    const boostPercent = Math.round(Number(b.multiplier || 0) * 100);
+    const title = b.nameEvent
+      ? `${b.nameEvent} (+${boostPercent}% NC)`
+      : `+${boostPercent}% NC Boost Event`;
+    const startDate = b.startDate || b.setAt || b.createdAt || b.endAt;
+    const endDate = b.endAt || startDate;
+
+    if (startDate || endDate) {
       events.push({
         id: b._id.toString(),
-        title: b.title || `${b.multiplier || 2}x NC Boost Event`,
+        title,
         type: "boost",
-        date: new Date(b.setAt || b.endAt),
-        endDate: new Date(b.endAt),
-        href: `/currency-boost/${b.slug}`,
+        date: new Date(startDate || endDate),
+        endDate: endDate ? new Date(endDate) : undefined,
+        href: `/currency-boost/${b.slug || slugify(b.nameEvent || "boost")}`,
+        imageUrl: b.imageUrl,
       });
     }
   });

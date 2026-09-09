@@ -10,9 +10,9 @@ export const metadata = {
   title: "Fleet",
 };
 
-
-
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 export default async function FleetDashboardPage() {
   const session = await getServerSession(authOptions);
@@ -74,7 +74,7 @@ export default async function FleetDashboardPage() {
             <div className="p-2 bg-accent-sky/10 rounded-lg text-accent-sky">
               <Truck size={24} />
             </div>
-            <h1 className="text-4xl font-black text-foreground tracking-tighter uppercase italic">
+            <h1 className="text-4xl font-black text-foreground tracking-tighter uppercase">
               Fleet Management
             </h1>
           </div>

@@ -11,11 +11,23 @@ import "@/lib/models/FleetBrand";
 import "@/lib/models/GarageSlot";
 import Transaction from "@/lib/models/Transaction";
 import { sendPersonalNotification } from "@/lib/services/NotificationService";
+import { checkRateLimit } from "@/lib/rateLimit";
+import { revalidatePath } from "next/cache";
 import crypto from "crypto";
 
 import dbConnect from "@/lib/mongoose";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const GUILD_ID = process.env.DISCORD_GUILD_ID;
+
+function normalizeGameId(raw: any): "ets2" | "ats" {
+  const g = String(raw || "").toLowerCase();
+  if (g === "2" || g.includes("ats")) return "ats";
+  return "ets2";
+}
 
 export async function POST(
   request: Request,
@@ -29,6 +41,7 @@ export async function POST(
   let isFeeGiven = false;
   let managerDiscordId: string | null = null;
   let acquiredSlotId: string | null = null;
+  let targetFleetId: any = null;
 
   try {
     const params = await context.params;
@@ -49,6 +62,14 @@ export async function POST(
       );
     }
 
+    // 🛡️ RATE LIMIT: Batasi 1 request per 2 detik per manager
+    if (!checkRateLimit(session.user.discordId, "fleet-maintenance-confirm", 2000)) {
+      return NextResponse.json(
+        { error: "Terlalu banyak permintaan. Mohon tunggu sesaat sebelum mengonfirmasi kembali." },
+        { status: 429 }
+      );
+    }
+
     managerDiscordId = String(session.user.discordId);
 
     await dbConnect();
@@ -60,7 +81,7 @@ export async function POST(
     const order = await FleetMaintenanceOrder.findOneAndUpdate(
       { _id: params.id, status: "pending" },
       { $set: { status: "processing" } },
-      { new: true }
+      { returnDocument: "after" }
     );
 
     if (!order) {
@@ -70,6 +91,7 @@ export async function POST(
       );
     }
 
+    targetFleetId = order.fleetId;
     driverDiscordId = order.discordId;
     deductAmount = order.totalPrice;
     adminFeeAmount = order.adminFee;
@@ -153,12 +175,8 @@ export async function POST(
     if (!fleet) {
       throw new Error("Kendaraan (Fleet) tidak ditemukan di database");
     }
-    let rawGameId = fleet.model?.game_id ?? fleet.game_id;
-    let gameId = String(rawGameId).toLowerCase();
-    
-    // Trucky API / Model uses '1' for ETS2 and '2' for ATS
-    if (gameId === "1" || gameId.includes("ets")) gameId = "ets2";
-    if (gameId === "2" || gameId.includes("ats")) gameId = "ats";
+    const rawGameId = fleet.model?.game_id ?? fleet.game_id;
+    const gameId = normalizeGameId(rawGameId);
     
     const isVip = userObj?.nismaraplus?.status === true;
 
@@ -171,7 +189,7 @@ export async function POST(
     assignedSlotDoc = await mongoose.model("GarageSlot").findOneAndUpdate(
       { game_id: gameId, type: "regular", status: "available", condition: { $gt: 0 } },
       { $set: { status: "in_use", currentOrderId: order._id, fleetId: order.fleetId } },
-      { new: true, sort: { slotId: 1 } }
+      { returnDocument: "after", sort: { slotId: 1 } }
     );
 
     // 2. Jika Regular penuh, gunakan VIP Slot khusus untuk user Nismara+
@@ -179,31 +197,33 @@ export async function POST(
       assignedSlotDoc = await mongoose.model("GarageSlot").findOneAndUpdate(
         { game_id: gameId, type: "vip", status: "available", condition: { $gt: 0 } },
         { $set: { status: "in_use", currentOrderId: order._id, fleetId: order.fleetId } },
-        { new: true, sort: { slotId: 1 } }
+        { returnDocument: "after", sort: { slotId: 1 } }
       );
+    }
+
+    if (assignedSlotDoc) {
+      assignedSlot = assignedSlotDoc.slotId;
+      acquiredSlotId = assignedSlot; // 🛡️ Kunci segera untuk rollback yang aman
     }
 
     order.managerId = session.user.discordId;
 
     if (assignedSlotDoc) {
-      assignedSlot = assignedSlotDoc.slotId;
-      acquiredSlotId = assignedSlot;
+      const startAt = new Date();
+      const endAt = new Date(startAt.getTime() + order.serviceDuration * 24 * 60 * 60 * 1000);
 
       // Masuk garasi (in_service)
       order.status = "in_service";
       order.slotNumber = assignedSlot;
-      order.maintenanceStartAt = new Date();
-      
-      const endAt = new Date();
-      endAt.setTime(endAt.getTime() + order.serviceDuration * 24 * 60 * 60 * 1000);
+      order.maintenanceStartAt = startAt;
       order.maintenanceEndAt = endAt;
 
       // Update fleet status and maintenance dates
       const updatedFleet = await Fleet.findByIdAndUpdate(order.fleetId, { 
         status: "onservice",
-        maintenance_start_date: new Date(),
+        maintenance_start_date: startAt,
         maintenance_end_date: endAt
-      }, { new: true });
+      }, { returnDocument: "after" });
       
       // Save order state
       await order.save();
@@ -236,8 +256,14 @@ export async function POST(
       // Masuk waiting list
       order.status = "waiting";
       order.slotNumber = null;
+      order.maintenanceStartAt = null;
+      order.maintenanceEndAt = null;
       
-      const waitFleet = await Fleet.findByIdAndUpdate(order.fleetId, { status: "onservice" }, { new: true });
+      const waitFleet = await Fleet.findByIdAndUpdate(order.fleetId, { 
+        status: "onservice",
+        maintenance_start_date: null,
+        maintenance_end_date: null
+      }, { returnDocument: "after" });
 
       // Save order state
       await order.save();
@@ -264,6 +290,14 @@ export async function POST(
           })
         }).catch(console.error);
       }
+    }
+
+    try {
+      revalidatePath("/dashboard/garage/fleet");
+      revalidatePath("/dashboard/manage/fleet/service");
+      revalidatePath("/dashboard/transactions");
+    } catch (e) {
+      console.error("Failed to revalidate maintenance confirm paths", e);
     }
 
     return NextResponse.json({ success: true, status: order.status });
@@ -306,8 +340,15 @@ export async function POST(
 
       if (orderId) {
         await FleetMaintenanceOrder.updateOne(
-          { _id: orderId, status: "processing" },
-          { $set: { status: "pending", managerId: null, slotNumber: null } }
+          { _id: orderId, status: { $in: ["processing", "in_service", "waiting"] } },
+          { $set: { status: "pending", managerId: null, slotNumber: null, maintenanceStartAt: null, maintenanceEndAt: null } }
+        );
+      }
+
+      if (targetFleetId) {
+        await Fleet.updateOne(
+          { _id: targetFleetId, status: "onservice" },
+          { $set: { status: "need_maintenance", maintenance_start_date: null, maintenance_end_date: null } }
         );
       }
     } catch (rollbackErr) {

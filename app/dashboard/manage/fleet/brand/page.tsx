@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { 
   Search, 
   Edit2, 
@@ -18,6 +19,7 @@ import { compressImageToWebP } from "@/lib/imageUtils";
 import { useSession } from "next-auth/react";
 
 export default function FleetBrandManager() {
+  const router = useRouter();
   const { data: session } = useSession();
   const [brands, setBrands] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,7 +46,10 @@ export default function FleetBrandManager() {
 
   const fetchData = async () => {
     try {
-      const res = await fetch("/api/fleet/brand");
+      const res = await fetch("/api/fleet/brand", {
+        cache: "no-store",
+        headers: { "Pragma": "no-cache", "Cache-Control": "no-cache" },
+      });
       const data = await res.json();
       setBrands(Array.isArray(data) ? data : []);
     } catch (error) {
@@ -132,6 +137,7 @@ export default function FleetBrandManager() {
       showToast(isEditMode ? "Brand berhasil diupdate!" : "Brand berhasil ditambahkan!", "success");
       setIsModalOpen(false);
       fetchData();
+      router.refresh();
     } catch (error) {
       showToast("Gagal menyimpan brand.", "error");
     } finally {
@@ -233,7 +239,7 @@ export default function FleetBrandManager() {
               <tbody className="divide-y divide-border">
                 {loading ? (
                   <tr>
-                    <td colSpan={2} className="px-8 py-20 text-center text-foreground/20 font-black uppercase tracking-[0.2em] italic">
+                    <td colSpan={2} className="px-8 py-20 text-center text-foreground/20 font-black uppercase tracking-[0.2em]">
                       Loading fleet brands...
                     </td>
                   </tr>
@@ -281,7 +287,7 @@ export default function FleetBrandManager() {
                   <tr>
                     <td
                       colSpan={2}
-                      className="px-8 py-20 text-center text-foreground/20 font-black uppercase tracking-[0.2em] italic"
+                      className="px-8 py-20 text-center text-foreground/20 font-black uppercase tracking-[0.2em]"
                     >
                       No brands found
                     </td>

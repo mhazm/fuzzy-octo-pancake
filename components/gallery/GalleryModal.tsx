@@ -16,7 +16,7 @@ interface Comment {
   _id: string;
   text: string;
   createdAt: string;
-  user: { name: string; avatarUrl: string; discordId: string; truckyId?: string; truckyRank?: string; isNismaraPlus?: boolean; nismaraPlusStartedAt?: string | null; isBooster?: boolean; isManager?: boolean };
+  user: { name: string; avatarUrl: string; discordId: string; truckyId?: string; truckyRank?: string; isNismaraPlus?: boolean; nismaraPlusStartedAt?: string | null; isBooster?: boolean; isManager?: boolean; topManager?: any };
   likes?: string[];
   parentId?: string;
   replyToUser?: string;
@@ -34,6 +34,7 @@ export default function GalleryModal({
   profileNismaraPlusStartedAt,
   profileIsBooster,
   profileRole,
+  profileTopManager,
   isManager,
   onPostUpdate,
 }: {
@@ -48,6 +49,7 @@ export default function GalleryModal({
   profileNismaraPlusStartedAt?: string | null;
   profileIsBooster?: boolean;
   profileRole?: string;
+  profileTopManager?: any;
   isManager?: boolean;
   onPostUpdate?: (post: any) => void;
 }) {
@@ -331,6 +333,7 @@ export default function GalleryModal({
                         isNismaraPlus={profileIsNismaraPlus} 
                         nismaraPlusStartedAt={profileNismaraPlusStartedAt}
                         truckyRank={undefined /* pass profileRank if available in props */}
+                        topManager={profileTopManager || post.user?.topManager}
                       />
                   </div>
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">{getRoleLabel()}</p>
@@ -352,6 +355,7 @@ export default function GalleryModal({
                         isNismaraPlus={profileIsNismaraPlus} 
                         nismaraPlusStartedAt={profileNismaraPlusStartedAt}
                         truckyRank={undefined}
+                        topManager={profileTopManager || post.user?.topManager}
                       />
                   </div>
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">{getRoleLabel()}</p>
@@ -417,6 +421,7 @@ export default function GalleryModal({
                       isNismaraPlus={profileIsNismaraPlus} 
                       nismaraPlusStartedAt={profileNismaraPlusStartedAt}
                       truckyRank={undefined}
+                      topManager={profileTopManager || post.user?.topManager}
                     />
                   </div>
                   <span className="text-sm mt-0.5 inline-block">{post.caption}</span>
@@ -477,6 +482,7 @@ export default function GalleryModal({
                           isNismaraPlus={comment.user.isNismaraPlus} 
                           nismaraPlusStartedAt={comment.user.nismaraPlusStartedAt}
                           truckyRank={comment.user.truckyRank}
+                          topManager={comment.user.topManager}
                           className="w-3.5 h-3.5"
                         />
                         <span className="text-[10px] text-muted-foreground ml-2">
@@ -582,6 +588,7 @@ export default function GalleryModal({
                                 isNismaraPlus={reply.user.isNismaraPlus} 
                                 nismaraPlusStartedAt={reply.user.nismaraPlusStartedAt}
                                 truckyRank={reply.user.truckyRank}
+                                topManager={reply.user.topManager}
                                 className="w-3 h-3"
                               />
                               <span className="text-[9px] text-muted-foreground ml-2">

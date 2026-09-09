@@ -3,11 +3,17 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import dbConnect from "@/lib/mongoose";
 import FuelMarketListing from "@/lib/models/FuelMarketListing";
+import clientPromise from "@/lib/mongodb";
+import { revalidatePath } from "next/cache";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || !session.user) {
+    if (!session?.user?.discordId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -24,20 +30,6 @@ export async function POST(request: Request) {
 
     await dbConnect();
     
-    const listing = await FuelMarketListing.findById(listingId);
-    if (!listing) {
-      return NextResponse.json({ error: "Listing tidak ditemukan" }, { status: 404 });
-    }
-    
-    if (listing.sellerDiscordId !== discordId) {
-      return NextResponse.json({ error: "Anda tidak berhak mengubah jualan ini" }, { status: 403 });
-    }
-
-    if (listing.status !== "active") {
-      return NextResponse.json({ error: "Listing ini sudah tidak aktif (mungkin sudah terjual)" }, { status: 400 });
-    }
-
-    const { default: clientPromise } = await import("@/lib/mongodb");
     const client = await clientPromise;
     const db = client.db();
     const userGarage = await db.collection("garages").findOne({ discordId });
@@ -45,11 +37,35 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Akses ditolak! Garasi Anda sedang dibekukan (disita) karena tunggakan biaya operasional." }, { status: 403 });
     }
 
-    // Ubah harga (updatedAt akan ter-update otomatis oleh Mongoose karena timestamps: true)
-    listing.pricePerLiter = Number(newPrice);
-    await listing.save();
+    // 🛡️ ATOMIC UPDATE: Hanya update jika listing status masih persis "active" dan dimiliki oleh seller
+    const updateResult = await FuelMarketListing.updateOne(
+      { _id: listingId, status: "active", sellerDiscordId: discordId },
+      { $set: { pricePerLiter: Number(newPrice) } }
+    );
 
-    return NextResponse.json({ success: true, message: "Harga jualan BBM berhasil diperbarui!" });
+    if (updateResult.modifiedCount === 0) {
+      return NextResponse.json({ 
+        error: "Gagal mengubah harga. Listing BBM ini sudah terjual, ditarik, atau Anda bukan pemilik listing ini." 
+      }, { status: 400 });
+    }
+
+    // Revalidasi cache
+    try {
+      revalidatePath("/fuel-market");
+    } catch (e) {
+      console.error("Failed to revalidate fuel market paths:", e);
+    }
+
+    return NextResponse.json({ 
+      success: true, 
+      message: "Harga jualan BBM berhasil diperbarui!" 
+    }, {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        "CDN-Cache-Control": "no-store",
+        "Vercel-CDN-Cache-Control": "no-store",
+      }
+    });
 
   } catch (error: any) {
     console.error("Error editing P2P fuel listing:", error);

@@ -5,15 +5,22 @@ import KBArticleClient from "@/components/kb/KBArticleClient";
 import KBSidebarClient from "@/components/kb/KBSidebarClient";
 import clientPromise from "@/lib/mongodb";
 
+import type { Metadata } from "next";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
+
 export async function generateMetadata({
   params,
 }: {
-  params: { categorySlug: string, articleSlug: string };
-}) {
+  params: Promise<{ categorySlug: string; articleSlug: string }>;
+}): Promise<Metadata> {
   const resolvedParams = await params;
 
   let articleTitle = resolvedParams.articleSlug;
-  let articleDescription = "Panduan dan informasi seputar Nismara Logistics";
+  let articleDescription = "Panduan dan informasi resmi seputar Nismara Transport";
+  let coverImage = "https://images.nismara.my.id/227300_188.jpg";
   
   try {
     const client = await clientPromise;
@@ -22,21 +29,47 @@ export async function generateMetadata({
     if (articleDoc) {
       if (articleDoc.title) articleTitle = articleDoc.title;
       if (articleDoc.description) articleDescription = articleDoc.description;
+      if (articleDoc.coverImage) coverImage = articleDoc.coverImage;
     }
   } catch (error) {
     console.error("Error fetching article metadata:", error);
   }
 
+  const title = `${articleTitle} | Knowledge Base`;
+  const pageUrl = `https://transport.nismara.web.id/kb/${resolvedParams.categorySlug}/${resolvedParams.articleSlug}`;
+
   return {
-    title: `${articleTitle} - Knowledge Base`,
+    title,
     description: articleDescription,
+    openGraph: {
+      title,
+      description: articleDescription,
+      url: pageUrl,
+      siteName: "Nismara Transport",
+      locale: "id_ID",
+      type: "article",
+      images: [
+        {
+          url: coverImage,
+          width: 1200,
+          height: 630,
+          alt: articleTitle,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description: articleDescription,
+      images: [coverImage],
+    },
   };
 }
 
 export default async function KBArticlePage({
   params,
 }: {
-  params: { categorySlug: string, articleSlug: string };
+  params: Promise<{ categorySlug: string; articleSlug: string }>;
 }) {
   const session = await getServerSession(authOptions);
   const resolvedParams = await params;

@@ -15,7 +15,13 @@ export async function GET(request: Request) {
     await dbConnect();
 
     const categories = await TicketCategory.find({ isActive: true }).sort({ name: 1 });
-    return NextResponse.json({ success: true, categories });
+    return NextResponse.json({ success: true, categories }, {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        "CDN-Cache-Control": "no-store",
+        "Vercel-CDN-Cache-Control": "no-store",
+      },
+    });
   } catch (error) {
     console.error("Manage TicketCategory GET Error:", error);
     return NextResponse.json({ error: "Terjadi kesalahan internal" }, { status: 500 });

@@ -3,8 +3,33 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import DriverAccessBlocker from "@/components/DriverAccessBlocker";
 import ScratcherClient from "./ScratcherClient";
 
-export const metadata = {
-  title: "Scratch & Win",
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Scratch & Win — Kupon Gosok Instan",
+  description: "Gosok kupon keberuntunganmu sekarang! Beli kupon scratcher dan raih hadiah instan ribuan Nismara Coin (NC).",
+  openGraph: {
+    title: "Scratch & Win — Kupon Gosok Instan",
+    description: "Gosok kupon keberuntunganmu sekarang! Beli kupon scratcher dan raih hadiah instan ribuan Nismara Coin (NC).",
+    url: "https://transport.nismara.web.id/scratchers",
+    siteName: "Nismara Transport",
+    locale: "id_ID",
+    type: "website",
+    images: [
+      {
+        url: "https://images.nismara.my.id/227300_188.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Scratch & Win Nismara Transport",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Scratch & Win — Kupon Gosok Instan",
+    description: "Beli kupon scratcher dan raih hadiah instan ribuan Nismara Coin (NC).",
+    images: ["https://images.nismara.my.id/227300_188.jpg"],
+  },
 };
 
 export default async function ScratchersPage() {

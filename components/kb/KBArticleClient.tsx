@@ -25,8 +25,10 @@ export default function KBArticleClient({ slug, categorySlug, session }: { slug:
     const fetchArticle = async () => {
       try {
         // Since we fetch by slug, it's mostly the same, but we could pass categorySlug if needed
-      // Currently API just takes slug, so it's fine.
-      const res = await fetch(`/api/kb/${slug}`);
+      const res = await fetch(`/api/kb/${slug}`, {
+        cache: "no-store",
+        headers: { "Pragma": "no-cache", "Cache-Control": "no-cache" },
+      });
         const data = await res.json();
         
         if (data.success && data.article) {

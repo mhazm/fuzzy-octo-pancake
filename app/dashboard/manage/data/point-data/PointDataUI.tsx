@@ -88,7 +88,7 @@ export default function PointDataUI({ initialData }: { initialData: any[] }) {
                       <p className="font-black text-(-primary-foreground) uppercase tracking-tight">
                         {driver.name}
                         {driver.isOrphaned && (
-                          <span className="ml-2 text-[8px] bg-red-500 text-white px-2 py-0.5 rounded italic">
+                          <span className="ml-2 text-[8px] bg-red-500 text-white px-2 py-0.5 rounded">
                             ORPHANED
                           </span>
                         )}
@@ -116,7 +116,7 @@ export default function PointDataUI({ initialData }: { initialData: any[] }) {
                       />
                     </div>
                     <span
-                      className={`text-sm font-black italic tabular-nums ${driver.totalPoints >= 50 ? "text-red-500" : driver.totalPoints >= 10 ? "text-orange-400" : "text-accent-lilac"}`}
+                      className={`text-sm font-black tabular-nums ${driver.totalPoints >= 50 ? "text-red-500" : driver.totalPoints >= 10 ? "text-orange-400" : "text-accent-lilac"}`}
                     >
                       {driver.totalPoints} PTS
                     </span>
@@ -156,7 +156,7 @@ export default function PointDataUI({ initialData }: { initialData: any[] }) {
         </table>
 
         {filtered.length === 0 && (
-          <div className="py-20 text-center text-(-primary-foreground)/10 font-black uppercase tracking-widest italic">
+          <div className="py-20 text-center text-(-primary-foreground)/10 font-black uppercase tracking-widest">
             No matching drivers found
           </div>
         )}

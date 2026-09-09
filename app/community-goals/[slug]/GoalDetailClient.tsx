@@ -128,6 +128,7 @@ export default function GoalDetailClient({ goal, userBalance, currentUserId }: {
                     nismaraPlusStartedAt={goal.creator.nismaraplus?.startedAt} 
                     truckyRank={goal.creator.truckyRank} 
                     isBooster={goal.creator.isBooster} 
+                    topManager={goal.creator.topManager}
                   />
                 )}
               </div>
@@ -318,6 +319,7 @@ export default function GoalDetailClient({ goal, userBalance, currentUserId }: {
                             nismaraPlusStartedAt={p.nismaraplus?.startedAt}
                             truckyRank={p.truckyRank}
                             isBooster={p.isBooster}
+                            topManager={p.topManager}
                           />
                         </div>
                         <p className="text-sm text-muted-foreground">

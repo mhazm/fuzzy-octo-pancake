@@ -21,7 +21,10 @@ export default function ManageKBCategories() {
   const fetchCategories = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch("/api/manager/kb/categories");
+      const res = await fetch("/api/manager/kb/categories", {
+        cache: "no-store",
+        headers: { "Pragma": "no-cache", "Cache-Control": "no-cache" },
+      });
       const data = await res.json();
       if (data.success) {
         setCategories(data.categories);
@@ -45,7 +48,11 @@ export default function ManageKBCategories() {
 
       const res = await fetch(url, {
         method,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Pragma": "no-cache",
+          "Cache-Control": "no-cache",
+        },
         body: JSON.stringify(formData),
       });
 
@@ -54,7 +61,8 @@ export default function ManageKBCategories() {
         showAlert(editingId ? "Kategori diperbarui!" : "Kategori dibuat!");
         setEditingId(null);
         setFormData({ name: "", order: 0, accessLevel: "public" });
-        fetchCategories();
+        await fetchCategories();
+        router.refresh();
       } else {
         showAlert(`Gagal: ${data.error}`, "error");
       }
@@ -76,11 +84,16 @@ export default function ManageKBCategories() {
   const handleDelete = async (id: string, name: string) => {
     if (await showConfirm(`Yakin ingin menghapus kategori "${name}"? Pastikan tidak ada artikel yang terikat!`)) {
       try {
-        const res = await fetch(`/api/manager/kb/categories/${id}`, { method: "DELETE" });
+        const res = await fetch(`/api/manager/kb/categories/${id}`, {
+          method: "DELETE",
+          headers: { "Pragma": "no-cache", "Cache-Control": "no-cache" },
+        });
         const data = await res.json();
         if (data.success) {
           setCategories(categories.filter(c => c._id !== id));
           showAlert("Kategori berhasil dihapus!");
+          await fetchCategories();
+          router.refresh();
         } else {
           showAlert(`Gagal: ${data.error}`, "error");
         }

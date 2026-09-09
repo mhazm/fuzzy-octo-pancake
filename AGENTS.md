@@ -6,11 +6,11 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 <!-- END:nextjs-agent-rules -->
 
-# Nismara Logistics - Project Context & Rules
+# Nismara Transport - Project Context & Rules
 
 ## 1. Project Overview
 
-Nismara Logistics is a web platform for a virtual trucking community (VTC). It integrates with Discord (for authentication and roles) and Trucky (for in-game data, `truckyId`, `truckyRank`). The platform includes features such as a Social Gallery, Market, Fuel Market, Cargo Market, Convoy management, and a Driver directory.
+Nismara Transport is a web platform for a virtual trucking community (VTC). It integrates with Discord (for authentication and roles) and Trucky (for in-game data, `truckyId`, `truckyRank`). The platform includes features such as a Social Gallery, Market, Fuel Market, Cargo Market, Convoy management, and a Driver directory.
 
 ## 2. Technology Stack
 
@@ -159,3 +159,68 @@ if (!turnstileResult.success) {
 - **NEVER GUESS THE STRUCTURE:** Do not assume or guess the database schema, field names, or object structures.
 - **ALWAYS VERIFY FIRST:** Before writing queries, aggregation pipelines, or data migration scripts, you **MUST** verify the actual structure by either reading the Mongoose models (e.g., `lib/models/`) or inspecting actual documents in the database.
 - **Why?** Guessing field names (like assuming `endDate` instead of `endAt`) can cause catastrophic data inconsistencies, especially during migrations or when interacting with other services (like the Discord bot) that expect a strict schema.
+
+## 13. Anti-Cache Standards & Invalidation (Vercel, Cloudflare & Browser)
+
+Nismara Logistics runs on Next.js App Router hosted on Vercel with Cloudflare proxying. Because the system deals with real-time financial balances (NC), penalty points, market mod purchases, tickets, and fleet ownership, **stale cache can cause severe user panic and miscommunication**. Always adhere to these standards:
+
+- **Server Components & Dashboard Pages:** Every dynamic or dashboard page (`app/dashboard/**/page.tsx`) must export:
+  ```tsx
+  export const dynamic = "force-dynamic";
+  export const revalidate = 0;
+  export const fetchCache = "force-no-store";
+  ```
+- **Route Handlers / API Endpoints:** Every dynamic or mutating API (`app/api/**/route.ts`) must declare `dynamic = "force-dynamic"`, `revalidate = 0`, `fetchCache = "force-no-store"`, and return anti-cache headers in `NextResponse.json(...)`:
+  ```ts
+  {
+    headers: {
+      "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0, s-maxage=0",
+      "CDN-Cache-Control": "no-store",
+      "Vercel-CDN-Cache-Control": "no-store",
+      "Pragma": "no-cache",
+      "Expires": "0",
+    }
+  }
+  ```
+- **Client-Side Data Fetching:** When using `fetch()` in client components (`"use client"`), ALWAYS pass `{ cache: "no-store", headers: { "Pragma": "no-cache", "Cache-Control": "no-cache" } }` to prevent the browser disk cache from serving stale JSON.
+- **Data Mutations & Revalidation:**
+  - On the server (after POST/PUT/DELETE mutations), call `revalidatePath("/path")` for affected pages (e.g. `/dashboard/library`, `/dashboard/transactions`). *Note: `revalidatePath` targets page paths, never API URLs.*
+  - On the client (after mutation succeeds in the UI), call `router.refresh()` from `next/navigation` to invalidate the Next.js in-memory Client Router Cache.
+- **Global `next.config.ts` Rules:** Maintain `experimental.staleTimes.dynamic: 0` and global header rules for `/api/:path*` and `/dashboard/:path*` at all times.
+
+## 14. Concurrency, Atomic Updates & Race Condition Prevention
+
+In financial mutations (NC, Penalty Points), claims (monthly Nismara+ rewards, scratchers, daily bonuses), and order processing (fleet purchases, maintenance tickets), **never rely solely on in-memory validation before updates** (e.g. `if (balance >= price)` then `updateOne`). Doing so introduces Time-of-Check to Time-of-Use (TOCTOU) race conditions when concurrent requests or rapid clicks occur.
+
+- **Pola Atomic Gate:** Always bundle all eligibility conditions (e.g., `{ totalNC: { $gte: price } }` or `{ "nismaraplus.status": true, "nismaraplus.lastClaimAt": { $lte: cooldownLimit } }`) directly into the `updateOne` or `findOneAndUpdate` filter. Check `modifiedCount === 0` (or `null` result) to reject concurrent or duplicate calls immediately.
+- **Pola State Locking:** For multi-step staff workflows (e.g. claiming or completing fleet/maintenance orders), atomically transition the state from initial to processing (e.g., `{ status: "claimed" }` -> `{ status: "processing" }`) using `findOneAndUpdate` before performing balance deductions or external calls.
+- **Pola Rollback Komprehensif:** When an operation spans multiple collections (e.g., locking user cooldown in `users`, deducting NC in `currencies`, and adding slots in `garages`), always maintain a rollback block in `catch` to revert the gate lock if subsequent mutations fail, ensuring user cooldowns or balances are not forfeited without rewards.
+- **Safe Upsert (`$setOnInsert`):** Never run `{ upsert: true }` with only incremented or partial fields on critical collections (like `garages` or `currencies`). Always supply a full schema default under `$setOnInsert` to prevent corrupt partial documents.
+- **Rate Limiting Guard:** Precede sensitive mutation handlers with `checkRateLimit(discordId, key, cooldownMs)` from `@/lib/rateLimit` as an immediate UX defense against automated request floods.
+- **Skill Reference:** For detailed implementation examples and templates, refer to `.agents/skills/anti-race-condition/SKILL.md`.
+
+## 15. SEO, OpenGraph & Metadata Standards (Discord Embeds)
+
+Setiap pembuatan halaman publik atau layout baru harus menyertakan metadata SEO, OpenGraph, dan Twitter Card yang lengkap agar embed pratinjau saat dibagikan ke Discord, WhatsApp, atau media sosial terlihat kaya dan menarik.
+
+- **Aturan Template Title (Anti-Duplikasi):** Root layout (`app/layout.tsx`) sudah memiliki template:
+  `title: { template: "%s - Nismara Transport" }`, `openGraph.title: { template: "%s - Nismara Transport" }`, dan `twitter.title: { template: "%s - Nismara Transport" }`.
+  **DILARANG KERAS** menambahkan suffix ` - Nismara Transport` pada child page atau child layout manapun! Menambahkan suffix manual akan menghasilkan string ganda: `"Judul - Nismara Transport - Nismara Transport"`.
+- **Halaman Statis:** Selalu sertakan `title`, `description`, `openGraph` (`title`, `description`, `url`, `siteName: "Nismara Transport"`, `locale: "id_ID"`, `type: "website"`, `images`), dan `twitter` (`card: "summary_large_image"`, `title`, `description`, `images`).
+- **Halaman Dinamis (`generateMetadata`):** Selalu `await params` (Next.js 15+), cari dokumen di database, gunakan cover image/banner spesifik (dengan fallback ke `https://images.nismara.my.id/227300_188.jpg`), dan tangani status not-found dengan judul bersih (misal: `{ title: "Artikel Tidak Ditemukan" }`).
+- **Halaman Dashboard (`app/dashboard/**`):** Menggunakan template `%s - Dashboard Nismara` dan `robots: { index: false, follow: false }`. Jangan tambahkan OpenGraph atau Twitter Card pada halaman dashboard internal.
+- **Skill Reference:** Untuk instruksi dan contoh template lengkap, rujuk `.agents/skills/seo-metadata/SKILL.md`.
+
+## 16. User Purge & Zero-Orphan Standards
+
+Setiap penambahan koleksi MongoDB baru, Mongoose model, atau fitur yang menyimpan data pengguna (`discordId`, `userId`, `truckyId`, `driverId`), media unggahan Cloudflare R2, atau array keterlibatan pengguna (`participants`, `contributors`, `likes`):
+- **Wajib Didaftarkan ke Purge Engine:** Selalu perbarui `app/api/manage/users/[discordId]/purge/route.ts` agar data pengguna pada fitur baru tersebut terhapus tuntas saat akun di-purge (baik via web dashboard maupun otomatis saat driver keluar dari Trucky).
+- **Pembedaan Owner vs Driver:** Bedakan secara ketat antara aset milik pengguna (dihapus beserta file R2 dan slot garasi dibebaskan) vs aset yang hanya disewa/disetir (cukup unassign driver ke `null`).
+- **Array Footprint:** Untuk dokumen publik bersama, gunakan `$pull` agar dokumen induk tidak terhapus.
+- **Skill Reference:** Panduan implementasi, pola kode, dan checklist lengkap wajib merujuk ke `.agents/skills/user-purge-maintenance/SKILL.md`.
+
+## 17. Standar Penamaan Brand Resmi (Nismara Transport - DILARANG Nismara Logistics)
+
+- **PERINGATAN KERAS:** Nama resmi komunitas, portal, dan platform ini adalah **Nismara Transport**.
+- **DILARANG KERAS** bagi AI Agent maupun developer menulis atau menyebut entitas ini sebagai **Nismara Logistics** di teks UI, metadata, notifikasi web/Discord, dialog alert/modal, maupun dokumentasi baru.
+- Selalu gunakan **Nismara Transport** secara konsisten di seluruh antarmuka dan salinan teks pengguna.

@@ -17,8 +17,33 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-export const metadata = {
-  title: "Support Us",
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Dukung Komunitas & Donasi Server",
+  description: "Dukung operasional server, bot, dan ekosistem Nismara Transport. Dapatkan role donatur eksklusif, lencana profil khusus, dan apresiasi penuh dari komunitas.",
+  openGraph: {
+    title: "Dukung Komunitas & Donasi Server",
+    description: "Dukung operasional server, bot, dan ekosistem Nismara Transport. Dapatkan role donatur eksklusif, lencana profil khusus, dan apresiasi penuh dari komunitas.",
+    url: "https://transport.nismara.web.id/support-us",
+    siteName: "Nismara Transport",
+    locale: "id_ID",
+    type: "website",
+    images: [
+      {
+        url: "https://images.nismara.my.id/227300_188.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Dukung Nismara Transport",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Dukung Komunitas & Donasi Server",
+    description: "Dukung operasional server, bot, dan ekosistem Nismara Transport.",
+    images: ["https://images.nismara.my.id/227300_188.jpg"],
+  },
 };
 
 

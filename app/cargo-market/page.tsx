@@ -4,8 +4,36 @@ import { PackageOpen, Coins, Search, ChevronLeft, ChevronRight, AlertTriangle, S
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-export const metadata = {
-  title: "Cargo Market",
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Pasar Kargo & Komoditas Logistik",
+  description:
+    "Pantau fluktuasi harga komoditas kargo Euro Truck Simulator 2 dan American Truck Simulator secara real-time di Nismara Transport.",
+  openGraph: {
+    title: "Pasar Kargo & Komoditas Logistik",
+    description:
+      "Pantau fluktuasi harga komoditas kargo Euro Truck Simulator 2 dan American Truck Simulator secara real-time di Nismara Transport.",
+    url: "https://transport.nismara.web.id/cargo-market",
+    siteName: "Nismara Transport",
+    locale: "id_ID",
+    type: "website",
+    images: [
+      {
+        url: "https://images.nismara.my.id/227300_188.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Cargo Market Nismara Transport",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Pasar Kargo & Komoditas Logistik",
+    description:
+      "Pantau fluktuasi harga komoditas kargo Euro Truck Simulator 2 dan American Truck Simulator secara real-time di Nismara Transport.",
+    images: ["https://images.nismara.my.id/227300_188.jpg"],
+  },
 };
 
 

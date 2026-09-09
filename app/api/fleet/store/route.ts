@@ -2,10 +2,13 @@ import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import FleetStore from "@/lib/models/FleetStore";
 import "@/lib/models/FleetBrand"; 
+import { revalidatePath } from "next/cache";
 
 import dbConnect from "@/lib/mongoose";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 export async function GET() {
   try {
@@ -44,6 +47,13 @@ export async function POST(request: Request) {
       component_cost_maintenance: data.component_cost_maintenance,
       component_cost_unfix_wear: data.component_cost_unfix_wear,
     });
+
+    try {
+      revalidatePath("/dashboard/garage/fleet/buy");
+      revalidatePath("/dashboard/manage/fleet/store");
+    } catch (e) {
+      console.error("Failed to revalidate fleet store paths", e);
+    }
 
     return NextResponse.json({ success: true, message: "Kendaraan berhasil ditambahkan!", data: newStore });
   } catch (error) {

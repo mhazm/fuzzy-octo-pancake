@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
+import { revalidatePath } from "next/cache";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 export async function POST(request: Request) {
   try {
@@ -97,6 +102,13 @@ export async function POST(request: Request) {
         }
       }
     );
+
+    try {
+      revalidatePath("/dashboard/garage");
+      revalidatePath("/dashboard/currency");
+    } catch (e) {
+      console.error("Failed to revalidate safebox-upgrade paths", e);
+    }
 
     return NextResponse.json({ success: true, message: `Safebox berhasil di-upgrade ke Level ${newLevel}` });
 

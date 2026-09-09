@@ -17,9 +17,33 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Timezone — Game Zone",
+  title: "Timezone Arcade — Game Zone Driver",
   description:
-    "Mainkan game seru di Nismara Transport! Ikuti Lotto untuk memenangkan jackpot besar, gosok Scratchers untuk hadiah instan, atau tantang keberuntunganmu di arena Drag Racing.",
+    "Mainkan game seru di Nismara Transport! Ikuti Lotto untuk jackpot puluhan ribu NC, gosok Scratchers hadiah instan, atau pacu adrenalin di Truck Drag Race.",
+  openGraph: {
+    title: "Timezone Arcade — Game Zone Driver",
+    description:
+      "Mainkan game seru di Nismara Transport! Ikuti Lotto untuk jackpot puluhan ribu NC, gosok Scratchers hadiah instan, atau pacu adrenalin di Truck Drag Race.",
+    url: "https://transport.nismara.web.id/timezone",
+    siteName: "Nismara Transport",
+    locale: "id_ID",
+    type: "website",
+    images: [
+      {
+        url: "https://images.nismara.my.id/227300_188.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Timezone Arcade Nismara Transport",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Timezone Arcade — Game Zone Driver",
+    description:
+      "Mainkan game seru di Nismara Transport! Ikuti Lotto, Scratchers, dan Truck Drag Race.",
+    images: ["https://images.nismara.my.id/227300_188.jpg"],
+  },
 };
 
 const games = [

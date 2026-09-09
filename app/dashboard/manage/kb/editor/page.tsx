@@ -37,7 +37,10 @@ export default function KBEditorPage() {
 
   const fetchCategories = async () => {
     try {
-      const res = await fetch("/api/manager/kb/categories");
+      const res = await fetch("/api/manager/kb/categories", {
+        cache: "no-store",
+        headers: { "Pragma": "no-cache", "Cache-Control": "no-cache" },
+      });
       const data = await res.json();
       if (data.success && data.categories) {
         setCategories(data.categories);
@@ -61,7 +64,10 @@ export default function KBEditorPage() {
     try {
       // Temporary fetch all from manager API and find the one.
       // Better to have a specific GET /api/manager/kb/[id] but this works for now.
-      const res = await fetch("/api/manager/kb");
+      const res = await fetch("/api/manager/kb", {
+        cache: "no-store",
+        headers: { "Pragma": "no-cache", "Cache-Control": "no-cache" },
+      });
       const data = await res.json();
       if (data.success) {
         const article = data.articles.find((a: any) => a._id === editId);
@@ -153,7 +159,11 @@ export default function KBEditorPage() {
 
       const res = await fetch(url, {
         method,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Pragma": "no-cache",
+          "Cache-Control": "no-cache",
+        },
         body: JSON.stringify(payload),
       });
 

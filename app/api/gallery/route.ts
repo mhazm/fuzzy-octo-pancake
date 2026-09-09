@@ -82,9 +82,11 @@ export async function GET(request: Request) {
               avatarUrl: { $ifNull: ["$uploader.image", "$uploader.avatarUrl"] },
               truckyId: "$uploader.truckyId",
               isNismaraPlus: "$uploader.nismaraplus.status",
+              nismaraPlusStartedAt: "$uploader.nismaraplus.startedAt",
               isBooster: "$uploader.isBooster",
               role: "$uploader.discordRole",
-              truckyRank: "$uploader.truckyRank"
+              truckyRank: "$uploader.truckyRank",
+              topManager: "$uploader.topManager"
             }
           }
         },

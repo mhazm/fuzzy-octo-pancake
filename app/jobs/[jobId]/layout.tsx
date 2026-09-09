@@ -28,12 +28,21 @@ export async function generateMetadata(
   const jobStatus = localJob?.jobStatus || "Unknown";
   const jobGame = localJob?.game || "Unknown";
 
+  const title = `Detail Pengiriman Job #${jobIds}`;
+  const description = `Pekerjaan logistik #${jobIds} Nismara Transport di game ${jobGame} dengan status ${jobStatus}.`;
+
   return {
-    title: `Job #${jobIds} Details - Nismara Transport`,
-    description: `Pekerjaan #${jobIds} Nismara Transport yang bertugas di ${jobGame} dengan status ${jobStatus}`,
+    title,
+    description,
     openGraph: {
-      title: `Job #${jobIds} Details - Nismara Transport`,
-      description: `Pekerjaan #${jobIds} Nismara Transport yang bertugas di ${jobGame} dengan status ${jobStatus}`,
+      title,
+      description,
+      images: ["https://images.nismara.my.id/227300_188.jpg"],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
       images: ["https://images.nismara.my.id/227300_188.jpg"],
     },
     robots: {

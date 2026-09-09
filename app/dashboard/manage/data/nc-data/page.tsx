@@ -57,7 +57,7 @@ export default async function CurrencyDataPage() {
           <WalletCards size={32} />
         </div>
         <div>
-          <h1 className="text-4xl font-black text-(-primary-foreground) tracking-tighter uppercase italic leading-none">
+          <h1 className="text-4xl font-black text-(-primary-foreground) tracking-tighter uppercase leading-none">
             Economy Audit
           </h1>
           <p className="text-(-primary-foreground)/40 font-bold uppercase text-[10px] tracking-[0.2em] mt-2 ml-1">

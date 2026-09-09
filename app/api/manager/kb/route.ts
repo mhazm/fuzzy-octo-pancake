@@ -3,6 +3,19 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
+import { revalidatePath } from "next/cache";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
+
+const NO_CACHE_HEADERS = {
+  "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0, s-maxage=0",
+  "CDN-Cache-Control": "no-store",
+  "Vercel-CDN-Cache-Control": "no-store",
+  "Pragma": "no-cache",
+  "Expires": "0",
+};
 
 function generateSlug(title: string) {
   return title
@@ -16,7 +29,10 @@ export async function GET(req: NextRequest) {
     const session = await getServerSession(authOptions);
     const isManager = session?.user?.role === "manager" || session?.user?.role === "admin";
     if (!isManager) {
-      return NextResponse.json({ success: false, error: "Akses Ditolak" }, { status: 403 });
+      return NextResponse.json(
+        { success: false, error: "Akses Ditolak" },
+        { status: 403, headers: NO_CACHE_HEADERS }
+      );
     }
 
     const { searchParams } = new URL(req.url);
@@ -54,19 +70,25 @@ export async function GET(req: NextRequest) {
 
     const totalPages = Math.ceil(totalArticles / limit);
 
-    return NextResponse.json({ 
-      success: true, 
-      articles,
-      pagination: {
-        total: totalArticles,
-        pages: totalPages,
-        currentPage: page,
-        limit
-      }
-    });
+    return NextResponse.json(
+      { 
+        success: true, 
+        articles,
+        pagination: {
+          total: totalArticles,
+          pages: totalPages,
+          currentPage: page,
+          limit
+        }
+      },
+      { headers: NO_CACHE_HEADERS }
+    );
   } catch (error: any) {
     console.error("Manager KB Fetch Error:", error);
-    return NextResponse.json({ success: false, error: "Kesalahan internal server" }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: "Kesalahan internal server" },
+      { status: 500, headers: NO_CACHE_HEADERS }
+    );
   }
 }
 
@@ -75,14 +97,20 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions);
     const isManager = session?.user?.role === "manager" || session?.user?.role === "admin";
     if (!isManager) {
-      return NextResponse.json({ success: false, error: "Akses Ditolak" }, { status: 403 });
+      return NextResponse.json(
+        { success: false, error: "Akses Ditolak" },
+        { status: 403, headers: NO_CACHE_HEADERS }
+      );
     }
 
     const body = await req.json();
     const { title, description, content, category, accessLevel, coverImage, order } = body;
 
     if (!title || !content || !category || !accessLevel) {
-      return NextResponse.json({ success: false, error: "Semua field wajib diisi" }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: "Semua field wajib diisi" },
+        { status: 400, headers: NO_CACHE_HEADERS }
+      );
     }
 
     const client = await clientPromise;
@@ -119,9 +147,25 @@ export async function POST(req: NextRequest) {
 
     const result = await db.collection("kb_articles").insertOne(newArticle);
 
-    return NextResponse.json({ success: true, articleId: result.insertedId, slug });
+    // Invalidate caches immediately
+    try {
+      revalidatePath("/kb");
+      revalidatePath(`/kb/${categorySlug}`);
+      revalidatePath(`/kb/${categorySlug}/${slug}`);
+      revalidatePath("/dashboard/manage/kb");
+    } catch (revalErr) {
+      console.error("Failed to revalidate KB path on create:", revalErr);
+    }
+
+    return NextResponse.json(
+      { success: true, articleId: result.insertedId, slug },
+      { headers: NO_CACHE_HEADERS }
+    );
   } catch (error: any) {
     console.error("Manager KB Create Error:", error);
-    return NextResponse.json({ success: false, error: "Kesalahan internal server" }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: "Kesalahan internal server" },
+      { status: 500, headers: NO_CACHE_HEADERS }
+    );
   }
 }

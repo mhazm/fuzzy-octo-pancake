@@ -5,8 +5,11 @@ import clientPromise from "@/lib/mongodb";
 import mongoose from "mongoose";
 import Ticket from "@/lib/models/Ticket";
 import { verifyTurnstileToken } from "@/lib/turnstile";
+import { revalidatePath } from "next/cache";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 import dbConnect from "@/lib/mongoose";
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
@@ -136,18 +139,27 @@ export async function GET(request: Request) {
       rejected: statsData.rejected,
     };
 
-    return NextResponse.json({
-      success: true,
-      tickets: enrichedTickets,
-      stats,
-      discordGuildId: GUILD_ID,
-      pagination: {
-        currentPage: safePage,
-        totalPages,
-        totalTickets,
-        limit,
+    return NextResponse.json(
+      {
+        success: true,
+        tickets: enrichedTickets,
+        stats,
+        discordGuildId: GUILD_ID,
+        pagination: {
+          currentPage: safePage,
+          totalPages,
+          totalTickets,
+          limit,
+        },
       },
-    });
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+          "CDN-Cache-Control": "no-store",
+          "Vercel-CDN-Cache-Control": "no-store",
+        },
+      },
+    );
   } catch (error) {
     console.error("Tickets GET Error:", error);
     return NextResponse.json(
@@ -297,6 +309,13 @@ export async function POST(request: Request) {
       description,
       status: "open",
     });
+
+    try {
+      revalidatePath("/dashboard/ticket");
+      revalidatePath("/dashboard/manage/tickets");
+    } catch (e) {
+      console.error("Failed to revalidate ticket paths", e);
+    }
 
     return NextResponse.json({ success: true, ticket: newTicket });
   } catch (error) {

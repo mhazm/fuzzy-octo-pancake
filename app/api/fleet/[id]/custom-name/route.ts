@@ -3,6 +3,11 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
 import Fleet from "@/lib/models/Fleet";
+import { revalidatePath } from "next/cache";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 export async function PATCH(
   request: Request,
@@ -58,6 +63,13 @@ export async function PATCH(
 
     fleet.customName = customName;
     await fleet.save();
+
+    try {
+      revalidatePath("/dashboard/garage/fleet");
+      revalidatePath(`/dashboard/garage/fleet/${id}`);
+    } catch (e) {
+      console.error("Failed to revalidate custom-name paths", e);
+    }
 
     return NextResponse.json({
       success: true,

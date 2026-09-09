@@ -6,15 +6,35 @@ import { Sparkles } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "Feeds",
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Feeds Linimasa Komunitas Driver",
   description:
-    "Linimasa momen terbaik dari komunitas driver Nismara Transport.",
+    "Linimasa sosial resmi Nismara Transport. Lihat update aktivitas, pengiriman kargo terbaru, dan interaksi seru antar pengemudi.",
   openGraph: {
-    title: "Feeds Nismara",
+    title: "Feeds Linimasa Komunitas Driver",
     description:
-      "Ikuti dan temukan momen perjalanan terbaru dari rekan-rekan driver Anda.",
+      "Linimasa sosial resmi Nismara Transport. Lihat update aktivitas, pengiriman kargo terbaru, dan interaksi seru antar pengemudi.",
+    url: "https://transport.nismara.web.id/feeds",
+    siteName: "Nismara Transport",
+    locale: "id_ID",
     type: "website",
+    images: [
+      {
+        url: "https://images.nismara.my.id/227300_188.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Feeds Nismara Transport",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Feeds Linimasa Komunitas Driver",
+    description:
+      "Linimasa sosial resmi Nismara Transport. Lihat update aktivitas dan pengiriman kargo rekan pengemudi.",
+    images: ["https://images.nismara.my.id/227300_188.jpg"],
   },
 };
 
@@ -95,7 +115,8 @@ export default async function GlobalFeedsPage({
             nismaraPlusStartedAt: "$uploader.nismaraplus.startedAt",
             isBooster: "$uploader.isBooster",
             role: "$uploader.discordRole",
-            truckyRank: "$uploader.truckyRank"
+            truckyRank: "$uploader.truckyRank",
+            topManager: "$uploader.topManager"
           },
         },
       },

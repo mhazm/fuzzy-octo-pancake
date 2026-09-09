@@ -13,6 +13,15 @@ export async function createContractAction(formData: any) {
   const { contractName, companyName, imageUrl, gameId, endAt, setBy, guildId, isScheduled, startDate } =
     formData;
 
+  const isSched = Boolean(isScheduled);
+  const startDt = isSched && startDate ? new Date(`${startDate}+07:00`) : new Date();
+  const endDt = new Date(`${endAt}+07:00`);
+  const now = new Date();
+
+  // Jika dijadwalkan dan tanggal mulai masih di masa depan, isActive = false
+  const isCurrentlyActive = !isSched || startDt <= now;
+  const isTrulyScheduled = isSched && startDt > now;
+
   await db.collection("contracts").insertOne({
     guildId,
     contractName,
@@ -25,10 +34,10 @@ export async function createContractAction(formData: any) {
     totalMass: 0,
     setBy, // Discord ID Manager
     setAt: new Date(),
-    startDate: isScheduled ? new Date(`${startDate}+07:00`) : new Date(),
-    endAt: new Date(`${endAt}+07:00`),
-    isActive: true,
-    isScheduled: isScheduled || false,
+    startDate: startDt,
+    endAt: endDt,
+    isActive: isCurrentlyActive,
+    isScheduled: isTrulyScheduled,
     contributors: [],
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -47,6 +56,14 @@ export async function createContractAction(formData: any) {
     // 1. Kirim Pesan Notifikasi ke Channel Driver
     if (channelId) {
       try {
+        const announcementContent = isTrulyScheduled
+          ? `📅 **SPECIAL CONTRACT SCHEDULED** 📅\n-# <@&${driverDiscordRole}> <@&${internDiscordRole}>`
+          : `🚨 **NEW SPECIAL CONTRACT DEPLOYED** 🚨\n-# <@&${driverDiscordRole}> <@&${internDiscordRole}>`;
+
+        const descMessage = isTrulyScheduled
+          ? `Nismara Transport telah menjadwalkan special contract baru dari **${companyName}**! Kontrak akan resmi dimulai pada <t:${Math.floor(startDt.getTime() / 1000)}:F> (<t:${Math.floor(startDt.getTime() / 1000)}:R>). Bersiaplah!`
+          : `Nismara Transport telah mendapatkan special contract dari **${companyName}**! Ayo segera ambil pekerjaan dari atau menuju ke ${companyName}. Jangan sampai terlambat!`;
+
         await fetch(
           `https://discord.com/api/v10/channels/${channelId}/messages`,
           {
@@ -56,11 +73,11 @@ export async function createContractAction(formData: any) {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              content: `🚨 **NEW SPECIAL CONTRACT DEPLOYED** 🚨\n-# <@&${driverDiscordRole}> <@&${internDiscordRole}>`,
+              content: announcementContent,
               embeds: [
                 {
-                  title: `${contractName}`,
-                  description: `Nismara Transport telah mendapatkan special contract dari **${companyName}**! Ayo segera ambil pekerjaan dari atau menuju ke ${companyName}. Jangan sampai terlambat!`,
+                  title: isTrulyScheduled ? `[SCHEDULED] ${contractName}` : `${contractName}`,
+                  description: descMessage,
                   url: contractUrl,
                   color: gameId === "1" ? 3447003 : 15844367, // Biru ETS2, Orange ATS
                   image: imageUrl ? { url: imageUrl } : undefined,
@@ -74,8 +91,10 @@ export async function createContractAction(formData: any) {
                       inline: true,
                     },
                     {
-                      name: "Deadline",
-                      value: `<t:${Math.floor(new Date(endAt).getTime() / 1000)}:R>`,
+                      name: isTrulyScheduled ? "Waktu Mulai" : "Deadline",
+                      value: isTrulyScheduled
+                        ? `<t:${Math.floor(startDt.getTime() / 1000)}:R>`
+                        : `<t:${Math.floor(endDt.getTime() / 1000)}:R>`,
                       inline: true,
                     },
                   ],
@@ -166,6 +185,14 @@ export async function updateContractAction(
       .collection("contracts")
       .findOne({ _id: new ObjectId(contractId) });
 
+    const isSched = String(rawData.isScheduled) === "true";
+    const startDt = isSched && rawData.startDate ? new Date(`${rawData.startDate}+07:00`) : new Date();
+    const endDt = new Date(`${rawData.endAt}+07:00`);
+    const now = new Date();
+
+    const isCurrentlyActive = !isSched || startDt <= now;
+    const isTrulyScheduled = isSched && startDt > now;
+
     await db.collection("contracts").updateOne(
       { _id: new ObjectId(contractId) },
       {
@@ -173,10 +200,11 @@ export async function updateContractAction(
           contractName: rawData.contractName,
           companyName: rawData.companyName,
           imageUrl: rawData.imageUrl || null,
-          gameId: rawData.gameId,
-          isScheduled: rawData.isScheduled === "true",
-          startDate: rawData.isScheduled === "true" ? new Date(`${rawData.startDate}+07:00`) : new Date(),
-          endAt: new Date(`${rawData.endAt}+07:00`),
+          gameId: String(rawData.gameId),
+          isActive: isCurrentlyActive,
+          isScheduled: isTrulyScheduled,
+          startDate: startDt,
+          endAt: endDt,
           updatedAt: new Date(),
         },
       },
@@ -197,4 +225,56 @@ export async function updateContractAction(
 
   revalidatePath("/dashboard/manage/events/contracts");
   redirect("/dashboard/manage/events/contracts");
+}
+
+export async function closeContractAction(contractId: string) {
+  const client = await clientPromise;
+  const db = client.db();
+
+  try {
+    await db.collection("contracts").updateOne(
+      { _id: new ObjectId(contractId) },
+      {
+        $set: {
+          isActive: false,
+          isScheduled: false,
+          endAt: new Date(),
+          updatedAt: new Date(),
+        },
+      },
+    );
+
+    revalidatePath("/dashboard/manage/events/contracts");
+    revalidatePath("/special-contracts");
+    return { success: true };
+  } catch (error: any) {
+    console.error("Gagal menutup kontrak:", error);
+    return { success: false, error: error.message || "Gagal menutup kontrak" };
+  }
+}
+
+export async function deleteContractAction(contractId: string) {
+  const client = await clientPromise;
+  const db = client.db();
+
+  try {
+    const existing = await db
+      .collection("contracts")
+      .findOne({ _id: new ObjectId(contractId) });
+
+    if (existing?.imageUrl) {
+      await deleteFileFromR2(existing.imageUrl);
+    }
+
+    await db
+      .collection("contracts")
+      .deleteOne({ _id: new ObjectId(contractId) });
+
+    revalidatePath("/dashboard/manage/events/contracts");
+    revalidatePath("/special-contracts");
+    return { success: true };
+  } catch (error: any) {
+    console.error("Gagal menghapus kontrak:", error);
+    return { success: false, error: error.message || "Gagal menghapus kontrak" };
+  }
 }

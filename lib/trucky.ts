@@ -92,6 +92,21 @@ export async function getCompanyMemberStats(
 }
 
 export async function getCompanyMembersMap(companyId: number) {
+  const cacheKey = `trucky:members_map:${companyId}`;
+
+  // 1. Cek Redis Cache terlebih dahulu untuk respons secepat kilat
+  try {
+    const { redis } = await import("@/lib/redis");
+    if (redis) {
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        return JSON.parse(cached);
+      }
+    }
+  } catch (err) {
+    // Abaikan jika Redis gagal, lanjut fetch live
+  }
+
   try {
     let currentPage = 1;
     let lastPage = 1;
@@ -109,22 +124,36 @@ export async function getCompanyMembersMap(companyId: number) {
             Referer: "https://nismara.web.id",
             Origin: "https://nismara.web.id",
           },
-          next: { revalidate: 3600 }, // Cache 1 jam
+          cache: "no-store",
         },
       );
 
       if (!res.ok) break;
 
       const responseData = await res.json();
-      lastPage = responseData.last_page;
+      lastPage = responseData.last_page || 1;
 
       // Masukkan semua member ke dalam object (Dictionary) dengan truckyId sebagai kunci
-      responseData.data.forEach((member: any) => {
-        membersMap[member.id] = member;
+      responseData.data?.forEach((member: any) => {
+        if (member.id) {
+          membersMap[Number(member.id)] = member;
+        }
       });
 
       currentPage++;
     } while (currentPage <= lastPage);
+
+    // 2. Simpan ke Redis selama 5 menit (300 detik) jika data berhasil didapatkan
+    if (Object.keys(membersMap).length > 0) {
+      try {
+        const { redis } = await import("@/lib/redis");
+        if (redis) {
+          await redis.set(cacheKey, JSON.stringify(membersMap), "EX", 300);
+        }
+      } catch (err) {
+        // Abaikan error penyimpanan Redis
+      }
+    }
 
     return membersMap;
   } catch (error) {

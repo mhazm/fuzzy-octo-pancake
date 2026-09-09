@@ -3,8 +3,13 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import mongoose from "mongoose";
 import Ticket from "@/lib/models/Ticket";
+import { revalidatePath } from "next/cache";
 
 import dbConnect from "@/lib/mongoose";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 
 export async function POST(
@@ -84,6 +89,13 @@ export async function POST(
           content: message
         })
       });
+    }
+
+    try {
+      revalidatePath("/dashboard/ticket");
+      revalidatePath("/dashboard/manage/tickets");
+    } catch (e) {
+      console.error("Failed to revalidate ticket paths", e);
     }
 
     return NextResponse.json({ success: true, message: "Tiket berhasil diklaim" });

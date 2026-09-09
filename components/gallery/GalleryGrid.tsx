@@ -22,6 +22,11 @@ export interface UserComment {
     isBooster?: boolean;
     isManager?: boolean;
     truckyRank?: string;
+    topManager?: {
+      status?: boolean;
+      month?: string | null;
+      expiredAt?: Date | string | null;
+    } | null;
   };
 }
 
@@ -47,6 +52,7 @@ export default function GalleryGrid({
   profileIsNismaraPlus,
   profileIsBooster,
   profileRole,
+  profileTopManager,
   isManager,
 }: {
   truckyId: string;
@@ -59,6 +65,7 @@ export default function GalleryGrid({
   profileIsNismaraPlus?: boolean;
   profileIsBooster?: boolean;
   profileRole?: string;
+  profileTopManager?: any;
   isManager?: boolean;
 }) {
   const [posts, setPosts] = useState<GalleryPost[]>([]);
@@ -164,6 +171,7 @@ export default function GalleryGrid({
           profileIsNismaraPlus={profileIsNismaraPlus}
           profileIsBooster={profileIsBooster}
           profileRole={profileRole}
+          profileTopManager={profileTopManager}
           isManager={isManager}
           onPostUpdate={(updated: GalleryPost) => {
             setPosts((prev) =>

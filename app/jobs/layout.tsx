@@ -2,12 +2,31 @@ import type { Metadata } from "next";
 import React from "react";
 
 export const metadata: Metadata = {
-  title: "Jobs",
+  title: "Daftar Pengiriman & Job Logistik",
   description:
-    "Lihat seluruh daftar pekerjaan dan pengiriman di Nismara Transport mulai dari ongoing jobs, completed deliveries, hingga canceled jobs dalam sistem logistik terintegrasi.",
+    "Pantau seluruh aktivitas pekerjaan dan pengiriman kargo driver Nismara Transport secara real-time dari Euro Truck Simulator 2 dan American Truck Simulator.",
   openGraph: {
-    title: "Jobs",
-    description: "Daftar pekerjaan dan pengiriman resmi Nismara Transport.",
+    title: "Daftar Pengiriman & Job Logistik",
+    description:
+      "Pantau seluruh aktivitas pekerjaan dan pengiriman kargo driver Nismara Transport secara real-time.",
+    url: "https://transport.nismara.web.id/jobs",
+    siteName: "Nismara Transport",
+    locale: "id_ID",
+    type: "website",
+    images: [
+      {
+        url: "https://images.nismara.my.id/227300_188.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Daftar Pengiriman Nismara Transport",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Daftar Pengiriman & Job Logistik",
+    description:
+      "Pantau seluruh aktivitas pekerjaan dan pengiriman kargo driver Nismara Transport secara real-time.",
     images: ["https://images.nismara.my.id/227300_188.jpg"],
   },
   keywords: [

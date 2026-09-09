@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "./api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
 import HeroSlider from "@/components/HeroSlider";
+import HeroAnniversary from "@/components/HeroAnniversary";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import Link from "next/link";
 import { NismaraIcon } from "@/components/icons/SocialMedia";
@@ -94,23 +95,40 @@ export default async function Home() {
     (async () => {
       const cached = await redis.get("nismaraplus:supporters");
       if (cached) return JSON.parse(cached);
-      
-      const supportersData = await db.collection("users").find(
-        { "nismaraplus.status": true },
-        { projection: { discordId: 1, name: 1, image: 1, avatarUrl: 1, truckyId: 1, "nismaraplus.startedAt": 1 } }
-      ).toArray();
-      
-      const mapped = supportersData.map(s => ({
-        discordId: s.discordId,
-        name: s.name || "Unknown Driver",
-        avatarUrl: s.image || s.avatarUrl || "https://ui-avatars.com/api/?name=Driver&background=random",
-        truckyId: s.truckyId,
-        startedAt: s.nismaraplus?.startedAt || null,
-      })).sort((a, b) => {
-        const dateA = a.startedAt ? new Date(a.startedAt).getTime() : 0;
-        const dateB = b.startedAt ? new Date(b.startedAt).getTime() : 0;
-        return dateA - dateB;
-      });
+
+      const supportersData = await db
+        .collection("users")
+        .find(
+          { "nismaraplus.status": true },
+          {
+            projection: {
+              discordId: 1,
+              name: 1,
+              image: 1,
+              avatarUrl: 1,
+              truckyId: 1,
+              "nismaraplus.startedAt": 1,
+            },
+          },
+        )
+        .toArray();
+
+      const mapped = supportersData
+        .map((s) => ({
+          discordId: s.discordId,
+          name: s.name || "Unknown Driver",
+          avatarUrl:
+            s.image ||
+            s.avatarUrl ||
+            "https://ui-avatars.com/api/?name=Driver&background=random",
+          truckyId: s.truckyId,
+          startedAt: s.nismaraplus?.startedAt || null,
+        }))
+        .sort((a, b) => {
+          const dateA = a.startedAt ? new Date(a.startedAt).getTime() : 0;
+          const dateB = b.startedAt ? new Date(b.startedAt).getTime() : 0;
+          return dateA - dateB;
+        });
       await redis.setex("nismaraplus:supporters", 3600, JSON.stringify(mapped));
       return mapped;
     })(),
@@ -118,23 +136,39 @@ export default async function Home() {
     (async () => {
       const cached = await redis.get("homepage:alldrivers");
       if (cached) return JSON.parse(cached);
-      
+
       // Fetch users with images
-      const driversData = await db.collection("users").find(
-        { },
-        { projection: { discordId: 1, name: 1, image: 1, avatarUrl: 1, truckyId: 1 } }
-      ).sort({ _id: -1 }).limit(60).toArray(); // Get latest 60 registered users
-      
-      const mapped = driversData.map(s => ({
+      const driversData = await db
+        .collection("users")
+        .find(
+          {},
+          {
+            projection: {
+              discordId: 1,
+              name: 1,
+              image: 1,
+              avatarUrl: 1,
+              truckyId: 1,
+            },
+          },
+        )
+        .sort({ _id: -1 })
+        .limit(60)
+        .toArray(); // Get latest 60 registered users
+
+      const mapped = driversData.map((s) => ({
         discordId: s.discordId,
         name: s.name || "Unknown Driver",
-        avatarUrl: s.image || s.avatarUrl || "https://ui-avatars.com/api/?name=Driver&background=random",
+        avatarUrl:
+          s.image ||
+          s.avatarUrl ||
+          "https://ui-avatars.com/api/?name=Driver&background=random",
         truckyId: s.truckyId,
       }));
-      
+
       // Shuffle for dynamic look
       mapped.sort(() => Math.random() - 0.5);
-      
+
       await redis.setex("homepage:alldrivers", 3600, JSON.stringify(mapped));
       return mapped;
     })(),
@@ -147,31 +181,50 @@ export default async function Home() {
       startOfMonth.setDate(1);
       startOfMonth.setHours(0, 0, 0, 0);
 
-      const topDriversAgg = await db.collection("jobhistories").aggregate([
-        {
-          $match: {
-            guildId,
-            jobStatus: "COMPLETED",
-            completedAt: { $gte: startOfMonth }
-          }
-        },
-        {
-          $group: {
-            _id: "$driverId",
-            totalKm: { $sum: "$distanceKm" }
-          }
-        },
-        { $sort: { totalKm: -1 } },
-        { $limit: 3 }
-      ]).toArray();
+      const topDriversAgg = await db
+        .collection("jobhistories")
+        .aggregate([
+          {
+            $match: {
+              guildId,
+              jobStatus: "COMPLETED",
+              completedAt: { $gte: startOfMonth },
+            },
+          },
+          {
+            $group: {
+              _id: "$driverId",
+              totalKm: { $sum: "$distanceKm" },
+            },
+          },
+          { $sort: { totalKm: -1 } },
+          { $limit: 3 },
+        ])
+        .toArray();
 
       if (!topDriversAgg.length) return [];
 
       const driverIds = topDriversAgg.map((d: any) => d._id);
-      const usersData = await db.collection("users").find(
-        { discordId: { $in: driverIds } },
-        { projection: { discordId: 1, name: 1, image: 1, avatarUrl: 1, truckyId: 1, discordRole: 1, isBooster: 1, nismaraplus: 1, truckyRank: 1 } }
-      ).toArray();
+      const usersData = await db
+        .collection("users")
+        .find(
+          { discordId: { $in: driverIds } },
+          {
+            projection: {
+              discordId: 1,
+              name: 1,
+              image: 1,
+              avatarUrl: 1,
+              truckyId: 1,
+              discordRole: 1,
+              isBooster: 1,
+              nismaraplus: 1,
+              truckyRank: 1,
+              topManager: 1,
+            },
+          },
+        )
+        .toArray();
 
       const mappedTop3 = topDriversAgg.map((agg: any) => {
         const user = usersData.find((u: any) => u.discordId === agg._id);
@@ -179,17 +232,25 @@ export default async function Home() {
           discordId: agg._id,
           totalKm: agg.totalKm,
           name: user?.name || "Unknown Driver",
-          avatarUrl: user?.image || user?.avatarUrl || "https://ui-avatars.com/api/?name=Driver&background=random",
+          avatarUrl:
+            user?.image ||
+            user?.avatarUrl ||
+            "https://ui-avatars.com/api/?name=Driver&background=random",
           truckyId: user?.truckyId,
           role: user?.discordRole,
           isBooster: user?.isBooster,
           isNismaraPlus: user?.nismaraplus?.status,
           nismaraPlusStartedAt: user?.nismaraplus?.startedAt,
-          truckyRank: user?.truckyRank
+          truckyRank: user?.truckyRank,
+          topManager: user?.topManager,
         };
       });
 
-      await redis.setex("homepage:top3drivers_v2", 3600, JSON.stringify(mappedTop3));
+      await redis.setex(
+        "homepage:top3drivers_v2",
+        3600,
+        JSON.stringify(mappedTop3),
+      );
       return mappedTop3;
     })(),
   ]);
@@ -205,6 +266,7 @@ export default async function Home() {
     <main className="flex flex-col w-full bg-background overflow-hidden">
       {/* 1. HERO SECTION */}
       <HeroSlider isDriver={isDriver} />
+      {/* <HeroAnniversary isDriver={isDriver} /> */}
 
       {/* 2. ABOUT NISMARA SECTION */}
       <section className="relative pt-28 pb-12 overflow-hidden z-10">
@@ -246,7 +308,7 @@ export default async function Home() {
               </defs>
               <text className="text-[42px] font-black fill-current uppercase tracking-[0.3em] text-foreground">
                 <textPath href="#textCircle" startOffset="0%" textLength="2199">
-                  NISMARA LOGISTICS • NISMARA TRANSPORT • NISMARA AIRLINES •
+                  NISMARA TRANSPORT • NISMARA COMMUNITY • NISMARA AIRLINES •
                   NISMARA RACING •
                 </textPath>
               </text>
@@ -472,63 +534,89 @@ export default async function Home() {
                   Driver Terjauh Bulan Ini
                 </h3>
                 <p className="text-muted-foreground mt-2">
-                  Pengemudi dengan total jarak tempuh tertinggi gabungan (ETS2 & ATS)
+                  Pengemudi dengan total jarak tempuh tertinggi gabungan (ETS2 &
+                  ATS)
                 </p>
               </ScrollReveal>
-              
+
               <div className="grid grid-cols-1 md:flex md:flex-row md:justify-center md:items-end gap-6 md:gap-8 max-w-4xl mx-auto pb-8 pt-6">
                 {[1, 0, 2].map((idx) => {
                   const driver = top3Drivers[idx];
                   if (!driver) return null;
-                  
+
                   const rank = idx + 1;
                   const isFirst = rank === 1;
-                  
+
                   const medals = [
-                    "bg-yellow-500/20 text-yellow-500 border-yellow-500/50 shadow-yellow-500/20", 
-                    "bg-gray-300/20 text-gray-300 border-gray-300/50 shadow-gray-300/20", 
-                    "bg-amber-700/20 text-amber-700 border-amber-700/50 shadow-amber-700/20"
+                    "bg-yellow-500/20 text-yellow-500 border-yellow-500/50 shadow-yellow-500/20",
+                    "bg-gray-300/20 text-gray-300 border-gray-300/50 shadow-gray-300/20",
+                    "bg-amber-700/20 text-amber-700 border-amber-700/50 shadow-amber-700/20",
                   ];
-                  const medalColors = medals[idx] || "bg-primary/20 text-primary border-primary/50 shadow-primary/20";
-                  
+                  const medalColors =
+                    medals[idx] ||
+                    "bg-primary/20 text-primary border-primary/50 shadow-primary/20";
+
                   // Mengatur urutan DOM dan ketinggian podium (di layar desktop md:)
-                  const orderClass = rank === 1 ? "order-1 md:order-2" : rank === 2 ? "order-2 md:order-1" : "order-3 md:order-3";
-                  const heightClass = rank === 1 ? "md:h-[340px] md:-translate-y-8" : "md:h-[300px]";
-                  
+                  const orderClass =
+                    rank === 1
+                      ? "order-1 md:order-2"
+                      : rank === 2
+                        ? "order-2 md:order-1"
+                        : "order-3 md:order-3";
+                  const heightClass =
+                    rank === 1
+                      ? "md:h-[340px] md:-translate-y-8"
+                      : "md:h-[300px]";
+
                   return (
-                    <ScrollReveal key={driver.discordId} delay={idx * 0.1} className={`w-full md:w-1/3 flex relative z-10 hover:z-50 ${orderClass}`}>
-                      <div className={`relative group w-full bg-card/60 backdrop-blur-md border border-border/50 rounded-3xl p-6 transition-all duration-300 hover:shadow-2xl hover:border-primary/50 flex flex-col items-center text-center ${heightClass} ${isFirst ? 'hover:shadow-yellow-500/10' : ''}`}>
-                        
-                        <div className={`absolute -top-6 w-12 h-12 rounded-full border-2 flex items-center justify-center font-black text-xl shadow-xl backdrop-blur-sm z-20 ${medalColors}`}>
+                    <ScrollReveal
+                      key={driver.discordId}
+                      delay={idx * 0.1}
+                      className={`w-full md:w-1/3 flex relative z-10 hover:z-50 ${orderClass}`}
+                    >
+                      <div
+                        className={`relative group w-full bg-card/60 backdrop-blur-md border border-border/50 rounded-3xl p-6 transition-all duration-300 hover:shadow-2xl hover:border-primary/50 flex flex-col items-center text-center ${heightClass} ${isFirst ? "hover:shadow-yellow-500/10" : ""}`}
+                      >
+                        <div
+                          className={`absolute -top-6 w-12 h-12 rounded-full border-2 flex items-center justify-center font-black text-xl shadow-xl backdrop-blur-sm z-20 ${medalColors}`}
+                        >
                           {rank}
                         </div>
-                        
-                        <img 
-                          src={driver.avatarUrl} 
+
+                        <img
+                          src={driver.avatarUrl}
                           alt={driver.name}
-                          className={`relative z-10 rounded-full object-cover ring-4 ring-background shadow-xl mb-4 transition-transform group-hover:scale-105 ${isFirst ? 'w-24 h-24 mt-2' : 'w-20 h-20'}`}
+                          className={`relative z-10 rounded-full object-cover ring-4 ring-background shadow-xl mb-4 transition-transform group-hover:scale-105 ${isFirst ? "w-24 h-24 mt-2" : "w-20 h-20"}`}
                         />
-                        
+
                         {/* Nama & Link Publik (Standar UI) */}
-                        <Link href={`/profile/${driver.truckyId}`} className="font-bold text-lg mb-1 line-clamp-1 group-hover:text-primary transition-colors hover:underline decoration-primary/50">
+                        <Link
+                          href={`/profile/${driver.truckyId}`}
+                          className="font-bold text-lg mb-1 line-clamp-1 group-hover:text-primary transition-colors hover:underline decoration-primary/50"
+                        >
                           {driver.name}
                         </Link>
-                        
+
                         {/* User Badges (Standar UI) */}
                         <div className="flex flex-wrap items-center justify-center gap-1.5 mb-auto mt-1 z-10">
-                          <UserBadges 
+                          <UserBadges
                             role={driver.role}
                             isBooster={driver.isBooster}
                             isNismaraPlus={driver.isNismaraPlus}
                             nismaraPlusStartedAt={driver.nismaraPlusStartedAt}
                             truckyRank={driver.truckyRank}
+                            topManager={driver.topManager}
                           />
                         </div>
 
                         {/* Skor Jarak Tempuh */}
                         <div className="flex items-baseline gap-1 mt-4 pt-4 border-t border-border/30 w-full justify-center">
-                          <span className="text-3xl font-black text-gradient">{driver.totalKm.toLocaleString("id-ID")}</span>
-                          <span className="text-xs font-bold text-muted-foreground">KM</span>
+                          <span className="text-3xl font-black text-gradient">
+                            {driver.totalKm.toLocaleString("id-ID")}
+                          </span>
+                          <span className="text-xs font-bold text-muted-foreground">
+                            KM
+                          </span>
                         </div>
                       </div>
                     </ScrollReveal>
@@ -776,55 +864,79 @@ export default async function Home() {
           <div className="max-w-6xl mx-auto px-4 relative z-10 text-center mb-12">
             <ScrollReveal direction="up">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent-sky/10 border border-accent-sky/20 text-[10px] font-black uppercase tracking-[0.3em] text-accent-sky mb-4">
-                <Truck size={14} className="text-accent-sky" /> Ratusan Pengemudi Aktif
+                <Truck size={14} className="text-accent-sky" /> Ratusan
+                Pengemudi Aktif
               </div>
               <h2 className="text-4xl md:text-5xl font-extrabold text-foreground tracking-tight leading-tight">
-                Bertemu dengan <span className="text-accent-sky">Komunitas Kami</span>
+                Bertemu dengan{" "}
+                <span className="text-accent-sky">Komunitas Kami</span>
               </h2>
               <div className="mt-8">
-                <Link href="/drivers" className="inline-flex items-center justify-center rounded-xl bg-accent-sky/10 text-accent-sky border border-accent-sky/20 px-6 py-2.5 font-bold hover:bg-accent-sky hover:text-white transition-all gap-2 group">
+                <Link
+                  href="/drivers"
+                  className="inline-flex items-center justify-center rounded-xl bg-accent-sky/10 text-accent-sky border border-accent-sky/20 px-6 py-2.5 font-bold hover:bg-accent-sky hover:text-white transition-all gap-2 group"
+                >
                   Lihat Semua Driver
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </div>
             </ScrollReveal>
           </div>
-          
-          <ScrollReveal direction="up" delay={0.2} className="w-[100vw] relative left-1/2 -translate-x-1/2 overflow-hidden py-8 flex flex-col gap-6">
-              {[
-                { id: "row1", items: allDrivers.filter((_: any, i: number) => i % 3 === 0), dir: "animate-marquee-left" },
-                { id: "row2", items: allDrivers.filter((_: any, i: number) => i % 3 === 1), dir: "animate-marquee-right" },
-                { id: "row3", items: allDrivers.filter((_: any, i: number) => i % 3 === 2), dir: "animate-marquee-left" },
-              ].map((row) => {
-                if (row.items.length === 0) return null;
-                
-                // Duplicate items so the flex container is wide enough for a seamless loop
-                const duplicated = Array(4).fill(row.items).flat();
-                
-                return (
-                  <div key={row.id} className={`flex w-max shrink-0 gap-8 px-4 ${row.dir}`}>
-                    {duplicated.map((driver: any, idx: number) => (
-                      <Link 
-                        href={`/profile/${driver.truckyId}`} 
-                        key={`${driver.discordId}-${idx}`}
-                        className="group relative flex flex-col items-center gap-3 transition-transform hover:scale-105 shrink-0"
-                      >
-                        <div className="relative w-24 h-24 md:w-28 md:h-28 rounded-full p-1 bg-gradient-to-b from-accent-sky/50 to-transparent">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img 
-                            src={driver.avatarUrl} 
-                            alt={driver.name}
-                            className="w-full h-full rounded-full object-cover border-[4px] border-background"
-                          />
-                        </div>
-                        <span className="text-sm font-bold text-foreground group-hover:text-accent-sky transition-colors w-24 md:w-28 truncate text-center block">
-                          {driver.name}
-                        </span>
-                      </Link>
-                    ))}
-                  </div>
-                );
-              })}
+
+          <ScrollReveal
+            direction="up"
+            delay={0.2}
+            className="w-[100vw] relative left-1/2 -translate-x-1/2 overflow-hidden py-8 flex flex-col gap-6"
+          >
+            {[
+              {
+                id: "row1",
+                items: allDrivers.filter((_: any, i: number) => i % 3 === 0),
+                dir: "animate-marquee-left",
+              },
+              {
+                id: "row2",
+                items: allDrivers.filter((_: any, i: number) => i % 3 === 1),
+                dir: "animate-marquee-right",
+              },
+              {
+                id: "row3",
+                items: allDrivers.filter((_: any, i: number) => i % 3 === 2),
+                dir: "animate-marquee-left",
+              },
+            ].map((row) => {
+              if (row.items.length === 0) return null;
+
+              // Duplicate items so the flex container is wide enough for a seamless loop
+              const duplicated = Array(4).fill(row.items).flat();
+
+              return (
+                <div
+                  key={row.id}
+                  className={`flex w-max shrink-0 gap-8 px-4 ${row.dir}`}
+                >
+                  {duplicated.map((driver: any, idx: number) => (
+                    <Link
+                      href={`/profile/${driver.truckyId}`}
+                      key={`${driver.discordId}-${idx}`}
+                      className="group relative flex flex-col items-center gap-3 transition-transform hover:scale-105 shrink-0"
+                    >
+                      <div className="relative w-24 h-24 md:w-28 md:h-28 rounded-full p-1 bg-gradient-to-b from-accent-sky/50 to-transparent">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={driver.avatarUrl}
+                          alt={driver.name}
+                          className="w-full h-full rounded-full object-cover border-[4px] border-background"
+                        />
+                      </div>
+                      <span className="text-sm font-bold text-foreground group-hover:text-accent-sky transition-colors w-24 md:w-28 truncate text-center block">
+                        {driver.name}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              );
+            })}
           </ScrollReveal>
         </section>
       )}
@@ -836,13 +948,18 @@ export default async function Home() {
           <div className="max-w-6xl mx-auto px-4 relative z-10 text-center">
             <ScrollReveal direction="up" className="mb-12">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-[10px] font-black uppercase tracking-[0.3em] text-amber-500 mb-4">
-                <Star size={14} className="fill-amber-500" /> Nismara+ Supporters
+                <Star size={14} className="fill-amber-500" /> Nismara+
+                Supporters
               </div>
               <h2 className="text-4xl md:text-5xl font-extrabold text-foreground tracking-tight leading-tight">
-                Terima Kasih Kepada <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-yellow-600">Supporter Kami</span>
+                Terima Kasih Kepada{" "}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-yellow-600">
+                  Supporter Kami
+                </span>
               </h2>
               <p className="text-lg text-foreground/60 leading-relaxed font-medium mt-4 max-w-2xl mx-auto">
-                Mereka yang telah berkontribusi lebih untuk mendukung infrastruktur dan perkembangan Nismara Transport.
+                Mereka yang telah berkontribusi lebih untuk mendukung
+                infrastruktur dan perkembangan Nismara Transport.
               </p>
             </ScrollReveal>
 
@@ -850,15 +967,15 @@ export default async function Home() {
               <div className="max-h-[400px] overflow-y-auto pr-2 pt-4 pb-4 rounded-xl [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-amber-500/20 [&::-webkit-scrollbar-thumb]:rounded-full">
                 <div className="flex flex-wrap justify-center gap-6">
                   {supporters.map((supporter: any) => (
-                    <Link 
-                      href={`/profile/${supporter.truckyId}`} 
+                    <Link
+                      href={`/profile/${supporter.truckyId}`}
                       key={supporter.discordId}
                       className="group relative flex flex-col items-center gap-3 transition-transform hover:scale-105"
                     >
                       <div className="relative w-28 h-28 rounded-3xl p-1 bg-gradient-to-b from-amber-400/50 to-transparent shadow-xl">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img 
-                          src={supporter.avatarUrl} 
+                        <img
+                          src={supporter.avatarUrl}
                           alt={supporter.name}
                           className="w-full h-full rounded-3xl object-cover border-[4px] border-background"
                         />

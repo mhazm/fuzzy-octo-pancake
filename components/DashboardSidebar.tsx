@@ -17,6 +17,9 @@ import {
   FileText,
   ShieldCheck,
   MoreHorizontal,
+  Ticket,
+  Trophy,
+  Crown,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -30,10 +33,12 @@ import {
 
 const menuItems = [
   { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Nismara Pass", href: "/dashboard/season-pass", icon: Trophy },
   { name: "Driver Guide", href: "/dashboard/driver-guide", icon: BookOpen },
   { name: "Garage", href: "/dashboard/garage", icon: Truck },
   { name: "Job History", href: "/dashboard/jobs", icon: Briefcase },
   { name: "Wallet", href: "/dashboard/currency", icon: Coins },
+  { name: "My Vouchers", href: "/dashboard/vouchers", icon: Ticket },
   { name: "Penalty Points", href: "/dashboard/points", icon: TriangleAlert },
   { name: "Tickets", href: "/dashboard/ticket", icon: FileText },
   { name: "Insurance", href: "/dashboard/insurance", icon: Shield },
@@ -45,20 +50,33 @@ const menuItems = [
 
 const managementItems = [
   { name: "Manager Overview", href: "/dashboard/manage", icon: ShieldCheck },
+  { name: "Payroll & KPI", href: "/dashboard/manage/payroll", icon: Coins },
+  { name: "Manage Season Pass", href: "/dashboard/manage/season-pass", icon: Trophy },
+  { name: "Manage N+ Quests", href: "/dashboard/manage/nismaraplus/quests", icon: Crown },
   { name: "Manage Data", href: "/dashboard/manage/data", icon: User2 },
   { name: "Manage Events", href: "/dashboard/manage/events", icon: Sparkles },
   { name: "Manage Fleets", href: "/dashboard/manage/fleet", icon: Truck },
   { name: "Manage Tickets", href: "/dashboard/manage/tickets", icon: FileText },
 ];
 
-export default function DashboardSidebar({ userRole }: { userRole?: string }) {
+export default function DashboardSidebar({
+  userRole,
+  isSeasonPassEnabled = true,
+}: {
+  userRole?: string;
+  isSeasonPassEnabled?: boolean;
+}) {
   const pathname = usePathname();
   const isManager = userRole === "manager" || userRole === "admin";
 
+  const effectiveMenuItems = isSeasonPassEnabled
+    ? menuItems
+    : menuItems.filter((item) => item.href !== "/dashboard/season-pass");
+
   // Konfigurasi untuk 4 menu yang tampil di Bottom Bar
   const primaryMobileHrefs = ["/dashboard", "/dashboard/garage", "/dashboard/jobs", "/dashboard/currency"];
-  const primaryMobileItems = menuItems.filter(item => primaryMobileHrefs.includes(item.href));
-  const secondaryMenuItems = menuItems.filter(item => !primaryMobileHrefs.includes(item.href));
+  const primaryMobileItems = effectiveMenuItems.filter(item => primaryMobileHrefs.includes(item.href));
+  const secondaryMenuItems = effectiveMenuItems.filter(item => !primaryMobileHrefs.includes(item.href));
 
   return (
     <>
@@ -73,7 +91,7 @@ export default function DashboardSidebar({ userRole }: { userRole?: string }) {
               Driver Menu
             </h2>
             <nav className="flex flex-col gap-2">
-              {menuItems.map((item) => {
+              {effectiveMenuItems.map((item) => {
                 const isActive = pathname === item.href;
                 const Icon = item.icon;
                 return (

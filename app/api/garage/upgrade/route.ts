@@ -5,8 +5,13 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import Garage from "@/lib/models/Garage";
 import mongoose from "mongoose";
 import { checkRateLimit } from "@/lib/rateLimit";
+import { revalidatePath } from "next/cache";
 
 import dbConnect from "@/lib/mongoose";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 const GUILD_ID = "863959415702028318";
 const UPGRADE_COST = 1000;
 const OPERATIONAL_COST_PER_SLOT = 250;
@@ -93,6 +98,14 @@ export async function POST(request: Request) {
     garage.operational_cost = garage.fleet_operational_cost + fuelCost;
     
     await garage.save();
+
+    try {
+      revalidatePath("/dashboard/garage");
+      revalidatePath("/dashboard/garage/fleet");
+      revalidatePath("/dashboard/currency");
+    } catch (e) {
+      console.error("Failed to revalidate garage paths", e);
+    }
 
     return NextResponse.json({ 
       success: true, 

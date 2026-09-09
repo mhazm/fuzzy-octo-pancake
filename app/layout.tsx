@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 const plusJakartaSans = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://transport.nismara.web.id"),
   title: {
     template: "%s - Nismara Transport",
     default: "Nismara Transport - Virtual Trucking Company Indonesia",
@@ -18,6 +19,27 @@ export const metadata: Metadata = {
   description:
     "Nismara Transport adalah perusahaan virtual trucking Indonesia pada game Euro Truck Simulator 2 dan American Simulator 2 yang menghadirkan sistem pengiriman modern, komunitas driver profesional, event convoy, dan manajemen transportasi terintegrasi",
   openGraph: {
+    title: {
+      template: "%s - Nismara Transport",
+      default: "Nismara Transport - Virtual Trucking Company Indonesia",
+    },
+    description:
+      "Nismara Transport adalah perusahaan virtual trucking Indonesia pada game Euro Truck Simulator 2 dan American Simulator 2 yang menghadirkan sistem pengiriman modern, komunitas driver profesional, event convoy, dan manajemen transportasi terintegrasi",
+    url: "https://transport.nismara.web.id",
+    siteName: "Nismara Transport",
+    locale: "id_ID",
+    type: "website",
+    images: [
+      {
+        url: "https://images.nismara.my.id/227300_188.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Nismara Transport - Virtual Trucking Company Indonesia",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
     title: {
       template: "%s - Nismara Transport",
       default: "Nismara Transport - Virtual Trucking Company Indonesia",

@@ -4,11 +4,19 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
 import dbConnect from "@/lib/mongoose";
 import FuelMarketListing from "@/lib/models/FuelMarketListing";
+import { revalidatePath } from "next/cache";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 export async function POST(request: Request) {
+  let isListingCancelled = false;
+  let targetListingId: string | null = null;
+
   try {
     const session = await getServerSession(authOptions);
-    if (!session || !session.user) {
+    if (!session?.user?.discordId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -57,6 +65,7 @@ export async function POST(request: Request) {
     }
 
     // Ubah status listing secara atomik untuk mencegah race condition
+    targetListingId = listing._id.toString();
     const listingUpdate = await FuelMarketListing.updateOne(
       { _id: listing._id, status: "active", sellerDiscordId: discordId },
       { $set: { status: "cancelled" } }
@@ -66,16 +75,48 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Listing ini sudah tidak aktif (mungkin sudah terjual)" }, { status: 400 });
     }
 
+    isListingCancelled = true;
+
     // Kembalikan BBM ke Garasi (dari Listed ke Stock)
     await db.collection("garages").updateOne(
       { discordId },
       { $inc: { fuelStock: listing.amount, fuelListed: -listing.amount } }
     );
 
-    return NextResponse.json({ success: true, message: "BBM berhasil ditarik dan dikembalikan ke garasi Anda!" });
+    // Revalidasi cache
+    try {
+      revalidatePath("/fuel-market");
+      revalidatePath("/dashboard/garage");
+    } catch (e) {
+      console.error("Failed to revalidate fuel market paths:", e);
+    }
+
+    return NextResponse.json({ 
+      success: true, 
+      message: "BBM berhasil ditarik dan dikembalikan ke garasi Anda!" 
+    }, {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        "CDN-Cache-Control": "no-store",
+        "Vercel-CDN-Cache-Control": "no-store",
+      }
+    });
 
   } catch (error: any) {
     console.error("Error cancelling P2P fuel listing:", error);
+
+    // 🛡️ Rollback status listing jika gagal mengembalikan BBM ke garasi
+    if (isListingCancelled && targetListingId) {
+      try {
+        await FuelMarketListing.updateOne(
+          { _id: targetListingId, status: "cancelled" },
+          { $set: { status: "active" } }
+        );
+      } catch (rollbackErr) {
+        console.error("Critical Rollback Error in P2P Cancel:", rollbackErr);
+      }
+    }
+
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

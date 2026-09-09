@@ -52,7 +52,10 @@ export default async function ManageUsersPage() {
           : truckyData?.role || "Driver",
       isWebActive: !!webData,
       isOnLeave: webData?.isOnLeave || false,
-      joinDate: truckyData.joinDate || link.createdAt,
+      joinDate:
+        link.createdAt ||
+        (link._id ? link._id.getTimestamp() : null) ||
+        truckyData.joinDate,
     };
   });
 
@@ -123,7 +126,7 @@ export default async function ManageUsersPage() {
                 <p className="text-[10px] font-black text-foreground/40 uppercase tracking-widest">
                   {stat.label}
                 </p>
-                <p className="text-4xl font-black text-foreground italic tabular-nums">
+                <p className="text-4xl font-black text-foreground tabular-nums">
                   {stat.value}
                 </p>
               </div>

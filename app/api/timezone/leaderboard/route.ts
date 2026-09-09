@@ -83,7 +83,7 @@ export async function GET(req: Request) {
     
     const users = await db.collection("users").find(
       { discordId: { $in: userIdsToFetch } },
-      { projection: { discordId: 1, name: 1, image: 1, avatarUrl: 1, nismaraplus: 1, role: 1, discordRole: 1, truckyRank: 1 } }
+      { projection: { discordId: 1, name: 1, image: 1, avatarUrl: 1, nismaraplus: 1, role: 1, discordRole: 1, truckyRank: 1, topManager: 1 } }
     ).toArray();
 
     const userMap = users.reduce((acc, u) => {
@@ -93,7 +93,8 @@ export async function GET(req: Request) {
         isNismaraPlus: u.nismaraplus?.status === true,
         nismaraPlusStartedAt: u.nismaraplus?.startedAt,
         isManager: u.role === "manager" || u.role === "admin" || u.discordRole === "manager" || u.discordRole === "admin",
-        truckyRank: u.truckyRank
+        truckyRank: u.truckyRank,
+        topManager: u.topManager,
       };
       return acc;
     }, {} as Record<string, any>);

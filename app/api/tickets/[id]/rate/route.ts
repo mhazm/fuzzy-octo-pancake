@@ -4,8 +4,13 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
 import mongoose from "mongoose";
 import Ticket from "@/lib/models/Ticket";
+import { revalidatePath } from "next/cache";
 
 import dbConnect from "@/lib/mongoose";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 const GUILD_ID = process.env.DISCORD_GUILD_ID;
 
 export async function POST(
@@ -107,6 +112,13 @@ export async function POST(
         reason: `Mendapat Tip dari tiket ${ticketId}`,
         createdAt: new Date(),
       });
+    }
+
+    try {
+      revalidatePath("/dashboard/ticket");
+      revalidatePath("/dashboard/manage/tickets");
+    } catch (e) {
+      console.error("Failed to revalidate ticket paths", e);
     }
 
     return NextResponse.json({ success: true, message: "Berhasil menyimpan rating dan tip!" });

@@ -1,9 +1,37 @@
 import clientPromise from "@/lib/mongodb";
 import { Calendar, Clock, User, Zap, History, Sparkles } from "lucide-react";
 import Link from "next/link";
+import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+export const metadata: Metadata = {
+  title: "Event Pengali NC & Currency Boost",
+  description: "Daftar event Currency Boost aktif dan terjadwal di Nismara Transport. Nikmati bonus pengali NC berlimpah saat pengiriman kargo!",
+  openGraph: {
+    title: "Event Pengali NC & Currency Boost",
+    description: "Daftar event Currency Boost aktif dan terjadwal di Nismara Transport. Nikmati bonus pengali NC berlimpah saat pengiriman kargo!",
+    url: "https://transport.nismara.web.id/currency-boost",
+    siteName: "Nismara Transport",
+    locale: "id_ID",
+    type: "website",
+    images: [
+      {
+        url: "https://images.nismara.my.id/227300_188.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Currency Boost Nismara Transport",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Event Pengali NC & Currency Boost",
+    description: "Daftar event Currency Boost aktif dan terjadwal di Nismara Transport.",
+    images: ["https://images.nismara.my.id/227300_188.jpg"],
+  },
+};
 
 export default async function EventsPage() {
   const client = await clientPromise;
@@ -95,8 +123,8 @@ export default async function EventsPage() {
                       alt={event.nameEvent}
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                     />
-                    <div className="absolute top-4 right-4 z-20 px-4 py-2 rounded-xl bg-primary text-(-foreground) font-bold shadow-lg flex items-center gap-2">
-                      <Zap className="w-4 h-4" /> {event.multiplier}x Bonus
+                    <div className="absolute top-4 right-4 z-20 px-4 py-2 rounded-xl bg-primary text-primary-foreground font-black shadow-lg flex items-center gap-1.5">
+                      <Zap className="w-4 h-4 fill-current" /> +{Math.round(Number(event.multiplier || 0) * 100)}% Bonus NC
                     </div>
                   </div>
 
@@ -222,8 +250,8 @@ export default async function EventsPage() {
                       <Calendar className="w-3 h-3" />{" "}
                       {formatDate(event.realEndAt || event.endAt)}
                     </span>
-                    <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10">
-                      {event.multiplier}x Multiplier
+                    <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 font-bold text-amber-400">
+                      +{Math.round(Number(event.multiplier || 0) * 100)}% NC
                     </span>
                   </div>
                 </div>

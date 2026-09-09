@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { 
   Search, 
   Filter, 
@@ -18,6 +19,7 @@ import { compressImageToWebP } from "@/lib/imageUtils";
 import { useSession } from "next-auth/react";
 
 export default function FleetStoreManager() {
+  const router = useRouter();
   const { data: session } = useSession();
   const [stores, setStores] = useState<any[]>([]);
   const [brands, setBrands] = useState<any[]>([]);
@@ -178,6 +180,7 @@ export default function FleetStoreManager() {
       showToast(isEditMode ? "Kendaraan berhasil diupdate!" : "Kendaraan berhasil ditambahkan!", "success");
       setIsModalOpen(false);
       fetchData();
+      router.refresh();
     } catch (error) {
       showToast("Gagal menyimpan kendaraan.", "error");
     } finally {
@@ -306,7 +309,7 @@ export default function FleetStoreManager() {
               <tbody className="divide-y divide-border">
                 {loading ? (
                   <tr>
-                    <td colSpan={5} className="px-8 py-20 text-center text-foreground/20 font-black uppercase tracking-[0.2em] italic">
+                    <td colSpan={5} className="px-8 py-20 text-center text-foreground/20 font-black uppercase tracking-[0.2em]">
                       <div className="flex justify-center items-center gap-3">
                         <Truck className="animate-pulse" size={24} />
                         Loading fleet store data...

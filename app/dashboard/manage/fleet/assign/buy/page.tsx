@@ -204,7 +204,7 @@ export default function BuyFleetPage() {
 
       <div className="glass-panel p-8 rounded-[2rem] border border-border min-h-[50vh]">
         {loading ? (
-          <div className="flex flex-col justify-center items-center h-full text-foreground/20 font-black uppercase tracking-[0.2em] italic py-32">
+          <div className="flex flex-col justify-center items-center h-full text-foreground/20 font-black uppercase tracking-[0.2em] py-32">
             <Truck className="animate-pulse mb-4" size={32} />
             Memuat Data...
           </div>
@@ -435,7 +435,7 @@ export default function BuyFleetPage() {
                                   </button>
                                 ))
                               ) : (
-                                <div className="text-center text-foreground/40 text-xs py-4 italic">
+                                <div className="text-center text-foreground/40 text-xs py-4">
                                   Driver tidak ditemukan
                                 </div>
                               )}

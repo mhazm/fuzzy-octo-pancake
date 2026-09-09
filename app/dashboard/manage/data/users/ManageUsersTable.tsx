@@ -157,7 +157,7 @@ export default function ManageUsersTable({
                             #{user.truckyId} • {user.role}
                           </p>
                           {/* Menampilkan Discord ID tipis untuk membantu audit */}
-                          <p className="text-[8px] font-mono text-foreground/10 uppercase mt-0.5 italic">
+                          <p className="text-[8px] font-mono text-foreground/10 uppercase mt-0.5">
                             {user.discordId}
                           </p>
                         </div>
@@ -220,7 +220,7 @@ export default function ManageUsersTable({
                 <tr>
                   <td
                     colSpan={4}
-                    className="px-8 py-20 text-center text-foreground/20 font-black uppercase tracking-[0.2em] italic"
+                    className="px-8 py-20 text-center text-foreground/20 font-black uppercase tracking-[0.2em]"
                   >
                     No drivers found
                   </td>

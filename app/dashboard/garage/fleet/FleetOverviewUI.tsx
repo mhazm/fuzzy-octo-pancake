@@ -40,7 +40,7 @@ export default function FleetOverviewUI({ session }: any) {
           <div className="w-10 h-10 rounded-full bg-accent-lilac flex items-center justify-center font-black text-white text-xl shadow-lg">
             N
           </div>
-          <h1 className="text-2xl font-black text-(-primary-foreground) uppercase italic tracking-tighter">
+          <h1 className="text-2xl font-black text-(-primary-foreground) uppercase tracking-tighter">
             Nismara
           </h1>
         </div>
@@ -68,9 +68,9 @@ export default function FleetOverviewUI({ session }: any) {
             <p className="text-sm text-foreground/40 font-medium">
               operational oversight
             </p>
-            <h1 className="text-2xl font-extrabold text-(-primary-foreground) uppercase italic leading-none">
+            <h1 className="text-2xl font-extrabold text-(-primary-foreground) uppercase leading-none">
               Good Morning{" "}
-              <span className="font-black not-italic">{userName}</span>
+              <span className="font-black">{userName}</span>
             </h1>
           </div>
 
@@ -83,7 +83,7 @@ export default function FleetOverviewUI({ session }: any) {
                 <p className="text-[10px] font-black text-foreground/40 uppercase">
                   NC Balance
                 </p>
-                <p className="text-lg font-black text-emerald-400 italic leading-none">
+                <p className="text-lg font-black text-emerald-400 leading-none">
                   N¢ 477.562
                 </p>
               </div>
@@ -124,15 +124,15 @@ export default function FleetOverviewUI({ session }: any) {
                 </div>
               </div>
 
-              {/* TEXT CONTENT (FONT BOLD ITALIC UNTUK IDENTITAS) */}
+              {/* TEXT CONTENT */}
               <div className="space-y-3">
                 <div className="inline-flex items-center gap-2 px-5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-[11px] font-black uppercase tracking-[0.3em] text-primary">
                   <Cpu size={14} className="animate-spin-slow" /> Hardware
                   Integration Phase
                 </div>
-                <h2 className="text-5xl md:text-6xl font-black text-(-primary-foreground) italic uppercase tracking-tighter leading-none pt-2">
+                <h2 className="text-5xl md:text-6xl font-black text-(-primary-foreground) uppercase tracking-tighter leading-none pt-2">
                   Maju Bersama:{" "}
-                  <span className="text-accent-sky italic">Fleet overhaul</span>
+                  <span className="text-accent-sky">Fleet overhaul</span>
                 </h2>
                 <p className="max-w-xl mx-auto text-base font-medium text-foreground/50 leading-relaxed pt-2">
                   Nismara Transport sedang merombak total sistem pemantauan
@@ -147,7 +147,7 @@ export default function FleetOverviewUI({ session }: any) {
                   <span className="text-[11px] font-black text-foreground/30 uppercase tracking-widest">
                     Calibration & Sync
                   </span>
-                  <span className="text-sm font-black text-accent-lilac italic tabular-nums">
+                  <span className="text-sm font-black text-accent-lilac tabular-nums">
                     75%
                   </span>
                 </div>

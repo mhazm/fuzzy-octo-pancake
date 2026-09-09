@@ -21,7 +21,10 @@ export default function KBCategoryClient({ categorySlug, session }: { categorySl
       const query = new URLSearchParams();
       if (searchQuery) query.append("search", searchQuery);
 
-      const res = await fetch(`/api/kb?${query.toString()}`);
+      const res = await fetch(`/api/kb?${query.toString()}`, {
+        cache: "no-store",
+        headers: { "Pragma": "no-cache", "Cache-Control": "no-cache" },
+      });
       const data = await res.json();
       
       if (data.success) {

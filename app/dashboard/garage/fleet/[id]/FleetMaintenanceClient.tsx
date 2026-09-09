@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
-import { AlertCircle, Wrench, Calendar, Receipt, Info } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { AlertCircle, Wrench, Calendar, Receipt, Info, Ticket, CheckCircle2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import VoucherPickerModal, { VoucherTriggerBar } from "@/components/voucher/VoucherPickerModal";
 
 interface FleetMaintenanceClientProps {
   fleetId: string;
@@ -32,11 +33,54 @@ export default function FleetMaintenanceClient({
   orderType,
 }: FleetMaintenanceClientProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isVoucherModalOpen, setIsVoucherModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [vouchers, setVouchers] = useState<any[]>([]);
+  const [selectedVoucherId, setSelectedVoucherId] = useState<string | null>(null);
+  const [isLoadingVouchers, setIsLoadingVouchers] = useState(false);
   const router = useRouter();
 
-  const totalPrice = totalComponentCost + adminFee;
+  // Fetch available maintenance vouchers when modal opens
+  useEffect(() => {
+    if (isModalOpen) {
+      setIsLoadingVouchers(true);
+      fetch("/api/vouchers/my?category=FLEET_MAINTENANCE&status=ACTIVE", {
+        cache: "no-store",
+        headers: { "Pragma": "no-cache", "Cache-Control": "no-cache" },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && Array.isArray(data.vouchers)) {
+            setVouchers(data.vouchers);
+          }
+        })
+        .catch(console.error)
+        .finally(() => setIsLoadingVouchers(false));
+    } else {
+      setSelectedVoucherId(null);
+      setError(null);
+    }
+  }, [isModalOpen]);
+
+  const selectedVoucher = vouchers.find((v) => v._id === selectedVoucherId);
+
+  // Calculate discount (applies strictly to totalComponentCost, Admin Fee remains intact)
+  let voucherDiscount = 0;
+  if (selectedVoucher) {
+    if (selectedVoucher.discountType === "percentage") {
+      voucherDiscount = Math.round(totalComponentCost * (selectedVoucher.discountValue / 100));
+      if (selectedVoucher.maxDiscount > 0) {
+        voucherDiscount = Math.min(voucherDiscount, selectedVoucher.maxDiscount);
+      }
+    } else if (selectedVoucher.discountType === "fixed") {
+      voucherDiscount = Math.min(totalComponentCost, selectedVoucher.discountValue);
+    }
+    voucherDiscount = Math.max(0, Math.min(totalComponentCost, voucherDiscount));
+  }
+
+  const finalComponentCost = Math.max(0, totalComponentCost - voucherDiscount);
+  const totalPrice = finalComponentCost + adminFee;
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
@@ -49,6 +93,7 @@ export default function FleetMaintenanceClient({
         body: JSON.stringify({
           fleetId,
           type: orderType,
+          voucherId: selectedVoucherId || undefined,
           needsEngine,
           needsTires,
           needsTransmission,
@@ -90,8 +135,8 @@ export default function FleetMaintenanceClient({
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
-          <div className="bg-card border border-border rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-border/50 bg-muted/30">
+          <div className="bg-card border border-border rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
+            <div className="p-6 border-b border-border/50 bg-muted/30 shrink-0">
               <h2 className="text-xl font-black uppercase italic tracking-wider flex items-center gap-2">
                 <AlertCircle
                   className={
@@ -104,7 +149,7 @@ export default function FleetMaintenanceClient({
               </h2>
             </div>
 
-            <div className="p-6 space-y-6">
+            <div className="p-6 space-y-6 overflow-y-auto flex-1">
               {error && (
                 <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-3 rounded-xl text-sm font-medium">
                   {error}
@@ -155,6 +200,29 @@ export default function FleetMaintenanceClient({
                 </div>
               </div>
 
+              {/* Voucher Selector Section */}
+              <div className="space-y-3">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <Ticket size={14} className="text-emerald-400" /> Kupon / Voucher Servis
+                  </span>
+                  {vouchers.length > 0 && (
+                    <span className="text-[10px] bg-emerald-500/20 text-emerald-400 font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">
+                      {vouchers.length} Tersedia
+                    </span>
+                  )}
+                </h3>
+
+                <VoucherTriggerBar
+                  vouchers={vouchers}
+                  selectedVoucher={selectedVoucher}
+                  isLoading={isLoadingVouchers}
+                  onOpenModal={() => setIsVoucherModalOpen(true)}
+                  onRemoveVoucher={() => setSelectedVoucherId(null)}
+                  accentColor="emerald"
+                />
+              </div>
+
               <div className="space-y-3">
                 <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                   <Receipt size={14} /> Rincian Biaya
@@ -168,8 +236,20 @@ export default function FleetMaintenanceClient({
                       {totalComponentCost.toLocaleString("id-ID")} NC
                     </span>
                   </div>
+
+                  {voucherDiscount > 0 && selectedVoucher && (
+                    <div className="flex justify-between text-sm text-emerald-400 font-medium">
+                      <span className="flex items-center gap-1">
+                        <Ticket size={13} /> Diskon Voucher ({selectedVoucher.discountType === "percentage" ? `${selectedVoucher.discountValue}%` : "Fixed"})
+                      </span>
+                      <span>
+                        -{voucherDiscount.toLocaleString("id-ID")} NC
+                      </span>
+                    </div>
+                  )}
+
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Biaya Admin</span>
+                    <span className="text-muted-foreground">Biaya Admin (Manager)</span>
                     <span className="font-medium">
                       {adminFee.toLocaleString("id-ID")} NC
                     </span>
@@ -195,7 +275,7 @@ export default function FleetMaintenanceClient({
               </div>
             </div>
 
-            <div className="p-4 border-t border-border/50 bg-muted/30 flex justify-end gap-3">
+            <div className="p-4 border-t border-border/50 bg-muted/30 flex justify-end gap-3 shrink-0">
               <button
                 onClick={() => setIsModalOpen(false)}
                 disabled={isSubmitting}
@@ -221,6 +301,17 @@ export default function FleetMaintenanceClient({
           </div>
         </div>
       )}
+
+      {/* Dedicated Voucher Picker Modal */}
+      <VoucherPickerModal
+        isOpen={isVoucherModalOpen}
+        onClose={() => setIsVoucherModalOpen(false)}
+        vouchers={vouchers}
+        selectedVoucherId={selectedVoucherId}
+        onSelectVoucher={(id) => setSelectedVoucherId(id)}
+        title="Pilih Kupon Servis"
+        categoryLabel="Servis & Perawatan"
+      />
     </>
   );
 }

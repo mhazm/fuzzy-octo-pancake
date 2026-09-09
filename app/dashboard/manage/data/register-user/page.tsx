@@ -29,7 +29,7 @@ export default async function ManageRegistrationPage() {
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-8 animate-in fade-in duration-700">
       <div className="space-y-1">
-        <h1 className="text-4xl font-black text-(-primary-foreground) tracking-tighter uppercase italic">
+        <h1 className="text-4xl font-black text-(-primary-foreground) tracking-tighter uppercase">
           Registration <span className="text-primary">Manager</span>
         </h1>
         <p className="text-foreground/40 font-bold uppercase text-[10px] tracking-[0.3em]">

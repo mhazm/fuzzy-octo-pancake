@@ -72,6 +72,8 @@ export default async function TransactionsPage() {
               <UserBadges 
                 role={session.user.role} 
                 isManager={session.user.role === "manager" || session.user.role === "admin"} 
+                isTopManager={session.user.topManager?.status === true && (!session.user.topManager?.expiredAt || new Date(session.user.topManager.expiredAt) > new Date())}
+                topManagerMonth={session.user.topManager?.month}
                 isBooster={session.user.isBooster} 
                 isNismaraPlus={session.user.nismaraplus?.status} 
                 nismaraPlusStartedAt={session.user.nismaraplus?.startedAt}

@@ -30,15 +30,37 @@ export async function generateMetadata({
     return { title: "Achievement Tidak Ditemukan" };
   }
 
+  const title = `${achievement.name}`;
+  const description =
+    achievement.description || "Lencana pencapaian resmi Nismara Transport.";
+  const imageUrl =
+    achievement.imageUrl || "https://images.nismara.my.id/227300_188.jpg";
+  const pageUrl = `https://transport.nismara.web.id/achievements/${slug}`;
+
   return {
-    title: `${achievement.name} - Achievement`,
-    description: achievement.description,
+    title: `${title}`,
+    description,
     openGraph: {
-      title: `${achievement.name} - Achievement`,
-      description: achievement.description,
+      title: `${title}`,
+      description,
+      url: pageUrl,
+      siteName: "Nismara Transport",
+      locale: "id_ID",
+      type: "website",
       images: [
-        achievement.imageUrl || "https://nismara.web.id/img/nismara_bg.png",
+        {
+          url: imageUrl,
+          width: 500,
+          height: 500,
+          alt: title,
+        },
       ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${title}`,
+      description,
+      images: [imageUrl],
     },
   };
 }
@@ -210,6 +232,7 @@ export default async function AchievementDetailPage({
                             p.userInfo.nismaraplus?.startedAt
                           }
                           truckyRank={p.userInfo.truckyRank}
+                          topManager={p.userInfo.topManager}
                           className="w-4 h-4"
                         />
                       </h3>

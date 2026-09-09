@@ -39,7 +39,23 @@ export const metadata: Metadata = {
       "Pelajari persyaratan dan cara mudah bergabung menjadi driver di ekosistem Nismara Transport.",
     type: "website",
     url: "https://transport.nismara.web.id/onboarding",
-    images: ["https://images.nismara.my.id/227300_188.jpg"], // Menggunakan gambar default project
+    siteName: "Nismara Transport",
+    locale: "id_ID",
+    images: [
+      {
+        url: "https://images.nismara.my.id/227300_188.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Bergabung dengan Nismara Transport",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Bergabung dengan Nismara Transport",
+    description:
+      "Pelajari persyaratan dan cara mudah bergabung menjadi driver di ekosistem Nismara Transport.",
+    images: ["https://images.nismara.my.id/227300_188.jpg"],
   },
 };
 export default async function OnboardingPage() {

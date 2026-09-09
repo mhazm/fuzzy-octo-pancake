@@ -111,13 +111,27 @@ export default async function ManagerServicePage() {
           {slots
             .filter((s: any) => s.game_id === "ets2")
             .map((slot: any) => {
-              const order = inService.find(
-                (o: any) => String(o.slotNumber) === String(slot.slotId),
-              );
+              const isSlotInUse = slot.status === "in_use";
+              const isSlotBroken = slot.status === "broken";
+              const order = isSlotInUse
+                ? inService.find(
+                    (o: any) =>
+                      String(o.slotNumber) === String(slot.slotId) ||
+                      (slot.currentOrderId &&
+                        String(o._id) === String(slot.currentOrderId)),
+                  )
+                : null;
+
               return (
                 <div
                   key={slot.slotId}
-                  className={`border rounded-2xl p-6 ${order ? "bg-card border-primary/50 shadow-[0_0_15px_rgba(var(--primary),0.1)]" : "bg-background/50 border-border/50 border-dashed opacity-70"}`}
+                  className={`border rounded-2xl p-6 ${
+                    isSlotInUse
+                      ? "bg-card border-primary/50 shadow-[0_0_15px_rgba(var(--primary),0.1)]"
+                      : isSlotBroken
+                      ? "bg-card/70 border-rose-500/30 opacity-90"
+                      : "bg-background/50 border-border/50 border-dashed opacity-70"
+                  }`}
                 >
                   <div className="flex justify-between items-center mb-4 pb-4 border-b border-border/50">
                     <h3 className="font-black uppercase tracking-widest text-lg flex items-center gap-2">
@@ -129,11 +143,11 @@ export default async function ManagerServicePage() {
                       )}
                     </h3>
                     <div className="flex flex-col items-end gap-1">
-                      {order ? (
+                      {isSlotInUse ? (
                         <span className="text-[10px] bg-emerald-500/10 text-emerald-500 px-2 py-1 rounded-full font-bold uppercase tracking-widest">
                           Terisi
                         </span>
-                      ) : slot.status === "broken" ? (
+                      ) : isSlotBroken ? (
                         <span className="text-[10px] bg-rose-500/10 text-rose-500 px-2 py-1 rounded-full font-bold uppercase tracking-widest">
                           Rusak
                         </span>
@@ -145,58 +159,70 @@ export default async function ManagerServicePage() {
                     </div>
                   </div>
 
-                  {order ? (
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
-                          <Truck size={24} className="text-primary" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <p className="font-bold text-lg leading-tight">
-                              {order.fleetInfo?.fleet_number}
-                            </p>
-                            {order.type === "replace" && (
-                              <span className="text-[10px] bg-red-500 text-white px-2 py-0.5 rounded-full font-black uppercase tracking-widest animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.5)]">
-                                Ganti Part
-                              </span>
-                            )}
+                  {isSlotInUse ? (
+                    order ? (
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
+                            <Truck size={24} className="text-primary" />
                           </div>
-                          <p className="text-xs text-muted-foreground uppercase tracking-widest">
-                            {order.driverInfo?.name}
-                          </p>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="font-bold text-lg leading-tight">
+                                {order.fleetInfo?.fleet_number || "Armada Servis"}
+                              </p>
+                              {order.type === "replace" && (
+                                <span className="text-[10px] bg-red-500 text-white px-2 py-0.5 rounded-full font-black uppercase tracking-widest animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.5)]">
+                                  Ganti Part
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground uppercase tracking-widest">
+                              {order.driverInfo?.name || "Driver"}
+                            </p>
+                          </div>
                         </div>
-                      </div>
 
-                      <div className="bg-background/80 p-3 rounded-xl border border-border/50 space-y-2">
-                        <div className="flex justify-between text-xs">
-                          <span className="text-muted-foreground uppercase font-bold">
-                            Durasi Servis
-                          </span>
-                          <span className="font-black">
-                            {order.serviceDuration} Hari
-                          </span>
-                        </div>
-                        <div className="flex justify-between text-xs">
-                          <span className="text-muted-foreground uppercase font-bold">
-                            Selesai Pada
-                          </span>
-                          <span className="font-black text-amber-500 text-right">
-                            {new Date(
-                              order.maintenanceEndAt,
-                            ).toLocaleString("id-ID", { timeZone: "Asia/Jakarta", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })} WIB
-                          </span>
+                        <div className="bg-background/80 p-3 rounded-xl border border-border/50 space-y-2">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-muted-foreground uppercase font-bold">
+                              Durasi Servis
+                            </span>
+                            <span className="font-black">
+                              {order.serviceDuration} Hari
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-muted-foreground uppercase font-bold">
+                              Selesai Pada
+                            </span>
+                            <span className="font-black text-amber-500 text-right">
+                              {order.maintenanceEndAt
+                                ? `${new Date(order.maintenanceEndAt).toLocaleString("id-ID", { timeZone: "Asia/Jakarta", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })} WIB`
+                                : "-"}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="py-8 text-center text-muted-foreground">
+                        <Truck size={32} className="mx-auto mb-3 text-primary opacity-60 animate-pulse" />
+                        <p className="text-xs font-bold uppercase tracking-widest text-foreground">
+                          Unit Dalam Servis
+                        </p>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">
+                          Slot Terpakai
+                        </p>
+                      </div>
+                    )
                   ) : (
                     <div className="py-8 text-center text-muted-foreground">
                       <Wrench
                         size={32}
-                        className={`mx-auto mb-3 opacity-20 ${slot.status === "broken" ? "text-rose-500" : ""}`}
+                        className={`mx-auto mb-3 opacity-20 ${isSlotBroken ? "text-rose-500" : ""}`}
                       />
                       <p className="text-xs font-bold uppercase tracking-widest">
-                        {slot.status === "broken"
+                        {isSlotBroken
                           ? "Menunggu Perbaikan"
                           : "Siap Menerima Kendaraan"}
                       </p>
@@ -237,13 +263,27 @@ export default async function ManagerServicePage() {
           {slots
             .filter((s: any) => s.game_id === "ats")
             .map((slot: any) => {
-              const order = inService.find(
-                (o: any) => String(o.slotNumber) === String(slot.slotId),
-              );
+              const isSlotInUse = slot.status === "in_use";
+              const isSlotBroken = slot.status === "broken";
+              const order = isSlotInUse
+                ? inService.find(
+                    (o: any) =>
+                      String(o.slotNumber) === String(slot.slotId) ||
+                      (slot.currentOrderId &&
+                        String(o._id) === String(slot.currentOrderId)),
+                  )
+                : null;
+
               return (
                 <div
                   key={slot.slotId}
-                  className={`border rounded-2xl p-6 ${order ? "bg-card border-primary/50 shadow-[0_0_15px_rgba(var(--primary),0.1)]" : "bg-background/50 border-border/50 border-dashed opacity-70"}`}
+                  className={`border rounded-2xl p-6 ${
+                    isSlotInUse
+                      ? "bg-card border-primary/50 shadow-[0_0_15px_rgba(var(--primary),0.1)]"
+                      : isSlotBroken
+                      ? "bg-card/70 border-rose-500/30 opacity-90"
+                      : "bg-background/50 border-border/50 border-dashed opacity-70"
+                  }`}
                 >
                   <div className="flex justify-between items-center mb-4 pb-4 border-b border-border/50">
                     <h3 className="font-black uppercase tracking-widest text-lg flex items-center gap-2">
@@ -255,11 +295,11 @@ export default async function ManagerServicePage() {
                       )}
                     </h3>
                     <div className="flex flex-col items-end gap-1">
-                      {order ? (
+                      {isSlotInUse ? (
                         <span className="text-[10px] bg-emerald-500/10 text-emerald-500 px-2 py-1 rounded-full font-bold uppercase tracking-widest">
                           Terisi
                         </span>
-                      ) : slot.status === "broken" ? (
+                      ) : isSlotBroken ? (
                         <span className="text-[10px] bg-rose-500/10 text-rose-500 px-2 py-1 rounded-full font-bold uppercase tracking-widest">
                           Rusak
                         </span>
@@ -271,58 +311,70 @@ export default async function ManagerServicePage() {
                     </div>
                   </div>
 
-                  {order ? (
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
-                          <Truck size={24} className="text-primary" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <p className="font-bold text-lg leading-tight">
-                              {order.fleetInfo?.fleet_number}
-                            </p>
-                            {order.type === "replace" && (
-                              <span className="text-[10px] bg-red-500 text-white px-2 py-0.5 rounded-full font-black uppercase tracking-widest animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.5)]">
-                                Ganti Part
-                              </span>
-                            )}
+                  {isSlotInUse ? (
+                    order ? (
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
+                            <Truck size={24} className="text-primary" />
                           </div>
-                          <p className="text-xs text-muted-foreground uppercase tracking-widest">
-                            {order.driverInfo?.name}
-                          </p>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="font-bold text-lg leading-tight">
+                                {order.fleetInfo?.fleet_number || "Armada Servis"}
+                              </p>
+                              {order.type === "replace" && (
+                                <span className="text-[10px] bg-red-500 text-white px-2 py-0.5 rounded-full font-black uppercase tracking-widest animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.5)]">
+                                  Ganti Part
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground uppercase tracking-widest">
+                              {order.driverInfo?.name || "Driver"}
+                            </p>
+                          </div>
                         </div>
-                      </div>
 
-                      <div className="bg-background/80 p-3 rounded-xl border border-border/50 space-y-2">
-                        <div className="flex justify-between text-xs">
-                          <span className="text-muted-foreground uppercase font-bold">
-                            Durasi Servis
-                          </span>
-                          <span className="font-black">
-                            {order.serviceDuration} Hari
-                          </span>
-                        </div>
-                        <div className="flex justify-between text-xs">
-                          <span className="text-muted-foreground uppercase font-bold">
-                            Selesai Pada
-                          </span>
-                          <span className="font-black text-amber-500 text-right">
-                            {new Date(
-                              order.maintenanceEndAt,
-                            ).toLocaleString("id-ID", { timeZone: "Asia/Jakarta", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })} WIB
-                          </span>
+                        <div className="bg-background/80 p-3 rounded-xl border border-border/50 space-y-2">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-muted-foreground uppercase font-bold">
+                              Durasi Servis
+                            </span>
+                            <span className="font-black">
+                              {order.serviceDuration} Hari
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-muted-foreground uppercase font-bold">
+                              Selesai Pada
+                            </span>
+                            <span className="font-black text-amber-500 text-right">
+                              {order.maintenanceEndAt
+                                ? `${new Date(order.maintenanceEndAt).toLocaleString("id-ID", { timeZone: "Asia/Jakarta", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })} WIB`
+                                : "-"}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="py-8 text-center text-muted-foreground">
+                        <Truck size={32} className="mx-auto mb-3 text-primary opacity-60 animate-pulse" />
+                        <p className="text-xs font-bold uppercase tracking-widest text-foreground">
+                          Unit Dalam Servis
+                        </p>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">
+                          Slot Terpakai
+                        </p>
+                      </div>
+                    )
                   ) : (
                     <div className="py-8 text-center text-muted-foreground">
                       <Wrench
                         size={32}
-                        className={`mx-auto mb-3 opacity-20 ${slot.status === "broken" ? "text-rose-500" : ""}`}
+                        className={`mx-auto mb-3 opacity-20 ${isSlotBroken ? "text-rose-500" : ""}`}
                       />
                       <p className="text-xs font-bold uppercase tracking-widest">
-                        {slot.status === "broken"
+                        {isSlotBroken
                           ? "Menunggu Perbaikan"
                           : "Siap Menerima Kendaraan"}
                       </p>
@@ -382,11 +434,6 @@ export default async function ManagerServicePage() {
                           </span>
                         )}
                       </h3>
-                      {order.type === "replace" && (
-                        <span className="text-[10px] bg-red-500/20 text-red-500 px-1.5 py-0.5 rounded-sm font-black uppercase ml-1">
-                          Replace
-                        </span>
-                      )}
                     </div>
                     <p className="text-xs text-muted-foreground uppercase tracking-widest">
                       {order.driverInfo?.name} • Durasi {order.serviceDuration}{" "}

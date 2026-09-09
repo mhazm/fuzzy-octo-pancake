@@ -161,8 +161,15 @@ export default function ManageUserUI({
     setIsResetModalOpen(false);
   };
 
-  const joinDate = driverLink?.createdAt
-    ? new Date(driverLink.createdAt).toLocaleDateString("id-ID")
+  const rawJoinDate =
+    driverLink?.createdAt ||
+    (typeof driverLink?._id === "string" && driverLink._id.length === 24
+      ? new Date(parseInt(driverLink._id.substring(0, 8), 16) * 1000)
+      : null);
+  const joinDate = rawJoinDate
+    ? new Date(rawJoinDate).toLocaleDateString("id-ID", {
+        timeZone: "Asia/Jakarta",
+      })
     : "-";
 
   const StatCard = ({ icon: Icon, label, value, sub, color = "text-white" }: any) => (
@@ -517,7 +524,7 @@ export default function ManageUserUI({
             ))}
 
             {leaveHistory.length === 0 && (
-              <div className="p-10 text-center text-(-primary-foreground)/10 font-black uppercase tracking-widest italic text-xs">
+              <div className="p-10 text-center text-(-primary-foreground)/10 font-black uppercase tracking-widest text-xs">
                 No absence records found
               </div>
             )}
@@ -538,9 +545,9 @@ export default function ManageUserUI({
                   Penalty System
                 </h3>
               </div>
-              <p className="text-4xl font-black text-(-primary-foreground) italic tabular-nums">
+              <p className="text-4xl font-black text-(-primary-foreground) tabular-nums">
                 {currentPoints}
-                <span className="text-sm text-(-primary-foreground)/20 not-italic ml-1">
+                <span className="text-sm text-(-primary-foreground)/20 ml-1">
                   /50
                 </span>
               </p>
@@ -601,7 +608,7 @@ export default function ManageUserUI({
                         </p>
                       </td>
                       <td
-                        className={`px-8 py-5 text-right font-black tabular-nums italic text-lg flex items-center justify-end gap-2 ${p.type === "add" ? "text-red-500" : "text-emerald-500"}`}
+                        className={`px-8 py-5 text-right font-black tabular-nums text-lg flex items-center justify-end gap-2 ${p.type === "add" ? "text-red-500" : "text-emerald-500"}`}
                       >
                         {p.type === "add" ? (
                           <TrendingUp size={16} />
@@ -615,7 +622,7 @@ export default function ManageUserUI({
                   ))}
                   {paginatedPointHistory.length === 0 && (
                     <tr>
-                      <td colSpan={2} className="px-8 py-10 text-center text-(-primary-foreground)/10 font-black uppercase tracking-widest italic text-xs">
+                      <td colSpan={2} className="px-8 py-10 text-center text-(-primary-foreground)/10 font-black uppercase tracking-widest text-xs">
                         No infraction records found
                       </td>
                     </tr>
@@ -716,7 +723,7 @@ export default function ManageUserUI({
                 <div className="p-2 bg-accent-lilac/10 rounded-lg text-accent-lilac">
                   <Calendar size={20} />
                 </div>
-                <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">
+                <h3 className="text-xl font-black text-white uppercase tracking-tighter">
                   Manage Leave
                 </h3>
               </div>
@@ -783,7 +790,7 @@ export default function ManageUserUI({
                 >
                   <CheckCircle2 size={18} /> Ajukan Cuti
                 </button>
-                <p className="text-center mt-4 text-[9px] font-bold text-gray-500 uppercase tracking-widest italic">
+                <p className="text-center mt-4 text-[9px] font-bold text-gray-500 uppercase tracking-widest">
                   Data ini akan langsung diproses oleh sistem Nismara.
                 </p>
               </div>
@@ -800,7 +807,7 @@ export default function ManageUserUI({
                 <div className="p-2 bg-red-500/10 rounded-lg text-red-500">
                   <ImageIcon size={20} />
                 </div>
-                <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">
+                <h3 className="text-xl font-black text-white uppercase tracking-tighter">
                   Manage Gallery Ban
                 </h3>
               </div>
@@ -890,7 +897,7 @@ export default function ManageUserUI({
                 <div className="p-2 bg-orange-500/10 rounded-lg text-orange-500">
                   <Trash2 size={20} />
                 </div>
-                <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">
+                <h3 className="text-xl font-black text-white uppercase tracking-tighter">
                   Reset Profile Images
                 </h3>
               </div>

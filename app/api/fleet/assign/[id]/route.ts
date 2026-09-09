@@ -4,8 +4,13 @@ import Fleet from "@/lib/models/Fleet";
 import "@/lib/models/FleetStore";
 import "@/lib/models/User";
 import "@/lib/models/FleetBrand";
+import { revalidatePath } from "next/cache";
 
 import dbConnect from "@/lib/mongoose";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -41,6 +46,15 @@ export async function PATCH(
         { error: "Fleet tidak ditemukan" },
         { status: 404 },
       );
+    }
+
+    try {
+      revalidatePath("/dashboard/garage");
+      revalidatePath("/dashboard/garage/fleet");
+      revalidatePath("/dashboard/manage/fleet/assign");
+      revalidatePath("/dashboard/manage/fleet/orderlist");
+    } catch (e) {
+      console.error("Failed to revalidate fleet assign paths", e);
     }
 
     return NextResponse.json({ success: true, data: updatedFleet });

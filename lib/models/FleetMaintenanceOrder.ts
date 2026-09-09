@@ -25,6 +25,8 @@ const fleetMaintenanceOrderSchema = new mongoose.Schema(
     },
     basePrice: { type: Number, required: true },
     adminFee: { type: Number, required: true, default: 500 },
+    voucherId: { type: mongoose.Schema.Types.ObjectId, ref: "UserVoucher", default: null },
+    voucherDiscount: { type: Number, default: 0 },
     totalPrice: { type: Number, required: true },
     serviceDuration: { type: Number, required: true }, // in days
     slotNumber: { type: String, default: null }, // e.g. "ets2-vip-1", "ets2-reg-2"

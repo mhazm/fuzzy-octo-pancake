@@ -207,6 +207,7 @@ export default function FeedsClient({
                           isNismaraPlus={post.user.isNismaraPlus} 
                           nismaraPlusStartedAt={post.user.nismaraPlusStartedAt}
                           truckyRank={post.user.truckyRank}
+                          topManager={post.user.topManager}
                         />
                       )}
                     </div>

@@ -198,12 +198,47 @@ export default function JobList({
                       </td>
 
                       <td className="px-6 py-4 text-right">
-                        <div className="font-bold text-yellow-500 text-sm">
-                          +{job.nc?.total?.toLocaleString("id-ID") || 0} NC
-                        </div>
-                        <div className="text-[10px] text-gray-500 font-mono mt-0.5">
-                          Tc {job.revenue?.toLocaleString("id-ID") || 0}
-                        </div>
+                        {(() => {
+                          const netRevenue =
+                            typeof job.revenue === "number"
+                              ? job.revenue
+                              : (job.nc?.total ?? 0);
+                          const grossNC =
+                            typeof job.nc === "object" && job.nc !== null
+                              ? (job.nc.total ?? 0)
+                              : typeof job.nc === "number"
+                                ? job.nc
+                                : 0;
+                          const isPositive = netRevenue > 0;
+                          const isNegative = netRevenue < 0;
+
+                          return (
+                            <div>
+                              <div
+                                className={`font-bold text-sm ${
+                                  isNegative
+                                    ? "text-red-400"
+                                    : isPositive
+                                      ? "text-yellow-500"
+                                      : "text-muted-foreground"
+                                }`}
+                              >
+                                {isPositive ? "+" : ""}
+                                {netRevenue.toLocaleString("id-ID")} NC
+                              </div>
+                              <div className="text-[10px] text-gray-500 font-mono mt-0.5">
+                                {grossNC !== netRevenue ? (
+                                  <span>
+                                    Kotor: {grossNC > 0 ? "+" : ""}
+                                    {grossNC.toLocaleString("id-ID")} NC
+                                  </span>
+                                ) : (
+                                  <span>Pendapatan Bersih</span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </td>
                     </tr>
                   );

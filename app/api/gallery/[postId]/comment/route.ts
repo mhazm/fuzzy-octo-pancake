@@ -25,7 +25,7 @@ export async function GET(
     const userIds = [...new Set(comments.map(c => c.userId))];
     const users = await db.collection("users")
       .find({ discordId: { $in: userIds } })
-      .project({ discordId: 1, name: 1, image: 1, avatarUrl: 1, truckyId: 1, truckyRank: 1, nismaraplus: 1, isBooster: 1, discordRole: 1 })
+      .project({ discordId: 1, name: 1, image: 1, avatarUrl: 1, truckyId: 1, truckyRank: 1, nismaraplus: 1, isBooster: 1, discordRole: 1, topManager: 1 })
       .toArray();
 
     const userMap = users.reduce((acc, user) => {
@@ -50,7 +50,8 @@ export async function GET(
           isNismaraPlus: u.isNismaraPlus,
           isBooster: u.isBooster,
           isManager: u.isManager,
-          truckyRank: u.truckyRank
+          truckyRank: u.truckyRank,
+          topManager: u.topManager
         }
       };
     });
@@ -112,7 +113,8 @@ export async function POST(
         isNismaraPlus: user.nismaraplus?.status === true,
         isBooster: user.isBooster === true,
         isManager: user.role === "manager" || user.role === "admin",
-        truckyRank: user.truckyRank
+        truckyRank: user.truckyRank,
+        topManager: user.topManager
       }
     };
 

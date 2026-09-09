@@ -92,7 +92,7 @@ export default function CurrencyDataUI({
                       <p className="font-black text-(-primary-foreground) uppercase tracking-tight flex items-center gap-2">
                         {cur.name}
                         {cur.isOrphaned && (
-                          <span className="text-[8px] bg-red-600 text-white px-2 py-0.5 rounded italic font-black">
+                          <span className="text-[8px] bg-red-600 text-white px-2 py-0.5 rounded font-black">
                             ORPHANED
                           </span>
                         )}
@@ -149,7 +149,7 @@ export default function CurrencyDataUI({
         </table>
 
         {filtered.length === 0 && (
-          <div className="py-20 text-center text-(-primary-foreground)/10 font-black uppercase tracking-widest italic">
+          <div className="py-20 text-center text-(-primary-foreground)/10 font-black uppercase tracking-widest">
             No economy records found
           </div>
         )}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   Search,
   Filter,
@@ -18,6 +19,7 @@ import {
 import Link from "next/link";
 
 export default function FleetAssignManager() {
+  const router = useRouter();
   const [fleets, setFleets] = useState<any[]>([]);
   const [stores, setStores] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
@@ -73,9 +75,9 @@ export default function FleetAssignManager() {
   const fetchData = async () => {
     try {
       const [resFleets, resStores, resUsers] = await Promise.all([
-        fetch("/api/fleet/assign", { cache: "no-store" }),
-        fetch("/api/fleet/store", { cache: "no-store" }),
-        fetch("/api/users"),
+        fetch("/api/fleet/assign", { cache: "no-store", headers: { "Pragma": "no-cache", "Cache-Control": "no-cache" } }),
+        fetch("/api/fleet/store", { cache: "no-store", headers: { "Pragma": "no-cache", "Cache-Control": "no-cache" } }),
+        fetch("/api/users", { cache: "no-store", headers: { "Pragma": "no-cache", "Cache-Control": "no-cache" } }),
       ]);
       const dataFleets = await resFleets.json();
       const dataStores = await resStores.json();
@@ -145,6 +147,7 @@ export default function FleetAssignManager() {
       showToast("Fleet berhasil diupdate!", "success");
       setIsModalOpen(false);
       fetchData();
+      router.refresh();
     } catch (error) {
       showToast("Gagal menyimpan fleet.", "error");
     } finally {
@@ -277,7 +280,7 @@ export default function FleetAssignManager() {
                   <tr>
                     <td
                       colSpan={5}
-                      className="px-8 py-20 text-center text-foreground/20 font-black uppercase tracking-[0.2em] italic"
+                      className="px-8 py-20 text-center text-foreground/20 font-black uppercase tracking-[0.2em]"
                     >
                       <div className="flex justify-center items-center gap-3">
                         <Truck className="animate-pulse" size={24} />
@@ -346,7 +349,7 @@ export default function FleetAssignManager() {
                             </span>
                           </div>
                         ) : (
-                          <span className="text-xs font-bold text-foreground/20 uppercase tracking-wider italic">
+                          <span className="text-xs font-bold text-foreground/20 uppercase tracking-wider">
                             Unassigned
                           </span>
                         )}
@@ -397,7 +400,7 @@ export default function FleetAssignManager() {
                   <tr>
                     <td
                       colSpan={5}
-                      className="px-8 py-20 text-center text-foreground/20 font-black uppercase tracking-[0.2em] italic"
+                      className="px-8 py-20 text-center text-foreground/20 font-black uppercase tracking-[0.2em]"
                     >
                       No fleets found
                     </td>
@@ -602,7 +605,7 @@ export default function FleetAssignManager() {
                               </button>
                             ))
                           ) : (
-                            <div className="text-center text-foreground/40 text-xs py-4 italic">
+                            <div className="text-center text-foreground/40 text-xs py-4">
                               Member tidak ditemukan
                             </div>
                           )}

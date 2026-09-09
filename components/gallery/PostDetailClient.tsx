@@ -23,6 +23,7 @@ export default function PostDetailClient({
   profileNismaraPlusStartedAt,
   profileIsBooster,
   profileRole,
+  profileTopManager,
   isManager,
 }: {
   post: GalleryPost;
@@ -36,6 +37,7 @@ export default function PostDetailClient({
   profileNismaraPlusStartedAt?: string | null;
   profileIsBooster?: boolean;
   profileRole?: string;
+  profileTopManager?: any;
   isManager?: boolean;
 }) {
   const [comments, setComments] = useState<UserComment[]>(initialComments);
@@ -278,6 +280,7 @@ export default function PostDetailClient({
                   isNismaraPlus={profileIsNismaraPlus} 
                   nismaraPlusStartedAt={profileNismaraPlusStartedAt}
                   truckyRank={undefined}
+                  topManager={profileTopManager || (post as any).user?.topManager}
                 />
               </div>
               <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">{getRoleLabel()}</p>
@@ -318,6 +321,7 @@ export default function PostDetailClient({
                     isNismaraPlus={profileIsNismaraPlus} 
                     nismaraPlusStartedAt={profileNismaraPlusStartedAt}
                     truckyRank={undefined}
+                    topManager={profileTopManager || (post as any).user?.topManager}
                   />
                 </div>
                 <span className="text-sm leading-relaxed inline-block">{post.caption}</span>
@@ -368,6 +372,7 @@ export default function PostDetailClient({
                       isNismaraPlus={comment.user.isNismaraPlus} 
                       nismaraPlusStartedAt={comment.user.nismaraPlusStartedAt}
                       truckyRank={comment.user.truckyRank}
+                      topManager={comment.user.topManager}
                     />
                   </div>
                   {editingCommentId === comment._id ? (
@@ -469,6 +474,7 @@ export default function PostDetailClient({
                             isNismaraPlus={reply.user.isNismaraPlus} 
                             nismaraPlusStartedAt={reply.user.nismaraPlusStartedAt}
                             truckyRank={reply.user.truckyRank}
+                            topManager={reply.user.topManager}
                             className="w-3.5 h-3.5"
                           />
                         </div>

@@ -12,9 +12,33 @@ import {
   EyeOff,
 } from "lucide-react";
 
-export const metadata = {
-  title: "Cookie Policy",
-  description: "Kebijakan penggunaan cookies di Nismara Transport.",
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Kebijakan Cookie & Privasi",
+  description: "Kebijakan penggunaan cookies, penyimpanan sesi, dan perlindungan privasi data di platform Nismara Transport.",
+  openGraph: {
+    title: "Kebijakan Cookie & Privasi",
+    description: "Kebijakan penggunaan cookies, penyimpanan sesi, dan perlindungan privasi data di platform Nismara Transport.",
+    url: "https://transport.nismara.web.id/cookies",
+    siteName: "Nismara Transport",
+    locale: "id_ID",
+    type: "website",
+    images: [
+      {
+        url: "https://images.nismara.my.id/227300_188.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Kebijakan Cookie Nismara Transport",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Kebijakan Cookie & Privasi",
+    description: "Kebijakan penggunaan cookies, penyimpanan sesi, dan perlindungan privasi data di platform Nismara Transport.",
+    images: ["https://images.nismara.my.id/227300_188.jpg"],
+  },
 };
 
 export const revalidate = 86400;

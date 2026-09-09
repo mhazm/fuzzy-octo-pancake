@@ -82,6 +82,17 @@ export default function ManageEventsHub() {
       hoverBorder: "group-hover:border-rose-500/50",
       glow: "group-hover:bg-rose-500/20",
     },
+    {
+      name: "Manage Giveaways",
+      desc: "Kelola giveaway Nismara Transport.",
+      icon: Gift,
+      href: "/dashboard/manage/giveaways",
+      color: "text-rose-500",
+      bg: "bg-rose-500/10",
+      border: "border-rose-500/20",
+      hoverBorder: "group-hover:border-rose-500/50",
+      glow: "group-hover:bg-rose-500/20",
+    },
   ];
 
   return (

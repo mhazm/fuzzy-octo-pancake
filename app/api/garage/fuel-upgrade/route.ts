@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
+import { revalidatePath } from "next/cache";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 const UPGRADE_COST = 500;
 const CAPACITY_INCREASE = 1000;
@@ -84,6 +89,14 @@ export async function POST(request: Request) {
         }
       }
     );
+
+    try {
+      revalidatePath("/dashboard/garage");
+      revalidatePath("/dashboard/fuel-market");
+      revalidatePath("/dashboard/currency");
+    } catch (e) {
+      console.error("Failed to revalidate fuel-upgrade paths", e);
+    }
 
     return NextResponse.json({ success: true, message: `Fuel tank berhasil di-upgrade ke Level ${newLevel}` });
 

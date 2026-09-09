@@ -16,13 +16,32 @@ export default async function ManageContractPage() {
 
   const client = await clientPromise;
   const db = client.db();
+  const guildId = process.env.DISCORD_GUILD_ID;
+  const now = new Date();
 
-  // Ambil Kontrak Berjalan dan Riwayat
-  const [ongoingContracts, contractHistory] = await Promise.all([
-    db.collection("contracts").find({ isActive: true }).toArray(),
+  // Ambil Kontrak Berjalan, Terjadwal, dan Riwayat
+  const [ongoingContracts, scheduledContracts, contractHistory] = await Promise.all([
+    db.collection("contracts").find({ guildId, isActive: true }).toArray(),
     db
       .collection("contracts")
-      .find({ isActive: false })
+      .find({
+        guildId,
+        isActive: false,
+        isScheduled: true,
+        startDate: { $gt: now },
+      })
+      .sort({ startDate: 1 })
+      .toArray(),
+    db
+      .collection("contracts")
+      .find({
+        guildId,
+        isActive: false,
+        $or: [
+          { isScheduled: { $ne: true } },
+          { startDate: { $lte: now } },
+        ],
+      })
       .sort({ endAt: -1 })
       .toArray(),
   ]);
@@ -32,6 +51,7 @@ export default async function ManageContractPage() {
   return (
     <ContractManageUI
       ongoing={serialize(ongoingContracts)}
+      scheduled={serialize(scheduledContracts)}
       history={serialize(contractHistory)}
       manager={session.user}
     />

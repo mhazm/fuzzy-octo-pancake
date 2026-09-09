@@ -30,7 +30,7 @@ export default function DriverGuidePage() {
             <div className="p-2 bg-accent-lilac/10 rounded-lg text-accent-lilac">
               <BookOpen size={24} />
             </div>
-            <h1 className="text-4xl font-black text-(-primary-foreground) tracking-tighter uppercase italic">
+            <h1 className="text-4xl font-black text-(-primary-foreground) tracking-tighter uppercase">
               Driver Guide
             </h1>
           </div>
@@ -51,66 +51,44 @@ export default function DriverGuidePage() {
       </div>
 
       {/* PDF READER CONTAINER */}
-      <div className="relative group bg-card border border-border rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col h-[80vh]">
+      <div className="relative group bg-card border border-border rounded-[2.5rem] overflow-hidden shadow-2xl flex, flex-col h-[80vh]">
         {/* TOOLBAR ATAS */}
         <div className="bg-white/5 border-b border-border px-8 py-4 flex justify-between items-center backdrop-blur-md">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 text-accent-lilac">
               <FileText size={18} />
               <span className="text-[10px] font-black uppercase tracking-widest">
-                Manual_Driver_Nismara.pdf
+                Viewer Mode
               </span>
             </div>
           </div>
-
-          <div className="hidden md:flex items-center gap-6">
-            <div className="flex items-center gap-2 p-1 bg-black/20 rounded-xl border border-white/5">
-              <button className="p-2 hover:bg-white/5 rounded-lg text-foreground/40 hover:text-white transition-all">
-                <ZoomOut size={16} />
-              </button>
-              <span className="text-[10px] font-black text-foreground/60 w-12 text-center">
-                100%
-              </span>
-              <button className="p-2 hover:bg-white/5 rounded-lg text-foreground/40 hover:text-white transition-all">
-                <ZoomIn size={16} />
-              </button>
-            </div>
-            <div className="h-4 w-px bg-border" />
-            <button className="text-foreground/40 hover:text-white transition-all">
-              <Printer size={18} />
-            </button>
-          </div>
+          <span className="text-[10px] font-mono text-foreground/40 uppercase tracking-widest">
+            Nismara SOP Engine v2.4
+          </span>
         </div>
 
-        {/* VIEW AREA */}
-        <div className="flex-1 bg-[#1a1a1a] relative overflow-hidden">
-          {/* Menggunakan Iframe Google Preview karena paling stabil 
-              untuk file yang di-host di Google Drive (Menghindari CORS Error)
-           */}
+        {/* EMBED VIEWER CONTAINER */}
+        <div className="flex-1 w-full bg-black/40 relative">
           <iframe
-            src={pdfUrl}
+            src={`https://docs.google.com/viewer?url=${encodeURIComponent(downloadUrl)}&embedded=true`}
             className="w-full h-full border-none"
-            allow="autoplay"
+            title="Driver Guide Document"
           />
-
           {/* OVERLAY UNTUK KESAN PREMIUM */}
           <div className="absolute inset-0 pointer-events-none border-[12px] border-card/10 rounded-[2.5rem]" />
         </div>
 
-        {/* FOOTER NAVIGASI (SIMULASI) */}
-        <div className="bg-card border-t border-border px-8 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <ShieldCheck size={14} className="text-emerald-500" />
-            <span className="text-[9px] font-black text-foreground/30 uppercase tracking-[0.2em]">
-              Verified Documentation
-            </span>
+        {/* TOOLBAR BAWAH */}
+        <div className="bg-white/5 border-t border-border px-8 py-4 flex justify-between items-center backdrop-blur-md">
+          <div className="flex items-center gap-2 text-[10px] font-bold text-foreground/40 uppercase tracking-widest">
+            <ShieldCheck size={14} className="text-emerald-400" /> Dokumen Resmi
+            Nismara Transport
           </div>
-
           <div className="flex items-center gap-4">
             <button className="p-2 bg-white/5 border border-border rounded-xl text-foreground/20 cursor-not-allowed">
               <ChevronLeft size={20} />
             </button>
-            <span className="text-xs font-black text-(-primary-foreground) italic tabular-nums">
+            <span className="text-xs font-black text-(-primary-foreground) tabular-nums">
               PAGES CONTROLLED BY GOOGLE VIEWER
             </span>
             <button className="p-2 bg-white/5 border border-border rounded-xl text-foreground/20 cursor-not-allowed">
@@ -126,7 +104,7 @@ export default function DriverGuidePage() {
           <h4 className="text-[10px] font-black text-accent-lilac uppercase tracking-widest mb-2">
             Penting
           </h4>
-          <p className="text-sm font-medium text-foreground/60 leading-relaxed italic">
+          <p className="text-sm font-medium text-foreground/60 leading-relaxed">
             "Bacalah panduan ini sebelum melakukan hauling perdana Anda untuk
             memahami sistem NC dan Poin Penalti."
           </p>
@@ -135,7 +113,7 @@ export default function DriverGuidePage() {
           <h4 className="text-[10px] font-black text-foreground/30 uppercase tracking-widest mb-2">
             Update Terakhir
           </h4>
-          <p className="text-xl font-black text-(-primary-foreground) italic uppercase">
+          <p className="text-xl font-black text-(-primary-foreground) uppercase">
             07 MEI 2026
           </p>
         </div>
@@ -143,7 +121,7 @@ export default function DriverGuidePage() {
           <h4 className="text-[10px] font-black text-foreground/30 uppercase tracking-widest mb-2">
             Format File
           </h4>
-          <p className="text-xl font-black text-(-primary-foreground) italic uppercase">
+          <p className="text-xl font-black text-(-primary-foreground) uppercase">
             Digital PDF
           </p>
         </div>

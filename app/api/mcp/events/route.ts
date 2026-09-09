@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import type { CalendarEvent } from "@/components/HomeEventsCalendar";
+import { slugify } from "@/lib/utils";
 
 export async function GET() {
   try {
@@ -33,14 +34,19 @@ export async function GET() {
 
     // 2. SPECIAL CONTRACTS
     contracts.forEach((c) => {
-      if (c.endAt) {
+      const title = c.contractName || c.title || "Special Contract";
+      const slug = c.slug || slugify(title);
+      const startDate = c.startDate || c.startAt || c.setAt || c.createdAt || c.endAt;
+      const endDate = c.endAt || c.startDate || c.setAt || c.createdAt;
+
+      if (startDate || endDate) {
         events.push({
           id: c._id.toString(),
-          title: c.title || "Special Contract",
+          title,
           type: "contract",
-          date: new Date(c.startAt || c.endAt),
-          endDate: new Date(c.endAt),
-          href: `/special-contracts/${c.slug}`,
+          date: new Date(startDate || endDate),
+          endDate: endDate ? new Date(endDate) : undefined,
+          href: `/special-contracts/${slug}`,
           imageUrl: c.imageUrl,
         });
       }
@@ -48,14 +54,21 @@ export async function GET() {
 
     // 3. NC BOOSTS
     boosts.forEach((b) => {
-      if (b.endAt) {
+      const boostPercent = Math.round(Number(b.multiplier || 0) * 100);
+      const title = b.nameEvent
+        ? `${b.nameEvent} (+${boostPercent}% NC)`
+        : `+${boostPercent}% NC Boost Event`;
+      const startDate = b.startDate || b.setAt || b.createdAt || b.endAt;
+      const endDate = b.endAt || startDate;
+
+      if (startDate || endDate) {
         events.push({
           id: b._id.toString(),
-          title: b.title || `${b.multiplier || 2}x NC Boost Event`,
+          title,
           type: "boost",
-          date: new Date(b.setAt || b.endAt),
-          endDate: new Date(b.endAt),
-          href: `/currency-boost/${b.slug}`,
+          date: new Date(startDate || endDate),
+          endDate: endDate ? new Date(endDate) : undefined,
+          href: `/currency-boost/${b.slug || slugify(b.nameEvent || "boost")}`,
         });
       }
     });

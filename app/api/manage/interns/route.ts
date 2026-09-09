@@ -6,6 +6,11 @@ import clientPromise from "@/lib/mongodb";
 import { getCompanyMembersMap } from "@/lib/trucky";
 
 import dbConnect from "@/lib/mongoose";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
@@ -93,6 +98,7 @@ export async function GET() {
           specialContractIncome: { $sum: { $cond: ["$isSpecialContract", "$nc.total", 0] } },
           hardcoreJobs: { $sum: { $cond: ["$isHardcore", 1, 0] } },
           hardcoreRatingSum: { $sum: { $cond: ["$isHardcore", "$hardcoreRating", 0] } },
+          lastJobCompletedAt: { $max: { $ifNull: ["$completedAt", "$updatedAt"] } },
         }
       }
     ]).toArray();
@@ -247,6 +253,29 @@ export async function GET() {
     const achievementMap: any = {};
     achievementStats.forEach(a => { achievementMap[a._id] = a; });
 
+    // Driver Evaluations
+    const evaluationDocs = await db
+      .collection("driverevaluations")
+      .find({ driverId: { $in: discordIds } })
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    const evaluationMap: any = {};
+    discordIds.forEach((id) => {
+      evaluationMap[id] = {
+        active: null,
+        history: [],
+      };
+    });
+
+    evaluationDocs.forEach((doc) => {
+      if (doc.status === "active" && !evaluationMap[doc.driverId].active) {
+        evaluationMap[doc.driverId].active = doc;
+      } else if (doc.status === "closed") {
+        evaluationMap[doc.driverId].history.push(doc);
+      }
+    });
+
     // Build intern data
     const interns = internUsers.map(user => {
       const did = user.discordId;
@@ -260,11 +289,35 @@ export async function GET() {
       const convoy = convoyMap[did] || { interested: 0, joined: 0 };
       const achievement = achievementMap[did] || {};
       const quiz = quizMap[did] || null;
+      const evaluation = evaluationMap[did] || { active: null, history: [] };
       const userFleets = fleetMap[user._id?.toString()] || [];
       const driverLink = driverLinkMap[did];
 
       const joinedAt = driverLink?.createdAt || user.createdAt;
       const daysSinceJoin = joinedAt ? Math.floor((Date.now() - new Date(joinedAt).getTime()) / (1000 * 60 * 60 * 24)) : 0;
+
+      const lastJobAt = jobs.lastJobCompletedAt || null;
+      const daysSinceLastJob = lastJobAt
+        ? Math.floor((Date.now() - new Date(lastJobAt).getTime()) / (1000 * 60 * 60 * 24))
+        : null;
+
+      let activityStatus: "active" | "warning" | "inactive" | "never" = "never";
+      if (daysSinceLastJob !== null) {
+        if (daysSinceLastJob <= 7) activityStatus = "active";
+        else if (daysSinceLastJob <= 20) activityStatus = "warning";
+        else activityStatus = "inactive";
+      }
+
+      const MAX_PROBATION_DAYS = 90;
+      const isOverdue = daysSinceJoin > MAX_PROBATION_DAYS;
+      const overdueDays = isOverdue ? daysSinceJoin - MAX_PROBATION_DAYS : 0;
+      const daysRemaining = Math.max(0, MAX_PROBATION_DAYS - daysSinceJoin);
+      const probationProgress = Math.min(100, Math.round((daysSinceJoin / MAX_PROBATION_DAYS) * 100));
+
+      let probationPhase: "month_1" | "month_2" | "month_3" | "overdue" = "month_1";
+      if (daysSinceJoin > MAX_PROBATION_DAYS) probationPhase = "overdue";
+      else if (daysSinceJoin > 60) probationPhase = "month_3";
+      else if (daysSinceJoin > 30) probationPhase = "month_2";
 
       return {
         _id: user._id,
@@ -282,6 +335,20 @@ export async function GET() {
         isBooster: user.isBooster || false,
         nismaraPlus: user.nismaraplus?.status || false,
 
+        lastJobAt,
+        daysSinceLastJob,
+        activityStatus,
+
+        probation: {
+          maxDays: MAX_PROBATION_DAYS,
+          daysSinceJoin,
+          daysRemaining,
+          isOverdue,
+          overdueDays,
+          phase: probationPhase,
+          progressPercent: probationProgress,
+        },
+
         jobs: {
           total: jobs.totalJobs || 0,
           ncEarned: Math.round(jobs.totalNcEarned || 0),
@@ -295,6 +362,8 @@ export async function GET() {
           hardcoreJobs: jobs.hardcoreJobs || 0,
           hardcoreRatingAvg: jobs.hardcoreJobs ? (jobs.hardcoreRatingSum / jobs.hardcoreJobs).toFixed(1) : "0",
           validatedJobs: validated.totalValidated || 0,
+          lastJobAt,
+          daysSinceLastJob,
         },
 
         lotto: {
@@ -341,13 +410,26 @@ export async function GET() {
         },
 
         quiz: quiz,
+        evaluation: evaluation,
       };
     });
 
     // Sort by daysSinceJoin descending (longest first)
     interns.sort((a: any, b: any) => b.daysSinceJoin - a.daysSinceJoin);
 
-    return NextResponse.json({ success: true, interns });
+    return NextResponse.json(
+      {
+        success: true,
+        interns,
+        guildId: process.env.DISCORD_GUILD_ID || "863959415702028318",
+      },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+          Pragma: "no-cache",
+        },
+      }
+    );
   } catch (error) {
     console.error("GET Intern Monitor Error:", error);
     return NextResponse.json({ error: "Gagal mengambil data intern" }, { status: 500 });

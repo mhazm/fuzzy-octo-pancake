@@ -13,7 +13,10 @@ export default function KBSidebarClient({ currentSlug, categorySlug }: { current
   useEffect(() => {
     const fetchAllArticles = async () => {
       try {
-        const res = await fetch("/api/kb");
+        const res = await fetch("/api/kb", {
+          cache: "no-store",
+          headers: { "Pragma": "no-cache", "Cache-Control": "no-cache" },
+        });
         const data = await res.json();
         
         if (data.success && data.articles) {

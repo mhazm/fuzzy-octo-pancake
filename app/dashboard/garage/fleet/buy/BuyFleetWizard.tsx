@@ -1,14 +1,18 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Truck,
   ArrowLeft,
   CheckCircle,
   AlertTriangle,
   Loader2,
+  Ticket,
+  CheckCircle2,
+  Info,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import VoucherPickerModal, { VoucherTriggerBar } from "@/components/voucher/VoucherPickerModal";
 
 interface UserData {
   discordId: string;
@@ -36,6 +40,31 @@ export default function BuyFleetWizard({
   const [selectedModel, setSelectedModel] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [vouchers, setVouchers] = useState<any[]>([]);
+  const [selectedVoucherId, setSelectedVoucherId] = useState<string | null>(null);
+  const [isVoucherModalOpen, setIsVoucherModalOpen] = useState(false);
+  const [isLoadingVouchers, setIsLoadingVouchers] = useState(false);
+
+  // Fetch available fleet buy vouchers when entering Step 3
+  useEffect(() => {
+    if (step === 3) {
+      setIsLoadingVouchers(true);
+      fetch("/api/vouchers/my?category=FLEET_BUY&status=ACTIVE", {
+        cache: "no-store",
+        headers: { "Pragma": "no-cache", "Cache-Control": "no-cache" },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && Array.isArray(data.vouchers)) {
+            setVouchers(data.vouchers);
+          }
+        })
+        .catch(console.error)
+        .finally(() => setIsLoadingVouchers(false));
+    } else {
+      setSelectedVoucherId(null);
+    }
+  }, [step]);
 
   const filteredStores = stores.filter(
     (s) => s.brand?._id === selectedBrand?._id,
@@ -51,6 +80,21 @@ export default function BuyFleetWizard({
 
   if (user.isNismaraPlus) nismaraPlusDiscount = basePrice * 0.2;
   if (user.isBooster) boosterDiscount = basePrice * 0.2;
+
+  // Voucher discount calculation
+  const selectedVoucher = vouchers.find((v) => v._id === selectedVoucherId);
+  let voucherDiscount = 0;
+  if (selectedVoucher && basePrice > 0) {
+    if (selectedVoucher.discountType === "percentage") {
+      voucherDiscount = Math.round(basePrice * (selectedVoucher.discountValue / 100));
+      if (selectedVoucher.maxDiscount > 0) {
+        voucherDiscount = Math.min(voucherDiscount, selectedVoucher.maxDiscount);
+      }
+    } else if (selectedVoucher.discountType === "fixed") {
+      voucherDiscount = Math.min(basePrice, selectedVoucher.discountValue);
+    }
+    voucherDiscount = Math.max(0, Math.min(basePrice, voucherDiscount));
+  }
 
   let upgradeFee = 0;
   let upgradeSlotCount = 0;
@@ -69,13 +113,16 @@ export default function BuyFleetWizard({
     }
   }
 
-  const totalPrice =
+  const totalPrice = Math.max(
+    adminFee,
     basePrice +
-    taxFee -
-    nismaraPlusDiscount -
-    boosterDiscount +
-    adminFee +
-    upgradeFee;
+      taxFee -
+      nismaraPlusDiscount -
+      boosterDiscount -
+      voucherDiscount +
+      adminFee +
+      upgradeFee
+  );
   const canAfford = user.balance >= totalPrice;
 
   const handleConfirm = async () => {
@@ -94,6 +141,7 @@ export default function BuyFleetWizard({
         body: JSON.stringify({
           fleetStoreId: selectedModel._id,
           requiresGarageUpgrade: needsUpgrade,
+          voucherId: selectedVoucherId || undefined,
         }),
       });
 
@@ -412,6 +460,43 @@ export default function BuyFleetWizard({
                         </span>
                       </div>
                     )}
+
+                    {voucherDiscount > 0 && selectedVoucher && (
+                      <div className="flex justify-between items-center text-sm text-teal-400">
+                        <span className="font-bold flex items-center gap-2">
+                          <Ticket size={14} /> Diskon Kupon Fleet{" "}
+                          <span className="px-2 py-0.5 bg-teal-500/20 text-teal-400 rounded text-[9px] uppercase tracking-widest">
+                            {selectedVoucher.discountType === "percentage" ? `${selectedVoucher.discountValue}%` : "Fixed"}
+                          </span>
+                        </span>
+                        <span className="font-black tabular-nums">
+                          -{voucherDiscount.toLocaleString("id-ID")} NC
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Voucher Selection Section */}
+                  <div className="mt-6 pt-6 border-t border-border/50 space-y-2">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                        <Ticket size={14} className="text-teal-400" /> Kupon Diskon Pembelian
+                      </span>
+                      {vouchers.length > 0 && (
+                        <span className="text-[10px] bg-teal-500/20 text-teal-400 font-bold px-2 py-0.5 rounded-full border border-teal-500/30">
+                          {vouchers.length} Tersedia
+                        </span>
+                      )}
+                    </div>
+
+                    <VoucherTriggerBar
+                      vouchers={vouchers}
+                      selectedVoucher={selectedVoucher}
+                      isLoading={isLoadingVouchers}
+                      onOpenModal={() => setIsVoucherModalOpen(true)}
+                      onRemoveVoucher={() => setSelectedVoucherId(null)}
+                      accentColor="teal"
+                    />
                   </div>
 
                   <div className="mt-6 pt-6 border-t border-border border-dashed">
@@ -466,6 +551,17 @@ export default function BuyFleetWizard({
           </div>
         )}
       </div>
+
+      {/* Dedicated Voucher Picker Modal */}
+      <VoucherPickerModal
+        isOpen={isVoucherModalOpen}
+        onClose={() => setIsVoucherModalOpen(false)}
+        vouchers={vouchers}
+        selectedVoucherId={selectedVoucherId}
+        onSelectVoucher={(id) => setSelectedVoucherId(id)}
+        title="Pilih Kupon Diskon Armada"
+        categoryLabel="Pembelian Armada"
+      />
     </div>
   );
 }

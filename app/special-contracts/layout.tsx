@@ -2,13 +2,31 @@ import type { Metadata } from "next";
 import React from "react";
 
 export const metadata: Metadata = {
-  title: "Special Contract",
+  title: "Kontrak Khusus & Special Contracts",
   description:
-    "Lihat daftar Special Contract eksklusif di Nismara Transport dengan pengiriman prioritas, cargo khusus, tantangan driver, dan reward tambahan.",
+    "Lihat daftar Special Contract eksklusif di Nismara Transport dengan pengiriman prioritas, kargo berharga tinggi, tantangan rute, dan bonus NC berlimpah.",
   openGraph: {
-    title: "Special Contract",
+    title: "Kontrak Khusus & Special Contracts",
     description:
-      "Special Contract resmi Nismara Transport untuk pengiriman dan tantangan eksklusif.",
+      "Special Contract resmi Nismara Transport untuk pengiriman prioritas dan tantangan kargo eksklusif berhadiah NC.",
+    url: "https://transport.nismara.web.id/special-contracts",
+    siteName: "Nismara Transport",
+    locale: "id_ID",
+    type: "website",
+    images: [
+      {
+        url: "https://images.nismara.my.id/227300_188.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Special Contracts Nismara Transport",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Kontrak Khusus & Special Contracts",
+    description:
+      "Special Contract resmi Nismara Transport untuk pengiriman prioritas dan tantangan kargo eksklusif berhadiah NC.",
     images: ["https://images.nismara.my.id/227300_188.jpg"],
   },
   keywords: [

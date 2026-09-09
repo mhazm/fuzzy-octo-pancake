@@ -98,10 +98,18 @@ export async function POST(
       },
     );
 
-    // Beri tanda bahwa user sedang dalam masa ujian kelayakan dan simpan channel ID
-    await db
-      .collection("users")
-      .updateOne({ discordId }, { $set: { isInterviewing: true, interviewChannelId: channelData.id } });
+    // Beri tanda bahwa user sedang dalam masa ujian kelayakan dan simpan channel ID beserta manager yang mengundang
+    await db.collection("users").updateOne(
+      { discordId },
+      {
+        $set: {
+          isInterviewing: true,
+          interviewChannelId: channelData.id,
+          interviewManagerId: String(session.user.discordId),
+          interviewStartedAt: new Date(),
+        },
+      }
+    );
 
     return NextResponse.json({
       success: true,

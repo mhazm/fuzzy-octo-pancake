@@ -7,6 +7,7 @@ import { getServerSession } from "next-auth";
 import { ObjectId } from "mongodb";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { deleteFileFromR2 } from "@/lib/r2";
+import { addSeasonXp } from "@/lib/seasonPass";
 
 export async function createConvoy(formData: FormData) {
   const client = await clientPromise;
@@ -496,6 +497,11 @@ export async function claimConvoyRewardAction(convoyId: string) {
     createdAt: new Date(),
   });
 
+  // Award Seasonal XP for Convoy participation (1.500 XP)
+  await addSeasonXp(discordId, 1500, `Reward Sesi Convoy: ${convoy.convoyName}`).catch((err) =>
+    console.error("Season XP Convoy Error:", err)
+  );
+
   // Generate Collectible Ticket
   let ticketNumber = convoy.ticketNumber;
   if (!ticketNumber) {
@@ -572,9 +578,60 @@ export async function endConvoyAction(convoyId: string) {
     .collection("convoylobby")
     .updateOne(
       { _id: new ObjectId(convoyId) },
-      { $set: { isEnded: true, isActive: false, updatedAt: new Date() } },
+      { $set: { isEnded: true, isActive: false, active: false, updatedAt: new Date() } },
     );
 
   revalidatePath(`/convoy/${convoy.convoyUri}`);
+  revalidatePath(`/dashboard/manage/events/convoy`);
   return { success: true, message: "Convoy berhasil diakhiri secara manual." };
+}
+
+export async function deleteConvoyAction(convoyId: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.role || session.user.role === "user") {
+    throw new Error("Unauthorized");
+  }
+
+  const client = await clientPromise;
+  const db = client.db();
+
+  const convoy = await db
+    .collection("convoylobby")
+    .findOne({ _id: new ObjectId(convoyId) });
+  if (!convoy) {
+    throw new Error("Convoy tidak ditemukan");
+  }
+
+  if (convoy.imageUrl) {
+    await deleteFileFromR2(convoy.imageUrl);
+  }
+
+  await db
+    .collection("convoylobby")
+    .deleteOne({ _id: new ObjectId(convoyId) });
+
+  revalidatePath("/dashboard/manage/events/convoy");
+  revalidatePath("/convoy");
+  return { success: true };
+}
+
+export async function closeConvoyAction(convoyId: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.role || session.user.role === "user") {
+    throw new Error("Unauthorized");
+  }
+
+  const client = await clientPromise;
+  const db = client.db();
+
+  await db
+    .collection("convoylobby")
+    .updateOne(
+      { _id: new ObjectId(convoyId) },
+      { $set: { active: false, isEnded: true, updatedAt: new Date() } }
+    );
+
+  revalidatePath("/dashboard/manage/events/convoy");
+  revalidatePath("/convoy");
+  return { success: true };
 }

@@ -329,7 +329,7 @@ export default function CargoManager() {
               <tbody className="divide-y divide-border">
                 {loading ? (
                   <tr>
-                    <td colSpan={4} className="px-8 py-20 text-center text-foreground/20 font-black uppercase tracking-[0.2em] italic">
+                    <td colSpan={4} className="px-8 py-20 text-center text-foreground/20 font-black uppercase tracking-[0.2em]">
                       <div className="flex justify-center items-center gap-3">
                         <Truck className="animate-pulse" size={24} />
                         Loading cargo data...
@@ -351,7 +351,7 @@ export default function CargoManager() {
                           <p className="text-[10px] font-mono text-foreground/30 mt-1">
                             {cargo.in_game_id}
                           </p>
-                          <p className="text-[8px] font-mono text-foreground/10 uppercase mt-0.5 italic">
+                          <p className="text-[8px] font-mono text-foreground/10 uppercase mt-0.5">
                             ID: {cargo.id}
                           </p>
                         </div>
@@ -376,7 +376,7 @@ export default function CargoManager() {
                             </span>
                           ) : null}
                           {(!cargo.adr_class && !cargo.fragility && !cargo.is_fragile && !cargo.overweight) && (
-                            <span className="text-[10px] text-foreground/20 italic">Normal</span>
+                            <span className="text-[10px] text-foreground/20">Normal</span>
                           )}
                         </div>
                       </td>
@@ -420,7 +420,7 @@ export default function CargoManager() {
                   <tr>
                     <td
                       colSpan={4}
-                      className="px-8 py-20 text-center text-foreground/20 font-black uppercase tracking-[0.2em] italic"
+                      className="px-8 py-20 text-center text-foreground/20 font-black uppercase tracking-[0.2em]"
                     >
                       No cargo found
                     </td>

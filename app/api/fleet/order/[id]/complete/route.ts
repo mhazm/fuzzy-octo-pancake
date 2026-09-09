@@ -9,9 +9,14 @@ import Transaction from "@/lib/models/Transaction";
 import Fleet from "@/lib/models/Fleet";
 import User from "@/lib/models/User";
 import Garage from "@/lib/models/Garage";
+import { revalidatePath } from "next/cache";
 import crypto from "crypto";
 
 import dbConnect from "@/lib/mongoose";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const GUILD_ID = process.env.DISCORD_GUILD_ID;
 
@@ -299,6 +304,16 @@ export async function POST(
           },
         },
       ).catch(err => console.error("Failed to delete discord order channel:", err));
+    }
+
+    try {
+      revalidatePath("/dashboard/garage");
+      revalidatePath("/dashboard/garage/fleet");
+      revalidatePath("/dashboard/manage/fleet/orderlist");
+      revalidatePath("/dashboard/manage/fleet/assign");
+      revalidatePath("/dashboard/transactions");
+    } catch (e) {
+      console.error("Failed to revalidate fleet order complete paths", e);
     }
 
     return NextResponse.json({ success: true });

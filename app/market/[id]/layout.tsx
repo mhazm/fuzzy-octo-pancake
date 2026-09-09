@@ -28,15 +28,35 @@ export async function generateMetadata({
       };
     }
 
+    const title = `${item.title}`;
+    const description = item.description || `Dapatkan mod ${item.title} di Mod Market Nismara Transport.`;
+    const image = item.image_url || "https://images.nismara.my.id/227300_188.jpg";
+    const pageUrl = `https://transport.nismara.web.id/market/${idOrSlug}`;
+
     return {
-      title: `${item.title} - Nismara Transport`,
-      description:
-        item.description ||
-        `Item market ${item.title} tersedia di Nismara Transport.`,
+      title,
+      description,
       openGraph: {
-        images: item.image_url
-          ? [item.image_url]
-          : ["https://images.nismara.my.id/227300_188.jpg"],
+        title,
+        description,
+        url: pageUrl,
+        siteName: "Nismara Transport",
+        locale: "id_ID",
+        type: "website",
+        images: [
+          {
+            url: image,
+            width: 1200,
+            height: 630,
+            alt: title,
+          },
+        ],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title,
+        description,
+        images: [image],
       },
     };
   } catch (error) {

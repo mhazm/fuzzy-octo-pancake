@@ -239,6 +239,7 @@ export default async function ConvoyDetailPage({
                         isNismaraPlus={usersMap.get(convoy.roadCaptain)?.nismaraplus?.status === true} 
                         nismaraPlusStartedAt={usersMap.get(convoy.roadCaptain)?.nismaraplus?.startedAt}
                         truckyRank={usersMap.get(convoy.roadCaptain)?.truckyRank}
+                        topManager={usersMap.get(convoy.roadCaptain)?.topManager}
                         className="w-4 h-4" 
                       />
                     </div>
@@ -288,6 +289,7 @@ export default async function ConvoyDetailPage({
                         isNismaraPlus={usersMap.get(convoy.setBy)?.nismaraplus?.status === true} 
                         nismaraPlusStartedAt={usersMap.get(convoy.setBy)?.nismaraplus?.startedAt}
                         truckyRank={usersMap.get(convoy.setBy)?.truckyRank}
+                        topManager={usersMap.get(convoy.setBy)?.topManager}
                         className="w-4 h-4" 
                       />
                     </div>
@@ -338,6 +340,7 @@ export default async function ConvoyDetailPage({
                           isNismaraPlus={usersMap.get(convoy.sweeper)?.nismaraplus?.status === true} 
                           nismaraPlusStartedAt={usersMap.get(convoy.sweeper)?.nismaraplus?.startedAt}
                           truckyRank={usersMap.get(convoy.sweeper)?.truckyRank}
+                          topManager={usersMap.get(convoy.sweeper)?.topManager}
                           className="w-4 h-4" 
                         />
                       </div>
@@ -612,6 +615,7 @@ export default async function ConvoyDetailPage({
                     isNismaraPlus={userDetail?.nismaraplus?.status === true} 
                     nismaraPlusStartedAt={userDetail?.nismaraplus?.startedAt}
                     truckyRank={userDetail?.truckyRank}
+                    topManager={userDetail?.topManager}
                     className="w-3 h-3 ml-0.5" 
                   />
                   {isRoadCaptain && (
@@ -673,6 +677,7 @@ export default async function ConvoyDetailPage({
                         isNismaraPlus={userDetail?.nismaraplus?.status === true} 
                         nismaraPlusStartedAt={userDetail?.nismaraplus?.startedAt}
                         truckyRank={userDetail?.truckyRank}
+                        topManager={userDetail?.topManager}
                         className="w-3.5 h-3.5 shrink-0" 
                       />
                     </div>

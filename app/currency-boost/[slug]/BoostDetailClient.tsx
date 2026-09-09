@@ -155,9 +155,9 @@ export default function BoostDetailClient({ event }: { event: any }) {
             <p className="text-yellow-500 font-black uppercase tracking-widest text-[10px] mb-2">
               Economy Surge
             </p>
-            <div className="text-6xl font-black text-white drop-shadow-[0_0_15px_rgba(234,179,8,0.5)] flex items-center justify-center gap-2">
-              <Zap className="text-yellow-500 fill-yellow-500" size={40} />
-              {event.multiplier}x
+            <div className="text-5xl md:text-6xl font-black text-white drop-shadow-[0_0_15px_rgba(234,179,8,0.5)] flex items-center justify-center gap-2">
+              <Zap className="text-yellow-500 fill-yellow-500" size={36} />
+              +{Math.round(Number(event.multiplier || 0) * 100)}%
             </div>
             <p className="text-gray-400 text-xs font-bold mt-2 uppercase tracking-wider">
               Bonus Penghasilan
@@ -224,7 +224,7 @@ export default function BoostDetailClient({ event }: { event: any }) {
               pada mode{" "}
               <strong className="text-white">{getTypeName(event.type)}</strong>{" "}
               selama periode event berlangsung. Semua penyelesaian job yang
-              valid secara otomatis akan dikalikan dengan {event.multiplier}x!
+              valid secara otomatis akan mendapatkan bonus ekstra +{Math.round(Number(event.multiplier || 0) * 100)}% NC!
             </p>
           </div>
         </div>
@@ -298,6 +298,7 @@ export default function BoostDetailClient({ event }: { event: any }) {
                             isNismaraPlus={p.isNismaraPlus}
                             nismaraPlusStartedAt={p.nismaraPlusStartedAt}
                             truckyRank={p.truckyRank}
+                            topManager={p.topManager}
                             className="w-4 h-4"
                           />
                         </div>
