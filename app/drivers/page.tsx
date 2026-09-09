@@ -33,7 +33,7 @@ export const metadata: Metadata = {
   },
 };
 
-export const revalidate = 1800; // Cache 30 menit
+export const dynamic = "force-dynamic";
 
 export default async function DriversPage() {
   const client = await clientPromise;

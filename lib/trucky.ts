@@ -85,7 +85,10 @@ export async function getCompanyMemberStats(
 
     // Jika sampai halaman terakhir tetap tidak ditemukan
     return null;
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.digest === "DYNAMIC_SERVER_USAGE") {
+      throw error;
+    }
     console.error("Trucky API Error:", error);
     return null;
   }
@@ -156,7 +159,10 @@ export async function getCompanyMembersMap(companyId: number) {
     }
 
     return membersMap;
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.digest === "DYNAMIC_SERVER_USAGE") {
+      throw error;
+    }
     console.error("Trucky Map Error:", error);
     return {};
   }
