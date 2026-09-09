@@ -23,6 +23,7 @@ import {
   Check,
 } from "lucide-react";
 import { showAlert, showConfirm } from "@/lib/dialog";
+import { resolveQuestDescription } from "@/lib/giveawayUtils";
 
 interface GiveawayPublicDetailClientProps {
   giveaway: any;
@@ -161,7 +162,7 @@ export default function GiveawayPublicDetailClient({
     : "-";
 
   return (
-    <main className="min-h-screen pt-28 pb-24 relative bg-background overflow-x-hidden">
+    <main className="min-h-screen pt-28 pb-24 relative bg-background overflow-x-clip">
       {/* Glow Backdrops */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-6xl h-96 bg-primary/10 blur-3xl rounded-b-full pointer-events-none" />
       <div className="absolute top-72 right-10 w-96 h-96 bg-amber-500/10 blur-3xl rounded-full pointer-events-none" />
@@ -443,7 +444,7 @@ export default function GiveawayPublicDetailClient({
                         </span>
                       </div>
                       <p className="text-xs text-muted-foreground leading-relaxed">
-                        {q.description}
+                        {resolveQuestDescription(q)}
                       </p>
                     </div>
 

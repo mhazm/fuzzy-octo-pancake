@@ -25,6 +25,7 @@ import {
   X,
 } from "lucide-react";
 import { showAlert } from "@/lib/dialog";
+import { getAutoQuestDescription, resolveQuestDescription } from "@/lib/giveawayUtils";
 
 interface GiveawayFormClientProps {
   initialData?: any;
@@ -143,12 +144,15 @@ export default function GiveawayFormClient({ initialData, isEdit }: GiveawayForm
   // Daftar Quest Game
   const [quests, setQuests] = useState<any[]>(
     initialData?.quests && initialData.quests.length > 0
-      ? initialData.quests
+      ? initialData.quests.map((q: any) => ({
+          ...q,
+          description: resolveQuestDescription(q),
+        }))
       : [
           {
             questId: "quest_jobs_3",
             title: "Pengemudi Rajin",
-            description: "Selesaikan 3 pekerjaan kargo apa saja di ETS2 atau ATS.",
+            description: getAutoQuestDescription("TOTAL_JOBS", 3),
             type: "TOTAL_JOBS",
             target: 3,
             rewardTickets: 1,
@@ -156,7 +160,7 @@ export default function GiveawayFormClient({ initialData, isEdit }: GiveawayForm
           {
             questId: "quest_long_haul",
             title: "Pengelana Jalur Jauh",
-            description: "Selesaikan 1 pengiriman kargo dengan jarak minimal 2.500 KM.",
+            description: getAutoQuestDescription("LONG_HAUL", 1, 2500),
             type: "LONG_HAUL",
             target: 1,
             minDistanceKm: 2500,
@@ -182,11 +186,11 @@ export default function GiveawayFormClient({ initialData, isEdit }: GiveawayForm
           },
           {
             tier: 2,
-            tierTitle: "Juara 2 - Runner Up",
+            tierTitle: "Juara 2 - Master Driver",
             winnerCount: 2,
             rewards: [
               { type: "NC", title: "25.000 NC", amount: 25000 },
-              { type: "SAFEBOX_TICKET", title: "2x Tiket Penebusan Penalti", amount: 2 },
+              { type: "FUEL", title: "2.500 L Fuel Garasi", amount: 2500 },
             ],
           },
           {
@@ -204,14 +208,16 @@ export default function GiveawayFormClient({ initialData, isEdit }: GiveawayForm
   // Handler Quest
   const handleAddQuest = () => {
     const nextIndex = quests.length + 1;
+    const defaultType = "TOTAL_JOBS";
+    const defaultTarget = 1;
     setQuests([
       ...quests,
       {
         questId: `quest_${Date.now().toString().slice(-4)}`,
         title: `Misi Baru #${nextIndex}`,
-        description: "Deskripsi misi pengantaran kargo.",
-        type: "TOTAL_JOBS",
-        target: 1,
+        description: getAutoQuestDescription(defaultType, defaultTarget),
+        type: defaultType,
+        target: defaultTarget,
         rewardTickets: 1,
       },
     ]);
@@ -223,7 +229,36 @@ export default function GiveawayFormClient({ initialData, isEdit }: GiveawayForm
 
   const handleUpdateQuest = (index: number, field: string, value: any) => {
     const updated = [...quests];
-    updated[index] = { ...updated[index], [field]: value };
+    const currentQuest = updated[index];
+    const newQuest = { ...currentQuest, [field]: value };
+
+    // Jika tipe misi diubah, langsung sinkronkan deskripsinya ke template tipe baru
+    if (field === "type") {
+      newQuest.description = getAutoQuestDescription(
+        value,
+        newQuest.target,
+        newQuest.minDistanceKm,
+        newQuest.minCargoMass
+      );
+    } else if (["target", "minDistanceKm", "minCargoMass"].includes(field)) {
+      // Jika target atau constraint berubah, cek apakah deskripsi sebelumnya merupakan deskripsi auto
+      const prevAuto = getAutoQuestDescription(
+        currentQuest.type,
+        currentQuest.target,
+        currentQuest.minDistanceKm,
+        currentQuest.minCargoMass
+      );
+      if (!currentQuest.description || currentQuest.description === prevAuto) {
+        newQuest.description = getAutoQuestDescription(
+          newQuest.type,
+          newQuest.target,
+          newQuest.minDistanceKm,
+          newQuest.minCargoMass
+        );
+      }
+    }
+
+    updated[index] = newQuest;
     setQuests(updated);
   };
 
@@ -732,6 +767,38 @@ export default function GiveawayFormClient({ initialData, isEdit }: GiveawayForm
                         value={q.rewardTickets || 1}
                         onChange={(e) => handleUpdateQuest(idx, "rewardTickets", Number(e.target.value))}
                         className="w-full px-3 py-2 rounded-xl bg-black/40 border border-border text-foreground text-xs font-semibold outline-none"
+                      />
+                    </div>
+
+                    {/* Deskripsi Misi Manual & Auto-Generate */}
+                    <div className="sm:col-span-3 space-y-1 pt-1">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[11px] font-bold text-muted-foreground">
+                          Deskripsi Misi (Ditampilkan ke Driver)
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const autoDesc = getAutoQuestDescription(
+                              q.type,
+                              q.target,
+                              q.minDistanceKm,
+                              q.minCargoMass
+                            );
+                            handleUpdateQuest(idx, "description", autoDesc);
+                          }}
+                          className="text-[10px] text-sky-400 hover:text-sky-300 font-bold flex items-center gap-1 transition-colors px-2.5 py-0.5 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/20"
+                          title="Generate deskripsi otomatis sesuai tipe dan target misi"
+                        >
+                          <Sparkles size={11} /> Auto Buat
+                        </button>
+                      </div>
+                      <textarea
+                        rows={2}
+                        value={q.description || ""}
+                        onChange={(e) => handleUpdateQuest(idx, "description", e.target.value)}
+                        placeholder="Contoh: Selesaikan 5 pekerjaan kargo di server multiplayer TruckersMP."
+                        className="w-full px-3 py-2 rounded-xl bg-black/40 border border-border text-foreground text-xs font-semibold outline-none resize-none focus:border-sky-500/50 transition-all leading-relaxed"
                       />
                     </div>
                   </div>

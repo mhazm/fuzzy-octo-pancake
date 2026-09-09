@@ -8,6 +8,7 @@ import User from "@/lib/models/User";
 import UserVoucher from "@/lib/models/UserVoucher";
 import Garage from "@/lib/models/Garage";
 import { checkRateLimit } from "@/lib/rateLimit";
+import { resolveQuestDescription } from "@/lib/giveawayUtils";
 
 const GUILD_ID = process.env.DISCORD_GUILD_ID || "863959415702028318";
 
@@ -173,7 +174,7 @@ export async function getUserGiveawayProgress(
     return {
       questId: qId,
       title: q.title,
-      description: q.description || "",
+      description: resolveQuestDescription(q),
       type: q.type,
       target: q.target || 1,
       currentValue,

@@ -3,6 +3,7 @@ import clientPromise from "@/lib/mongodb";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import GiveawayPublicDetailClient from "./GiveawayPublicDetailClient";
+import { resolveQuestDescription } from "@/lib/giveawayUtils";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -81,7 +82,10 @@ export default async function GiveawayPublicDetailPage({
     status: giveawayDoc.status,
     allowMultipleWins: Boolean(giveawayDoc.allowMultipleWins),
     enableQuests: Boolean(giveawayDoc.enableQuests),
-    quests: giveawayDoc.quests || [],
+    quests: (giveawayDoc.quests || []).map((q: any) => ({
+      ...q,
+      description: resolveQuestDescription(q),
+    })),
     enableNcPurchase: Boolean(giveawayDoc.enableNcPurchase),
     ticketPriceNC: giveawayDoc.ticketPriceNC || 1000,
     maxPurchasableTickets: giveawayDoc.maxPurchasableTickets ?? 5,
