@@ -71,6 +71,7 @@ Nismara Transport is a web platform for a virtual trucking community (VTC). It i
 
 ## 7. Data Formatting Standards
 - **Timezone (WIB/Jakarta):** Always format dates and times explicitly to `Asia/Jakarta` using `toLocaleString("id-ID", { timeZone: 'Asia/Jakarta', ... })` and append " WIB" where contextually appropriate, especially on charts, feeds, and market history.
+- **Date Parsing & Inputs:** Always use `parseWIBDate()` and `formatWIBDateTimeLocal()` from `@/lib/utils` for all date operations involving form inputs or database queries. See Section 18 for full guidelines.
 - **Currency (NC):** Always format Nismara Coin (NC) balances to standard Indonesian currency format (e.g. `2.000,00 NC`) using `.toLocaleString("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 })`. Do NOT use `.toFixed(2)` for frontend display of user balances.
 - **Fuel (Liter):** Fuel amounts should always be displayed as flat integers without decimals (e.g. `500 L`). Use `Math.floor()` before formatting with `.toLocaleString("id-ID")`.
 
@@ -224,3 +225,24 @@ Setiap penambahan koleksi MongoDB baru, Mongoose model, atau fitur yang menyimpa
 - **PERINGATAN KERAS:** Nama resmi komunitas, portal, dan platform ini adalah **Nismara Transport**.
 - **DILARANG KERAS** bagi AI Agent maupun developer menulis atau menyebut entitas ini sebagai **Nismara Logistics** di teks UI, metadata, notifikasi web/Discord, dialog alert/modal, maupun dokumentasi baru.
 - Selalu gunakan **Nismara Transport** secara konsisten di seluruh antarmuka dan salinan teks pengguna.
+
+## 18. Standar Parsing Tanggal & Waktu WIB (Anti-Bug Tahun 1970)
+
+DILARANG KERAS melakukan penggabungan string manual seperti `new Date(`${inputDate}+07:00`)` saat memproses tanggal dari form HTML (`<input type="date">` atau `<input type="datetime-local">`).
+
+### Akar Masalah Bug Tahun 1970:
+Standar ISO 8601 **tidak mengizinkan** offset timezone (`+07:00`) ditempelkan langsung setelah tanggal tanpa penanda jam `T` (misalnya `"2026-10-31+07:00"`). Mesin JavaScript V8 mengevaluasi string tersebut menjadi `Invalid Date` (`NaN`). Saat disimpan ke MongoDB, driver BSON menserialisasi `NaN` menjadi timestamp `0` (Unix Epoch), sehingga tanggal tersimpan sebagai **`1970-01-01`**.
+
+### Standardisasi Wajib Menggunakan Helper `@/lib/utils`:
+1. **`parseWIBDate(dateInput, isEndOfDayIfDateOnly = false)`**:
+   - **Wajib digunakan** di semua Server Actions, API routes, atau form handlers saat mengonversi input form ke objek MongoDB `Date`.
+   - Menangani otomatis input ISO utuh, datetime-local (`YYYY-MM-DDTHH:mm`), maupun date-only (`YYYY-MM-DD`).
+   - Jika parameter `isEndOfDayIfDateOnly` diset `true` (misal untuk deadline kontrak/event/giveaway), input date-only otomatis diset ke akhir hari WIB (`T23:59:59+07:00`).
+   - Melemparkan `Error` deskriptif jika format tidak valid untuk mencegah data korup atau `NaN` tersimpan ke database.
+2. **`formatWIBDateTimeLocal(dateInput)`**:
+   - **Wajib digunakan** saat mengisi prop `value` atau `defaultValue` pada elemen `<input type="datetime-local">` dari dokumen database (misal pada halaman Edit).
+   - Menghasilkan string format `YYYY-MM-DDTHH:mm` yang presisi dalam zona waktu `Asia/Jakarta` (WIB) tanpa terpengaruh perbedaan zona waktu lokal server Vercel maupun browser client.
+   - Otomatis mengembalikan string kosong `""` jika tanggal kosong, invalid, atau merupakan tanggal korup tahun 1970 (sehingga form tidak terkunci di tahun 1970).
+3. **Standar Input Form Event & Deadline:**
+   - Selalu prioritaskan `<input type="datetime-local">` dibandingkan `<input type="date">` untuk event atau kontrak baru agar staf/manajer dapat menentukan jam dan menit deadline secara eksplisit.
+   - Selalu validasi `endDt > startDt` baik di client-side (dengan `showAlert` dari `@/lib/dialog`) maupun di backend Server Action sebelum mutasi database.
