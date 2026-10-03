@@ -6,6 +6,7 @@ import clientPromise from "@/lib/mongodb";
 import mongoose from "mongoose";
 import CommunityGoal from "@/lib/models/CommunityGoal";
 import { revalidatePath } from "next/cache";
+import { parseWIBDate } from "@/lib/utils";
 
 export async function createCommunityGoal(formData: FormData) {
   try {
@@ -34,7 +35,7 @@ export async function createCommunityGoal(formData: FormData) {
     }
 
     const targetAmount = Number(targetAmountStr);
-    const deadline = new Date(deadlineStr.includes('T') ? `${deadlineStr}+07:00` : deadlineStr);
+    const deadline = parseWIBDate(deadlineStr, true);
     if (isNaN(targetAmount) || targetAmount <= 0) {
       return { success: false, error: "Target Amount tidak valid." };
     }
