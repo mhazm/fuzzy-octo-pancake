@@ -94,20 +94,25 @@ export async function getCompanyMemberStats(
   }
 }
 
-export async function getCompanyMembersMap(companyId: number) {
+export async function getCompanyMembersMap(
+  companyId: number,
+  forceRefresh: boolean = false,
+) {
   const cacheKey = `trucky:members_map:${companyId}`;
 
-  // 1. Cek Redis Cache terlebih dahulu untuk respons secepat kilat
-  try {
-    const { redis } = await import("@/lib/redis");
-    if (redis) {
-      const cached = await redis.get(cacheKey);
-      if (cached) {
-        return JSON.parse(cached);
+  // 1. Cek Redis Cache terlebih dahulu untuk respons secepat kilat (kecuali jika forceRefresh diminta)
+  if (!forceRefresh) {
+    try {
+      const { redis } = await import("@/lib/redis");
+      if (redis) {
+        const cached = await redis.get(cacheKey);
+        if (cached) {
+          return JSON.parse(cached);
+        }
       }
+    } catch (err) {
+      // Abaikan jika Redis gagal, lanjut fetch live
     }
-  } catch (err) {
-    // Abaikan jika Redis gagal, lanjut fetch live
   }
 
   try {

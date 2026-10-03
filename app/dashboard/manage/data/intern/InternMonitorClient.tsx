@@ -37,6 +37,7 @@ import {
   AlertCircle,
   Timer,
   Activity,
+  RefreshCw,
 } from "lucide-react";
 import Swal from "sweetalert2";
 import { showAlert, showConfirm } from "@/lib/dialog";
@@ -67,10 +68,11 @@ export default function InternMonitorClient() {
     fetchInterns();
   }, []);
 
-  const fetchInterns = async () => {
+  const fetchInterns = async (forceRefresh: boolean = false) => {
     setLoading(true);
     try {
-      const res = await fetch("/api/manage/interns", {
+      const url = forceRefresh ? "/api/manage/interns?refresh=true" : "/api/manage/interns";
+      const res = await fetch(url, {
         cache: "no-store",
         headers: { Pragma: "no-cache", "Cache-Control": "no-cache" },
       });
@@ -199,7 +201,7 @@ export default function InternMonitorClient() {
           background: "#1e1e2d",
           color: "#ffffff",
         });
-        fetchInterns();
+        fetchInterns(true);
       } else {
         Swal.fire({
           icon: "error",
@@ -352,7 +354,7 @@ export default function InternMonitorClient() {
           `Evaluasi driver ${closeModalIntern.name} berhasil diselesaikan!\n\nChannel Discord telah dihapus dan Anda mendapatkan +2 Poin KPI Payroll Manager (Audit Intern).`,
           "Evaluasi Selesai 🎉",
         );
-        fetchInterns();
+        fetchInterns(true);
       } else {
         await showAlert(data.error || "Gagal menutup evaluasi.", "Gagal");
       }
@@ -403,8 +405,20 @@ export default function InternMonitorClient() {
             promosi.
           </p>
         </div>
-        <div className="bg-accent-lilac/20 border border-accent-lilac/30 text-accent-lilac text-sm font-bold px-4 py-2 rounded-xl">
-          {interns.length} Intern Aktif
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => fetchInterns(true)}
+            disabled={loading}
+            className="flex items-center gap-2 bg-card/60 hover:bg-muted text-gray-300 hover:text-white px-3.5 py-2 rounded-xl text-xs font-bold border border-border/50 transition disabled:opacity-50"
+            title="Segarkan data langsung dari Trucky & Database"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+            <span>Segarkan</span>
+          </button>
+          <div className="bg-accent-lilac/20 border border-accent-lilac/30 text-accent-lilac text-sm font-bold px-4 py-2 rounded-xl">
+            {interns.length} Intern Aktif
+          </div>
         </div>
       </div>
 

@@ -76,6 +76,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         {
           $set: {
             isDriver: true,
+            truckyRole: "Sopir",
             promotedBy: String(session.user.discordId),
             promotedAt: new Date(),
           },
@@ -138,10 +139,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         updatedAt: new Date(),
       });
 
-      // Invalidate Redis profile cache jika tersedia
+      // Invalidate Redis profile cache & Trucky members map
       try {
         const { redis } = await import("@/lib/redis");
         if (redis) {
+          const NISMARA_COMPANY_ID = process.env.TRUCKY_COMPANY_ID || "35643";
+          await redis.del(`trucky:members_map:${NISMARA_COMPANY_ID}`);
           const u = await db.collection("users").findOne({ discordId });
           if (u?._id) {
             await redis.del(`session:profile:${u._id.toString()}`);
