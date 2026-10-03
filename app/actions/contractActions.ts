@@ -5,6 +5,7 @@ import { ObjectId } from "mongodb";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { deleteFileFromR2 } from "@/lib/r2";
+import { parseWIBDate } from "@/lib/utils";
 
 export async function createContractAction(formData: any) {
   const client = await clientPromise;
@@ -14,9 +15,13 @@ export async function createContractAction(formData: any) {
     formData;
 
   const isSched = Boolean(isScheduled);
-  const startDt = isSched && startDate ? new Date(`${startDate}+07:00`) : new Date();
-  const endDt = new Date(`${endAt}+07:00`);
+  const startDt = isSched && startDate ? parseWIBDate(startDate) : new Date();
+  const endDt = parseWIBDate(endAt, true);
   const now = new Date();
+
+  if (endDt <= startDt) {
+    throw new Error("Deadline kontrak harus lebih lama daripada waktu mulai!");
+  }
 
   // Jika dijadwalkan dan tanggal mulai masih di masa depan, isActive = false
   const isCurrentlyActive = !isSched || startDt <= now;
@@ -141,34 +146,42 @@ export async function createContractAction(formData: any) {
         }
       }
 
-      await fetch(
-        `https://discord.com/api/v10/guilds/${guildId}/scheduled-events`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bot ${botToken}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            name: contractName,
-            privacy_level: 2, // GUILD_ONLY
-            scheduled_start_time: isScheduled ? new Date(`${startDate}+07:00`).toISOString() : new Date(Date.now() + 60000).toISOString(),
-            scheduled_end_time: new Date(`${endAt}+07:00`).toISOString(),
-            entity_type: 3, // EXTERNAL
-            entity_metadata: {
-              location: `${companyName} - ${gameId === "1" ? "ETS2" : "ATS"}`,
+      const eventStartTime = isTrulyScheduled
+        ? startDt
+        : new Date(Date.now() + 60000);
+
+      if (endDt > eventStartTime) {
+        await fetch(
+          `https://discord.com/api/v10/guilds/${guildId}/scheduled-events`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bot ${botToken}`,
+              "Content-Type": "application/json",
             },
-            description: `Kontrak logistik khusus dari ${companyName}. Info lebih lanjut: ${contractUrl}`,
-            image: base64Image,
-          }),
-        },
-      );
+            body: JSON.stringify({
+              name: contractName,
+              privacy_level: 2, // GUILD_ONLY
+              scheduled_start_time: eventStartTime.toISOString(),
+              scheduled_end_time: endDt.toISOString(),
+              entity_type: 3, // EXTERNAL
+              entity_metadata: {
+                location: `${companyName} - ${gameId === "1" ? "ETS2" : "ATS"}`,
+              },
+              description: `Kontrak logistik khusus dari ${companyName}. Info lebih lanjut: ${contractUrl}`,
+              image: base64Image,
+            }),
+          },
+        );
+      }
     } catch (err) {
       console.error("Gagal membuat Discord Event:", err);
     }
   }
 
   revalidatePath("/dashboard/manage/events/contracts");
+  revalidatePath("/special-contracts");
+  revalidatePath("/calendar");
 }
 
 export async function updateContractAction(
@@ -186,9 +199,15 @@ export async function updateContractAction(
       .findOne({ _id: new ObjectId(contractId) });
 
     const isSched = String(rawData.isScheduled) === "true";
-    const startDt = isSched && rawData.startDate ? new Date(`${rawData.startDate}+07:00`) : new Date();
-    const endDt = new Date(`${rawData.endAt}+07:00`);
+    const startDt = isSched && rawData.startDate
+      ? parseWIBDate(rawData.startDate as string)
+      : (existingContract?.startDate ? new Date(existingContract.startDate) : new Date());
+    const endDt = parseWIBDate(rawData.endAt as string, true);
     const now = new Date();
+
+    if (endDt <= startDt) {
+      throw new Error("Deadline kontrak harus lebih lama daripada waktu mulai!");
+    }
 
     const isCurrentlyActive = !isSched || startDt <= now;
     const isTrulyScheduled = isSched && startDt > now;
@@ -224,6 +243,8 @@ export async function updateContractAction(
   }
 
   revalidatePath("/dashboard/manage/events/contracts");
+  revalidatePath("/special-contracts");
+  revalidatePath("/calendar");
   redirect("/dashboard/manage/events/contracts");
 }
 

@@ -4,7 +4,7 @@ import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { revalidatePath } from "next/cache";
 import { deleteFileFromR2 } from "@/lib/r2";
-import { slugify } from "@/lib/utils";
+import { slugify, parseWIBDate } from "@/lib/utils";
 
 export async function createNCEventAction(formData: any) {
   const client = await clientPromise;
@@ -25,9 +25,13 @@ export async function createNCEventAction(formData: any) {
   } = formData;
 
   const isSched = Boolean(isScheduled);
-  const startDt = isSched && startDate ? new Date(`${startDate}+07:00`) : new Date();
-  const endDt = new Date(`${endAt}+07:00`);
+  const startDt = isSched && startDate ? parseWIBDate(startDate) : new Date();
+  const endDt = parseWIBDate(endAt, true);
   const now = new Date();
+
+  if (endDt <= startDt) {
+    return { success: false, error: "Waktu berakhir event harus lebih lama daripada waktu mulai!" };
+  }
 
   const isCurrentlyActive = !isSched || startDt <= now;
   const isTrulyScheduled = isSched && startDt > now;
@@ -154,9 +158,13 @@ export async function updateNCEventAction(eventId: string, formData: any) {
     }
 
     const isSched = Boolean(isScheduled);
-    const startDt = isSched && startDate ? new Date(`${startDate}+07:00`) : new Date();
-    const endDt = new Date(`${endAt}+07:00`);
+    const startDt = isSched && startDate ? parseWIBDate(startDate) : new Date();
+    const endDt = parseWIBDate(endAt, true);
     const now = new Date();
+
+    if (endDt <= startDt) {
+      return { success: false, error: "Waktu berakhir event harus lebih lama daripada waktu mulai!" };
+    }
 
     const isCurrentlyActive = !isSched || startDt <= now;
     const isTrulyScheduled = isSched && startDt > now;

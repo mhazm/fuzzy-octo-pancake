@@ -35,6 +35,7 @@ import {
 import { compressImageToWebP } from "@/lib/imageUtils";
 import { useSession } from "next-auth/react";
 import { showAlert, showConfirm } from "@/lib/dialog";
+import { formatWIBDateTimeLocal } from "@/lib/utils";
 
 export default function ContractManageUI({
   ongoing = [],
@@ -55,6 +56,19 @@ export default function ContractManageUI({
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
 
+  const getInitialEndDate = () => {
+    const d = new Date();
+    d.setDate(d.getDate() + 7);
+    d.setHours(23, 59, 0, 0);
+    return formatWIBDateTimeLocal(d);
+  };
+
+  const getInitialStartDate = () => {
+    const d = new Date();
+    d.setHours(d.getHours() + 1, 0, 0, 0);
+    return formatWIBDateTimeLocal(d);
+  };
+
   const [formData, setFormData] = useState({
     contractName: "",
     companyName: "",
@@ -64,6 +78,21 @@ export default function ContractManageUI({
     isScheduled: false,
     startDate: "",
   });
+
+  const handleOpenCreateModal = () => {
+    setFormData({
+      contractName: "",
+      companyName: "",
+      imageUrl: "",
+      gameId: "1",
+      endAt: getInitialEndDate(),
+      isScheduled: false,
+      startDate: getInitialStartDate(),
+    });
+    setImageFile(null);
+    setPreviewUrl("");
+    setIsModalOpen(true);
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -204,6 +233,13 @@ export default function ContractManageUI({
       return;
     }
 
+    if (formData.isScheduled && formData.startDate && formData.endAt) {
+      if (new Date(formData.endAt) <= new Date(formData.startDate)) {
+        showAlert("Deadline kontrak harus lebih lama daripada waktu mulai!");
+        return;
+      }
+    }
+
     setLoading(true);
     try {
       let finalImageUrl = formData.imageUrl;
@@ -253,9 +289,9 @@ export default function ContractManageUI({
         companyName: "",
         imageUrl: "",
         gameId: "1",
-        endAt: "",
+        endAt: getInitialEndDate(),
         isScheduled: false,
-        startDate: "",
+        startDate: getInitialStartDate(),
       });
       await showAlert("Kontrak berhasil dideploy ke sistem!");
     } catch (err: any) {
@@ -324,7 +360,7 @@ export default function ContractManageUI({
               <ExternalLink size={16} /> Public Portal
             </Link>
             <button
-              onClick={() => setIsModalOpen(true)}
+              onClick={handleOpenCreateModal}
               className="bg-primary text-primary-foreground px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-3 shadow-xl hover:brightness-110 hover:scale-105 active:scale-95 shadow-primary/25"
             >
               <Plus size={18} /> New Contract
@@ -1008,7 +1044,7 @@ export default function ContractManageUI({
                   Deadline Kontrak *
                 </label>
                 <input
-                  type="date"
+                  type="datetime-local"
                   required
                   value={formData.endAt}
                   onChange={(e) => setFormData({ ...formData, endAt: e.target.value })}
