@@ -4,26 +4,14 @@ import { useState } from "react";
 import { updateContractAction } from "@/app/actions/contractActions";
 import Link from "next/link";
 import { Briefcase, Save, ArrowLeft, Loader2 } from "lucide-react";
+import { formatWIBDateTimeLocal } from "@/lib/utils";
+import { showAlert } from "@/lib/dialog";
 
 export default function EditContractForm({ contract }: { contract: any }) {
   const [loading, setLoading] = useState(false);
 
-  // Format tanggal ISO ke format datetime-local (YYYY-MM-DDTHH:mm)
-  const formatForDateTimeInput = (dateString?: string) => {
-    if (!dateString) return "";
-    const d = new Date(dateString);
-    const pad = (n: number) => n.toString().padStart(2, "0");
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  };
-
-  // Format tanggal ISO ke YYYY-MM-DD untuk default value input type="date"
-  const initialDate = contract.endAt
-    ? new Date(contract.endAt).toISOString().split("T")[0]
-    : "";
-
-  const initialStartDate = contract.startDate
-    ? formatForDateTimeInput(contract.startDate)
-    : "";
+  const initialDate = formatWIBDateTimeLocal(contract.endAt);
+  const initialStartDate = formatWIBDateTimeLocal(contract.startDate);
 
   const [formData, setFormData] = useState({
     contractName: contract.contractName || "",
@@ -45,7 +33,12 @@ export default function EditContractForm({ contract }: { contract: any }) {
       <form
         action={async (data) => {
           setLoading(true);
-          await updateContractAction(contract._id, data);
+          try {
+            await updateContractAction(contract._id, data);
+          } catch (err: any) {
+            await showAlert(err.message || "Gagal memperbarui data kontrak.");
+            setLoading(false);
+          }
         }}
         className="relative z-10 space-y-8"
       >
@@ -76,7 +69,7 @@ export default function EditContractForm({ contract }: { contract: any }) {
               Deadline Kontrak
             </label>
             <input
-              type="date"
+              type="datetime-local"
               name="endAt"
               required
               value={formData.endAt}

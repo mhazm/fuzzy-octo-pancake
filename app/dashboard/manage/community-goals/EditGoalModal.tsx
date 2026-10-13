@@ -17,6 +17,7 @@ import { editGoalDetails } from "./actions";
 import { Edit, Trophy } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { useRouter } from "next/navigation";
+import { parseWIBDate } from "@/lib/utils";
 
 export default function EditGoalModal({ goal }: { goal: any }) {
   const [open, setOpen] = useState(false);
@@ -68,7 +69,7 @@ export default function EditGoalModal({ goal }: { goal: any }) {
         description,
         type,
         targetAmount: Number(targetAmount),
-        deadline: new Date(deadline.includes('T') ? `${deadline}+07:00` : deadline),
+        deadline: parseWIBDate(deadline, true),
         rewardType,
         rewardDetails: rewardType === "currency-boost" 
           ? { multiplier: Number(multiplier), duration: Number(rewardDuration) } 

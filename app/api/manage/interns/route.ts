@@ -11,21 +11,24 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const fetchCache = "force-no-store";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session || !session.user || (session.user.role !== "manager" && session.user.role !== "admin")) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const { searchParams } = new URL(req.url);
+    const forceRefresh = searchParams.get("refresh") === "true";
+
     await dbConnect();
 
     const client = await clientPromise;
     const db = client.db();
 
-    // 1. Fetch data Trucky
+    // 1. Fetch data Trucky (dukung forceRefresh jika diminta)
     const NISMARA_COMPANY_ID = process.env.TRUCKY_COMPANY_ID || "35643";
-    const membersMap = await getCompanyMembersMap(Number(NISMARA_COMPANY_ID));
+    const membersMap = await getCompanyMembersMap(Number(NISMARA_COMPANY_ID), forceRefresh);
 
     // 2. Ambil driverlinks
     const driverLinks = await db.collection("driverlinks").find({}).toArray();
@@ -36,7 +39,11 @@ export async function GET() {
       discordId: { $in: discordIdsFromLinks }
     }).toArray();
 
-    // 4. Identifikasi Intern (berdasarkan role Trucky API atau fallback DB)
+    // 4. Ambil data riwayat promosi intern agar yang sudah naik jabatan tidak pernah muncul lagi
+    const internPromotions = await db.collection("internpromotions").find({}).toArray();
+    const promotedDiscordIds = new Set(internPromotions.map((p) => String(p.internDiscordId)));
+
+    // 5. Identifikasi Intern (berdasarkan role Trucky API atau fallback DB)
     const internUsers: any[] = [];
     const internDiscordIds: string[] = [];
     const driverLinkMap: any = {};
@@ -44,18 +51,68 @@ export async function GET() {
     driverLinks.forEach((link) => {
       driverLinkMap[link.userId] = link;
       const webUser = webUsers.find((u) => u.discordId === link.userId);
-      const truckyData = membersMap[link.truckyId] || {};
 
-      // Role Check (Prioritaskan dari Trucky API, fallback ke users DB)
+      // A. Jika user sudah pernah dipromosikan (via web atau ada catatan di internpromotions / promotedAt)
+      if (webUser?.promotedAt || promotedDiscordIds.has(String(link.userId))) {
+        // Sinkronkan truckyRole di collection users jika masih tertulis Magang
+        if (webUser && webUser.truckyRole !== "Sopir") {
+          db.collection("users").updateOne(
+            { discordId: link.userId },
+            { $set: { truckyRole: "Sopir", updatedAt: new Date() } }
+          ).catch(console.error);
+        }
+        return; // Lewati, karena sudah resmi menjadi Sopir
+      }
+
+      // B. Ambil data Trucky API (dukung key number maupun string)
+      const truckyData = membersMap[Number(link.truckyId)] || membersMap[link.truckyId] || {};
+
+      // Role Check dari Trucky API
       const truckyRoleName = truckyData.role
         ? typeof truckyData.role === "object"
           ? truckyData.role.name
           : truckyData.role
         : null;
 
-      const finalRole = truckyRoleName || webUser?.truckyRole || "";
+      // C. Jika Trucky API mengembalikan data role dan rolenya BUKAN intern/magang (misal Sopir, Driver, Manajer, Owner)
+      if (truckyRoleName) {
+        const lowerTruckyRole = truckyRoleName.toLowerCase();
+        const isInternInTrucky = lowerTruckyRole.includes("intern") || lowerTruckyRole.includes("magang");
 
-      if (finalRole.toLowerCase().includes("intern") || finalRole.toLowerCase().includes("magang")) {
+        // Sinkronkan ke database jika role di DB berbeda
+        if (webUser && webUser.truckyRole !== truckyRoleName) {
+          db.collection("users").updateOne(
+            { discordId: link.userId },
+            { $set: { truckyRole: truckyRoleName, updatedAt: new Date() } }
+          ).catch(console.error);
+        }
+
+        // Jika di Trucky rolenya sudah bukan magang/intern (misal sudah dinaikkan jabatannya ke Sopir di Trucky Hub)
+        if (!isInternInTrucky) {
+          return;
+        }
+      }
+
+      const finalRole = truckyRoleName || webUser?.truckyRole || "";
+      const lowerFinalRole = finalRole.toLowerCase();
+
+      // D. Filter ketat: jika role sudah Sopir, Driver, Manajer, Owner, lewati!
+      if (
+        lowerFinalRole.includes("sopir") ||
+        lowerFinalRole.includes("driver") ||
+        lowerFinalRole.includes("manajer") ||
+        lowerFinalRole.includes("owner")
+      ) {
+        return;
+      }
+
+      // E. Driver yang dinonaktifkan (isDriver: false) juga dilewati
+      if (webUser?.isDriver === false) {
+        return;
+      }
+
+      // F. HANYA masukkan jika role-nya secara eksplisit adalah intern atau magang
+      if (lowerFinalRole.includes("intern") || lowerFinalRole.includes("magang")) {
         // Gabungkan data user (menggunakan data dari DB jika ada, atau buat dummy object berdasarkan link)
         internUsers.push({
           _id: webUser?._id || new mongoose.Types.ObjectId(),
