@@ -38,9 +38,9 @@ export const dynamic = "force-dynamic";
 export default async function DriversPage() {
   const client = await clientPromise;
   const db = client.db();
-  const guildId = process.env.DISCORD_GUILD_ID;
+  const guildId = process.env.DISCORD_GUILD_ID || "863959415702028318";
 
-  // Ambil data Trucky VTC resmi sebagai sumber utama (136 driver)
+  // Ambil data Trucky VTC resmi sebagai sumber utama
   const NISMARA_COMPANY_ID = process.env.TRUCKY_COMPANY_ID || "35643";
   const membersMap = await getCompanyMembersMap(Number(NISMARA_COMPANY_ID));
   const truckyMembers = Object.values(membersMap);
@@ -67,56 +67,81 @@ export default async function DriversPage() {
     webUserByDiscordId.set(String(u.discordId), u);
   }
 
-  // Map seluruh 136 anggota resmi Trucky VTC
-  const drivers = truckyMembers.map((member: any) => {
-    const link = driverLinkByTruckyId.get(Number(member.id));
-    const webUser = link ? webUserByDiscordId.get(String(link.userId)) : null;
+  // Map driver: prioritaskan anggota Trucky VTC, fallback ke database jika Trucky API terkendala
+  let drivers: any[] = [];
+  if (truckyMembers.length > 0) {
+    drivers = truckyMembers.map((member: any) => {
+      const link = driverLinkByTruckyId.get(Number(member.id));
+      const webUser = link ? webUserByDiscordId.get(String(link.userId)) : null;
 
-    // Role (Prioritaskan dari Trucky API, fallback ke users DB, fallback ke Trucky fallback)
-    const truckyRoleName = member.role
-      ? typeof member.role === "object"
-        ? member.role?.name
-        : member.role
-      : null;
-    const truckyRoleColor =
-      member.role && typeof member.role === "object"
-        ? member.role?.color
-        : "#64748b";
+      // Role (Prioritaskan dari Trucky API, fallback ke users DB, fallback ke Trucky fallback)
+      const truckyRoleName = member.role
+        ? typeof member.role === "object"
+          ? member.role?.name
+          : member.role
+        : null;
+      const truckyRoleColor =
+        member.role && typeof member.role === "object"
+          ? member.role?.color
+          : "#64748b";
 
-    // Rank (Prioritaskan dari Trucky API, fallback ke users DB, fallback ke Trucky fallback)
-    const truckyRankName = member.rank
-      ? typeof member.rank === "object"
-        ? member.rank?.name
-        : member.rank
-      : null;
-    const truckyRankColor =
-      member.rank && typeof member.rank === "object"
-        ? member.rank?.color
-        : "#64748b";
+      // Rank (Prioritaskan dari Trucky API, fallback ke users DB, fallback ke Trucky fallback)
+      const truckyRankName = member.rank
+        ? typeof member.rank === "object"
+          ? member.rank?.name
+          : member.rank
+        : null;
+      const truckyRankColor =
+        member.rank && typeof member.rank === "object"
+          ? member.rank?.color
+          : "#64748b";
 
-    return {
-      truckyId: member.id,
-      name:
-        webUser?.name ||
-        link?.truckyName ||
-        member.name ||
-        member.username ||
-        "Unknown Driver",
-      image:
-        webUser?.image ||
-        webUser?.avatarUrl ||
-        member.avatar_url ||
-        "https://cdn.truckyapp.com/public/default-avatar.png",
-      role: truckyRoleName || webUser?.truckyRole || "Driver",
-      roleColor: truckyRoleColor || webUser?.truckyRoleColor || "#64748b",
-      rank: truckyRankName || webUser?.truckyRank || "Member",
-      rankColor: truckyRankColor || webUser?.truckyRankColor || "#64748b",
-      isNismaraPlus: webUser?.nismaraplus?.status === true,
-      nismaraPlusStartedAt: webUser?.nismaraplus?.startedAt,
-    };
-  });
+      return {
+        truckyId: member.id,
+        name:
+          webUser?.name ||
+          link?.truckyName ||
+          member.name ||
+          member.username ||
+          "Unknown Driver",
+        image:
+          webUser?.image ||
+          webUser?.avatarUrl ||
+          member.avatar_url ||
+          "https://cdn.truckyapp.com/public/default-avatar.png",
+        role: truckyRoleName || webUser?.truckyRole || "Driver",
+        roleColor: truckyRoleColor || webUser?.truckyRoleColor || "#64748b",
+        rank: truckyRankName || webUser?.truckyRank || "Member",
+        rankColor: truckyRankColor || webUser?.truckyRankColor || "#64748b",
+        isNismaraPlus: webUser?.nismaraplus?.status === true,
+        nismaraPlusStartedAt: webUser?.nismaraplus?.startedAt,
+      };
+    });
+  } else {
+    // Fallback otomatis ke database driverlinks jika API Trucky tidak mengembalikan data
+    drivers = driverLinks.map((link: any) => {
+      const webUser = webUserByDiscordId.get(String(link.userId));
+      return {
+        truckyId: Number(link.truckyId),
+        name:
+          webUser?.name ||
+          link.truckyName ||
+          "Driver",
+        image:
+          webUser?.image ||
+          webUser?.avatarUrl ||
+          "https://cdn.truckyapp.com/public/default-avatar.png",
+        role: webUser?.truckyRole || "Driver",
+        roleColor: webUser?.truckyRoleColor || "#64748b",
+        rank: webUser?.truckyRank || "Member",
+        rankColor: webUser?.truckyRankColor || "#64748b",
+        isNismaraPlus: webUser?.nismaraplus?.status === true,
+        nismaraPlusStartedAt: webUser?.nismaraplus?.startedAt,
+      };
+    });
+  }
 
-  // Urutkan (sort) opsional: bisa berdasarkan Nismara+ lalu nama
+  // Urutkan (sort): Nismara+ di depan, lalu alfabetis berdasarkan nama
   const sortedDrivers = drivers.sort((a, b) => {
     if (a.isNismaraPlus !== b.isNismaraPlus) {
       return a.isNismaraPlus ? -1 : 1;

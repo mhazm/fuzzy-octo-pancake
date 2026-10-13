@@ -70,7 +70,7 @@ async function fetchAllTruckyMembers(companyId: string | number, apiKey: string)
     const res = await fetch(`https://e.truckyapp.com/api/v1/company/${companyId}/members?page=${page}`, {
       headers: {
         "x-access-token": apiKey,
-        "User-Agent": "NismaraLogistics/1.0",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
       },
     });
 

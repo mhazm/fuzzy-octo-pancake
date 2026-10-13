@@ -4,6 +4,7 @@ import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Search, Crown, ShieldAlert, Award, ChevronDown } from "lucide-react";
+import UserBadges from "@/components/icons/UserBadges";
 
 interface DriverData {
   truckyId: number;
@@ -14,6 +15,7 @@ interface DriverData {
   rank: string;
   rankColor: string;
   isNismaraPlus: boolean;
+  nismaraPlusStartedAt?: string | Date | null;
 }
 
 interface DriversClientProps {
@@ -105,12 +107,12 @@ export default function DriversClient({ drivers }: DriversClientProps) {
       {/* Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {filteredDrivers.map((driver) => (
-          <Link href={`/profile/${driver.truckyId}`} key={driver.truckyId}>
-            <div className="group relative bg-card/40 backdrop-blur-md border border-white/10 rounded-3xl p-6 transition-all duration-300 hover:scale-[1.02] hover:bg-card/60 hover:shadow-2xl hover:shadow-primary/20 flex flex-col items-center text-center overflow-hidden h-full">
+          <Link href={`/profile/${driver.truckyId}`} key={driver.truckyId} className="relative z-10 hover:z-50">
+            <div className="group relative bg-card/40 backdrop-blur-md border border-white/10 rounded-3xl p-6 transition-all duration-300 hover:scale-[1.02] hover:bg-card/60 hover:shadow-2xl hover:shadow-primary/20 flex flex-col items-center text-center h-full">
               
               {/* Nismara+ Glow Effect */}
               {driver.isNismaraPlus && (
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 shadow-[0_0_20px_rgba(245,158,11,0.5)]" />
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 shadow-[0_0_20px_rgba(245,158,11,0.5)] rounded-t-3xl" />
               )}
               
               {/* Avatar */}
@@ -134,8 +136,13 @@ export default function DriversClient({ drivers }: DriversClientProps) {
               </div>
 
               {/* Name */}
-              <h3 className="text-xl font-bold text-white mb-3 group-hover:text-primary transition-colors flex items-center justify-center gap-2">
-                {driver.name}
+              <h3 className="text-xl font-bold text-white mb-3 group-hover:text-primary transition-colors flex items-center justify-center gap-1.5 flex-wrap">
+                <span>{driver.name}</span>
+                <UserBadges
+                  isNismaraPlus={driver.isNismaraPlus}
+                  nismaraPlusStartedAt={driver.nismaraPlusStartedAt}
+                  truckyRank={driver.rank}
+                />
               </h3>
 
               {/* Badges Container */}

@@ -1,5 +1,7 @@
 // Fungsi ini hanya akan berjalan di server (aman dari kebocoran key)
 const TRUCKY_BASE_URL = "https://e.truckyapp.com";
+export const TRUCKY_USER_AGENT =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 // Catatan: Base URL ini bisa disesuaikan dengan endpoint e.truckyapp.com jika kamu menggunakan spesifik VTC Hub API.
 
 export async function getDriverStats(truckyId: number) {
@@ -11,7 +13,7 @@ export async function getDriverStats(truckyId: number) {
       headers: {
         "Content-Type": "application/json",
         "x-access-token": `${process.env.TRUCKY_API_KEY}`,
-        "User-Agent": "NismaraLogistics/1.0 (Next.js Server)",
+        "User-Agent": TRUCKY_USER_AGENT,
         Referer: "https://nismara.web.id",
         Origin: "https://nismara.web.id",
       },
@@ -49,7 +51,7 @@ export async function getCompanyMemberStats(
           headers: {
             "Content-Type": "application/json",
             "x-access-token": process.env.TRUCKY_API_KEY as string,
-            "User-Agent": "NismaraLogistics/1.0 (Next.js Server)",
+            "User-Agent": TRUCKY_USER_AGENT,
             Referer: "https://nismara.web.id",
             Origin: "https://nismara.web.id",
           },
@@ -128,7 +130,7 @@ export async function getCompanyMembersMap(
           headers: {
             "Content-Type": "application/json",
             "x-access-token": process.env.TRUCKY_API_KEY as string,
-            "User-Agent": "NismaraLogistics/1.0 (Next.js Server)",
+            "User-Agent": TRUCKY_USER_AGENT,
             Referer: "https://nismara.web.id",
             Origin: "https://nismara.web.id",
           },
@@ -182,7 +184,7 @@ export async function getCompanyDetails(companyId: string | number) {
         headers: {
           "Content-Type": "application/json",
           "x-access-token": process.env.TRUCKY_API_KEY as string,
-          "User-Agent": "NismaraLogistics/1.0",
+          "User-Agent": TRUCKY_USER_AGENT,
           Referer: "https://nismara.web.id",
           Origin: "https://nismara.web.id",
         },
@@ -207,7 +209,7 @@ export async function getMonthlyStats(companyId: string | number) {
         headers: {
           "Content-Type": "application/json",
           "x-access-token": process.env.TRUCKY_API_KEY as string,
-          "User-Agent": "NismaraLogistics/1.0",
+          "User-Agent": TRUCKY_USER_AGENT,
           Referer: "https://nismara.web.id",
           Origin: "https://nismara.web.id",
         },
@@ -230,7 +232,7 @@ export async function getJobDetails(jobId: string | number) {
       headers: {
         "Content-Type": "application/json",
         "x-access-token": process.env.TRUCKY_API_KEY as string,
-        "User-Agent": "NismaraLogistics/1.0",
+        "User-Agent": TRUCKY_USER_AGENT,
       },
       next: { revalidate: 3600 }, // Cache 1 jam
     });
@@ -255,7 +257,7 @@ export async function getJobEvents(jobId: string | number) {
         headers: {
           "Content-Type": "application/json",
           "x-access-token": process.env.TRUCKY_API_KEY as string,
-          "User-Agent": "NismaraLogistics/1.0",
+          "User-Agent": TRUCKY_USER_AGENT,
         },
         next: { revalidate: 3600 },
       },
