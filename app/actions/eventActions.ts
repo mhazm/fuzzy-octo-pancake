@@ -24,108 +24,116 @@ export async function createNCEventAction(formData: any) {
     guildId = process.env.DISCORD_GUILD_ID || "863959415702028318",
   } = formData;
 
-  const isSched = Boolean(isScheduled);
-  const startDt = isSched && startDate ? new Date(`${startDate}+07:00`) : new Date();
-  const endDt = new Date(`${endAt}+07:00`);
-  const now = new Date();
+  try {
+    const isSched = Boolean(isScheduled);
+    const startDt = isSched && startDate ? new Date(`${startDate}+07:00`) : new Date();
+    const endDt = new Date(`${endAt}+07:00`);
+    const now = new Date();
 
-  const isCurrentlyActive = !isSched || startDt <= now;
-  const isTrulyScheduled = isSched && startDt > now;
-  const finalSlug = rawSlug && rawSlug.trim() ? slugify(rawSlug) : slugify(nameEvent);
+    const isCurrentlyActive = !isSched || startDt <= now;
+    const isTrulyScheduled = isSched && startDt > now;
+    const finalSlug = rawSlug && rawSlug.trim() ? slugify(rawSlug) : slugify(nameEvent);
 
-  const newEventDoc = {
-    guildId,
-    slug: finalSlug,
-    nameEvent,
-    multiplier: Number(multiplier),
-    imageUrl: imageUrl || null,
-    type: type || "all",
-    gameId: gameId || "all",
-    participants: [],
-    isActive: isCurrentlyActive,
-    isScheduled: isTrulyScheduled,
-    setBy, // Discord ID Manager
-    setAt: new Date(),
-    startDate: startDt,
-    endAt: endDt,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
+    const newEventDoc = {
+      guildId,
+      slug: finalSlug,
+      nameEvent,
+      multiplier: Number(multiplier),
+      imageUrl: imageUrl || null,
+      type: type || "all",
+      gameId: gameId || "all",
+      participants: [],
+      isActive: isCurrentlyActive,
+      isScheduled: isTrulyScheduled,
+      setBy, // Discord ID Manager
+      setAt: new Date(),
+      startDate: startDt,
+      endAt: endDt,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
 
-  await db.collection("ncevents").insertOne(newEventDoc);
+    await db.collection("ncevents").insertOne(newEventDoc);
 
-  // Optional Discord Notification
-  const botToken = process.env.DISCORD_BOT_TOKEN;
-  const channelId = process.env.DISCORD_GENERAL_DRIVER_ID_CHANNEL;
-  const driverDiscordRole = process.env.DISCORD_DRIVER_ROLE_ID;
-  const internDiscordRole = process.env.DISCORD_INTERN_ROLE_ID;
+    // Optional Discord Notification
+    const botToken = process.env.DISCORD_BOT_TOKEN;
+    const channelId = process.env.DISCORD_GENERAL_DRIVER_ID_CHANNEL;
+    const driverDiscordRole = process.env.DISCORD_DRIVER_ROLE_ID;
+    const internDiscordRole = process.env.DISCORD_INTERN_ROLE_ID;
 
-  if (botToken && guildId && channelId) {
-    try {
-      const eventUrl = `${process.env.NEXT_PUBLIC_BASE_URL || "https://transport.nismara.web.id"}/currency-boost/${finalSlug}`;
-      const boostPercent = Math.round(Number(multiplier) * 100);
+    if (botToken && guildId && channelId) {
+      try {
+        const eventUrl = `${process.env.NEXT_PUBLIC_BASE_URL || "https://transport.nismara.web.id"}/currency-boost/${finalSlug}`;
+        const boostPercent = Math.round(Number(multiplier) * 100);
 
-      const announcementContent = isTrulyScheduled
-        ? `📅 **CURRENCY BOOST EVENT SCHEDULED** 📅\n-# <@&${driverDiscordRole}> <@&${internDiscordRole}>`
-        : `⚡ **NEW CURRENCY BOOST EVENT ACTIVE** ⚡\n-# <@&${driverDiscordRole}> <@&${internDiscordRole}>`;
+        const announcementContent = isTrulyScheduled
+          ? `📅 **CURRENCY BOOST EVENT SCHEDULED** 📅\n-# <@&${driverDiscordRole}> <@&${internDiscordRole}>`
+          : `⚡ **NEW CURRENCY BOOST EVENT ACTIVE** ⚡\n-# <@&${driverDiscordRole}> <@&${internDiscordRole}>`;
 
-      const descMessage = isTrulyScheduled
-        ? `Nismara Transport telah menjadwalkan Boost Event **+${boostPercent}% NC (+${multiplier}x)**! Event akan resmi aktif pada <t:${Math.floor(startDt.getTime() / 1000)}:F> (<t:${Math.floor(startDt.getTime() / 1000)}:R>). Bersiaplah!`
-        : `Event **${nameEvent}** kini telah aktif! Seluruh pengiriman mendapatkan bonus **+${boostPercent}% NC (+${multiplier}x)**. Ambil job sekarang sebelum deadline berakhir!`;
+        const descMessage = isTrulyScheduled
+          ? `Nismara Transport telah menjadwalkan Boost Event **+${boostPercent}% NC (+${multiplier}x)**! Event akan resmi aktif pada <t:${Math.floor(startDt.getTime() / 1000)}:F> (<t:${Math.floor(startDt.getTime() / 1000)}:R>). Bersiaplah!`
+          : `Event **${nameEvent}** kini telah aktif! Seluruh pengiriman mendapatkan bonus **+${boostPercent}% NC (+${multiplier}x)**. Ambil job sekarang sebelum deadline berakhir!`;
 
-      await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bot ${botToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          content: announcementContent,
-          embeds: [
-            {
-              title: isTrulyScheduled ? `[SCHEDULED] ${nameEvent}` : `${nameEvent}`,
-              description: descMessage,
-              url: eventUrl,
-              color: 16753920, // Amber Gold
-              image: imageUrl ? { url: imageUrl } : undefined,
-              fields: [
-                {
-                  name: "Bonus Multiplier",
-                  value: `+${boostPercent}% NC (+${multiplier}x)`,
-                  inline: true,
+        await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bot ${botToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            content: announcementContent,
+            embeds: [
+              {
+                title: isTrulyScheduled ? `[SCHEDULED] ${nameEvent}` : `${nameEvent}`,
+                description: descMessage,
+                url: eventUrl,
+                color: 16753920, // Amber Gold
+                image: imageUrl ? { url: imageUrl } : undefined,
+                fields: [
+                  {
+                    name: "Bonus Multiplier",
+                    value: `+${boostPercent}% NC (+${multiplier}x)`,
+                    inline: true,
+                  },
+                  {
+                    name: "Target Game",
+                    value: gameId === "1" ? "Euro Truck Simulator 2" : gameId === "2" ? "American Truck Simulator" : "Semua Game",
+                    inline: true,
+                  },
+                  {
+                    name: isTrulyScheduled ? "Waktu Mulai" : "Deadline",
+                    value: isTrulyScheduled
+                      ? `<t:${Math.floor(startDt.getTime() / 1000)}:R>`
+                      : `<t:${Math.floor(endDt.getTime() / 1000)}:R>`,
+                    inline: true,
+                  },
+                ],
+                footer: {
+                  text: "Nismara Transport • Currency Boost Event",
                 },
-                {
-                  name: "Target Game",
-                  value: gameId === "1" ? "Euro Truck Simulator 2" : gameId === "2" ? "American Truck Simulator" : "Semua Game",
-                  inline: true,
-                },
-                {
-                  name: isTrulyScheduled ? "Waktu Mulai" : "Deadline",
-                  value: isTrulyScheduled
-                    ? `<t:${Math.floor(startDt.getTime() / 1000)}:R>`
-                    : `<t:${Math.floor(endDt.getTime() / 1000)}:R>`,
-                  inline: true,
-                },
-              ],
-              footer: {
-                text: "Nismara Transport • Currency Boost Event",
+                timestamp: new Date().toISOString(),
               },
-              timestamp: new Date().toISOString(),
-            },
-          ],
-        }),
-      });
-    } catch (err) {
-      console.error("Failed to send Discord event announcement:", err);
+            ],
+          }),
+        });
+      } catch (err) {
+        console.error("Failed to send Discord event announcement:", err);
+      }
     }
+
+    revalidatePath("/dashboard/manage/events/ncboost");
+    revalidatePath("/currency-boost");
+    revalidatePath("/calendar");
+    revalidatePath("/");
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("Gagal membuat event NC Boost:", error);
+    if (imageUrl) {
+      await deleteFileFromR2(imageUrl);
+    }
+    return { success: false, error: error.message || "Gagal membuat event." };
   }
-
-  revalidatePath("/dashboard/manage/events/ncboost");
-  revalidatePath("/currency-boost");
-  revalidatePath("/calendar");
-  revalidatePath("/");
-
-  return { success: true };
 }
 
 export async function updateNCEventAction(eventId: string, formData: any) {
@@ -181,8 +189,9 @@ export async function updateNCEventAction(eventId: string, formData: any) {
       }
     );
 
-    // Rule 4 Storage Hygiene: Hapus gambar lama jika diganti
-    if (existing.imageUrl && imageUrl && existing.imageUrl !== imageUrl) {
+    // Rule 4 Storage Hygiene: Hapus gambar lama jika diganti atau dihapus
+    const newCleanImageUrl = imageUrl || null;
+    if (existing.imageUrl && existing.imageUrl !== newCleanImageUrl) {
       await deleteFileFromR2(existing.imageUrl);
     }
 

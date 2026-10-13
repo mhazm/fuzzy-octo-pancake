@@ -108,7 +108,28 @@ export default function EventManageUI({
     setMounted(true);
   }, []);
 
+  // Bersihkan Object URL saat preview berubah atau komponen unmount
+  useEffect(() => {
+    return () => {
+      if (imagePreview && imagePreview.startsWith("blob:")) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
+
+  const closeModal = () => {
+    if (imagePreview && imagePreview.startsWith("blob:")) {
+      URL.revokeObjectURL(imagePreview);
+    }
+    setImageFile(null);
+    setImagePreview(null);
+    setIsModalOpen(false);
+  };
+
   const openCreateModal = () => {
+    if (imagePreview && imagePreview.startsWith("blob:")) {
+      URL.revokeObjectURL(imagePreview);
+    }
     setEditingEvent(null);
     setFormData({
       nameEvent: "",
@@ -127,6 +148,9 @@ export default function EventManageUI({
   };
 
   const openEditModal = (eventItem: any) => {
+    if (imagePreview && imagePreview.startsWith("blob:")) {
+      URL.revokeObjectURL(imagePreview);
+    }
     setEditingEvent(eventItem);
     const start = eventItem.startDate ? new Date(eventItem.startDate) : new Date(eventItem.setAt || Date.now());
     const end = eventItem.endAt ? new Date(eventItem.endAt) : new Date();
@@ -159,19 +183,39 @@ export default function EventManageUI({
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    const isNismaraPlus = Boolean(manager?.nismaraplus?.status);
+    const maxSizeBytes = isNismaraPlus ? 5 * 1024 * 1024 : 3 * 1024 * 1024;
+
     if (!file.type.startsWith("image/")) {
       showAlert("File harus berupa format gambar (PNG, JPEG, WebP, GIF).");
+      e.target.value = "";
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      showAlert("Maksimal ukuran gambar adalah 5MB");
+    if (file.type === "image/gif" && !isNismaraPlus) {
+      showAlert("Format GIF hanya diperbolehkan untuk member Nismara+.");
+      e.target.value = "";
       return;
     }
+    if (file.size > maxSizeBytes) {
+      showAlert(`Maksimal ukuran gambar adalah ${isNismaraPlus ? "5MB" : "3MB"}.`);
+      e.target.value = "";
+      return;
+    }
+
+    if (imagePreview && imagePreview.startsWith("blob:")) {
+      URL.revokeObjectURL(imagePreview);
+    }
+
     setImageFile(file);
     setImagePreview(URL.createObjectURL(file));
+    e.target.value = "";
   };
 
   const removeImage = () => {
+    if (imagePreview && imagePreview.startsWith("blob:")) {
+      URL.revokeObjectURL(imagePreview);
+    }
     setImageFile(null);
     setImagePreview(null);
     setFormData((prev) => ({ ...prev, imageUrl: "" }));
@@ -194,14 +238,30 @@ export default function EventManageUI({
 
       // Upload deferred file jika ada file baru yang dipilih
       if (imageFile) {
+        const isNismaraPlus = Boolean(manager?.nismaraplus?.status);
         let fileToUpload = imageFile;
-        if (imageFile.type !== "image/gif") {
-          fileToUpload = await compressImageToWebP(imageFile, 1, 1920);
+
+        if (imageFile.type === "image/gif") {
+          if (!isNismaraPlus) {
+            throw new Error("Format GIF hanya diperbolehkan untuk member Nismara+.");
+          }
+          // Biarkan GIF asli, jangan dikompresi ke WebP agar animasi tetap aktif
+        } else {
+          fileToUpload = await compressImageToWebP(
+            imageFile,
+            isNismaraPlus ? 5 : 3,
+            1920
+          );
         }
 
         const presignedRes = await fetch("/api/upload", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "Cache-Control": "no-cache",
+            "Pragma": "no-cache",
+          },
+          cache: "no-store",
           body: JSON.stringify({
             fileName: fileToUpload.name,
             fileType: fileToUpload.type,
@@ -211,13 +271,19 @@ export default function EventManageUI({
         });
 
         if (!presignedRes.ok) {
-          const errData = await presignedRes.json();
+          const errData = await presignedRes.json().catch(() => ({}));
           throw new Error(errData.error || "Gagal mendapatkan izin upload Cloudflare R2.");
         }
 
-        const { uploadUrl, fileUrl } = await presignedRes.json();
+        const uploadData = await presignedRes.json();
+        const targetUploadUrl = uploadData.signedUrl || uploadData.uploadUrl;
+        const targetPublicUrl = uploadData.publicUrl || uploadData.fileUrl;
 
-        const uploadBinaryRes = await fetch(uploadUrl, {
+        if (!targetUploadUrl || !targetPublicUrl) {
+          throw new Error("Presigned URL upload Cloudflare R2 tidak ditemukan dari server.");
+        }
+
+        const uploadBinaryRes = await fetch(targetUploadUrl, {
           method: "PUT",
           headers: { "Content-Type": fileToUpload.type },
           body: fileToUpload,
@@ -227,7 +293,7 @@ export default function EventManageUI({
           throw new Error("Gagal mengunggah gambar ke server storage Cloudflare R2.");
         }
 
-        finalImageUrl = fileUrl;
+        finalImageUrl = targetPublicUrl;
       }
 
       const payload = {
@@ -240,7 +306,7 @@ export default function EventManageUI({
         const res = await updateNCEventAction(editingEvent._id, payload);
         if (res.success) {
           await showAlert("Event Currency Boost berhasil diperbarui!");
-          setIsModalOpen(false);
+          closeModal();
           router.refresh();
         } else {
           await showAlert(res.error || "Gagal memperbarui event.");
@@ -249,10 +315,10 @@ export default function EventManageUI({
         const res = await createNCEventAction(payload);
         if (res.success) {
           await showAlert("Event Currency Boost berhasil dibuat dan dijadwalkan!");
-          setIsModalOpen(false);
+          closeModal();
           router.refresh();
         } else {
-          await showAlert("Gagal membuat event.");
+          await showAlert(res.error || "Gagal membuat event.");
         }
       }
     } catch (err: any) {
@@ -662,7 +728,8 @@ export default function EventManageUI({
                 </div>
               </div>
               <button
-                onClick={() => setIsModalOpen(false)}
+                type="button"
+                onClick={closeModal}
                 className="p-2 text-muted-foreground hover:text-foreground rounded-xl hover:bg-white/5 transition"
               >
                 <X size={18} />
@@ -898,7 +965,7 @@ export default function EventManageUI({
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-border/60">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={closeModal}
                   className="px-5 py-3 rounded-xl border border-border text-foreground font-bold text-xs uppercase tracking-wider hover:bg-white/5 transition"
                 >
                   Batal

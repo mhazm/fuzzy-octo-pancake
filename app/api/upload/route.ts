@@ -5,6 +5,18 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import clientPromise from "@/lib/mongodb";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
+
+const NO_CACHE_HEADERS = {
+  "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0, s-maxage=0",
+  "CDN-Cache-Control": "no-store",
+  "Vercel-CDN-Cache-Control": "no-store",
+  "Pragma": "no-cache",
+  "Expires": "0",
+};
+
 // Inisialisasi R2 langsung di sini (menggantikan @/lib/r2)
 const r2 = new S3Client({
   region: "auto",
@@ -23,7 +35,10 @@ export async function POST(request: Request) {
   // Proteksi API agar hanya user login yang bisa upload
   const session = await getServerSession(authOptions);
   if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json(
+      { error: "Unauthorized" },
+      { status: 401, headers: NO_CACHE_HEADERS }
+    );
   }
 
   try {
@@ -35,7 +50,7 @@ export async function POST(request: Request) {
       if (!["image/jpeg", "image/png", "image/webp"].includes(fileType)) {
         return NextResponse.json(
           { error: "Format file harus JPEG, PNG, atau WebP" },
-          { status: 400 }
+          { status: 400, headers: NO_CACHE_HEADERS }
         );
       }
 
@@ -50,7 +65,7 @@ export async function POST(request: Request) {
       if (fileSize && fileSize > maxSize) {
         return NextResponse.json(
           { error: `Ukuran file melebihi batas maksimal (${isNismaraPlus ? '10MB' : '2MB'})` },
-          { status: 400 }
+          { status: 400, headers: NO_CACHE_HEADERS }
         );
       }
     }
@@ -75,12 +90,20 @@ export async function POST(request: Request) {
     // Ganti domain ini dengan Custom Domain R2 kamu (URL dari .env)
     const publicUrl = `${process.env.NEXT_PUBLIC_R2_PUBLIC_URL}/${filePath}`;
 
-    return NextResponse.json({ signedUrl, publicUrl });
+    return NextResponse.json(
+      {
+        signedUrl,
+        publicUrl,
+        uploadUrl: signedUrl,
+        fileUrl: publicUrl,
+      },
+      { headers: NO_CACHE_HEADERS }
+    );
   } catch (error) {
     console.error("Error generating presigned URL:", error);
     return NextResponse.json(
       { error: "Failed to generate presigned URL" },
-      { status: 500 },
+      { status: 500, headers: NO_CACHE_HEADERS },
     );
   }
 }
