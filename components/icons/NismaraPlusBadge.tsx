@@ -5,6 +5,7 @@ import React, { useMemo } from "react";
 interface NismaraPlusBadgeProps {
   className?: string;
   startedAt?: string | Date | null;
+  placement?: "top" | "bottom";
 }
 
 const getTierDetails = (startedAt?: string | Date | null) => {
@@ -69,7 +70,9 @@ const getTierDetails = (startedAt?: string | Date | null) => {
 export default function NismaraPlusBadge({
   className = "w-4 h-4",
   startedAt,
+  placement = "bottom",
 }: NismaraPlusBadgeProps) {
+  const isTop = placement === "top";
   const tier = useMemo(() => getTierDetails(startedAt), [startedAt]);
 
   const BadgeSVG = ({
@@ -232,9 +235,21 @@ export default function NismaraPlusBadge({
       )}
 
       {/* --- DISCORD NITRO STYLE POPOVER TOOLTIP --- */}
-      <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 p-4 bg-[#111214]/95 backdrop-blur-md rounded-2xl opacity-0 group-hover/nplus:opacity-100 transition-all duration-300 -translate-y-2 group-hover/nplus:translate-y-0 pointer-events-none border border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.9)] z-[9999] w-56 text-center flex flex-col items-center gap-3">
-        {/* Top Arrow Notch */}
-        <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-[#111214]/95 border-l border-t border-white/10 rotate-45" />
+      <div
+        className={`absolute ${
+          isTop
+            ? "bottom-full mb-3 translate-y-2 group-hover/nplus:translate-y-0"
+            : "top-full mt-3 -translate-y-2 group-hover/nplus:translate-y-0"
+        } left-1/2 -translate-x-1/2 p-4 bg-[#111214]/95 backdrop-blur-md rounded-2xl opacity-0 group-hover/nplus:opacity-100 transition-all duration-300 pointer-events-none border border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.9)] z-[9999] w-56 text-center flex flex-col items-center gap-3`}
+      >
+        {/* Arrow Notch */}
+        <div
+          className={`absolute ${
+            isTop
+              ? "-bottom-1.5 border-r border-b"
+              : "-top-1.5 border-l border-t"
+          } left-1/2 -translate-x-1/2 w-3 h-3 bg-[#111214]/95 border-white/10 rotate-45`}
+        />
 
         {/* Large Badge Preview with Intense Aura */}
         <div className="w-16 h-16 relative flex items-center justify-center mb-1">

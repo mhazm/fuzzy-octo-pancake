@@ -6,12 +6,15 @@ import { Crown } from "lucide-react";
 interface TopManagerBadgeProps {
   className?: string;
   month?: string | null; // e.g. "2026-08"
+  placement?: "top" | "bottom";
 }
 
 export default function TopManagerBadge({
   className = "w-4 h-4",
   month,
+  placement = "bottom",
 }: TopManagerBadgeProps) {
+  const isTop = placement === "top";
   const formatMonth = (mStr?: string | null) => {
     if (!mStr || !mStr.includes("-")) return null;
     const [year, m] = mStr.split("-");
@@ -46,7 +49,7 @@ export default function TopManagerBadge({
       />
 
       {/* Tooltip */}
-      <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2.5 py-1 bg-zinc-950 text-amber-300 text-[10px] font-bold rounded-lg opacity-0 group-hover/topmanager:opacity-100 transition-all duration-300 -translate-y-1 group-hover/topmanager:translate-y-0 whitespace-nowrap pointer-events-none border border-amber-500/40 shadow-[0_0_12px_rgba(245,158,11,0.3)] z-[9999] flex flex-col items-center">
+      <div className={`absolute ${isTop ? "bottom-full mb-1.5 translate-y-1" : "top-full mt-1.5 -translate-y-1"} left-1/2 -translate-x-1/2 px-2.5 py-1 bg-zinc-950 text-amber-300 text-[10px] font-bold rounded-lg opacity-0 group-hover/topmanager:opacity-100 transition-all duration-300 group-hover/topmanager:translate-y-0 whitespace-nowrap pointer-events-none border border-amber-500/40 shadow-[0_0_12px_rgba(245,158,11,0.3)] z-[9999] flex flex-col items-center`}>
         <div className="flex items-center gap-1 text-amber-400 font-extrabold uppercase tracking-wide">
           <span>👑 Top Manager</span>
         </div>

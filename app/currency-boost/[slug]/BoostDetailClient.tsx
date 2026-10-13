@@ -14,6 +14,7 @@ import {
   XCircle,
   Coins,
   Clock,
+  User,
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -169,9 +170,12 @@ export default function BoostDetailClient({ event }: { event: any }) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Info & Details Panel */}
         <div className="lg:col-span-1 space-y-6">
-          <div className="bg-card border border-border p-8 rounded-[2.5rem] shadow-xl relative overflow-hidden">
-            <div className="absolute -top-10 -right-10 text-border opacity-20 pointer-events-none">
-              <Calendar size={150} />
+          <div className="bg-card border border-border p-8 rounded-[2.5rem] shadow-xl relative z-20">
+            {/* Watermark clipped inside its own isolated container */}
+            <div className="absolute inset-0 rounded-[2.5rem] overflow-hidden pointer-events-none">
+              <div className="absolute -top-10 -right-10 text-border opacity-20">
+                <Calendar size={150} />
+              </div>
             </div>
             <h3 className="text-xl font-black text-white uppercase tracking-tight mb-6">
               Detail Waktu
@@ -209,6 +213,54 @@ export default function BoostDetailClient({ event }: { event: any }) {
                   {formatDate(event.endAt)}
                 </p>
               </div>
+
+              {event.organizer && (
+                <>
+                  <div className="h-px w-full bg-border" />
+                  <div>
+                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 flex items-center gap-1">
+                      <User size={12} /> Penyelenggara Event
+                    </p>
+                    <div className="flex items-center gap-3 bg-black/30 p-2.5 rounded-2xl border border-white/5 relative z-10 hover:z-50">
+                      {event.organizer.avatarUrl ? (
+                        <img
+                          src={event.organizer.avatarUrl}
+                          alt={event.organizer.name}
+                          className="w-8 h-8 rounded-full object-cover ring-2 ring-white/10"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xs">
+                          <User size={14} />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-bold text-white text-sm truncate">
+                            {event.organizer.name || "Management Nismara"}
+                          </span>
+                          {event.organizer.isNismaraPlus && (
+                            <UserBadges
+                              role={event.organizer.role}
+                              isBooster={event.organizer.isBooster}
+                              isNismaraPlus={event.organizer.isNismaraPlus}
+                              nismaraPlusStartedAt={event.organizer.nismaraPlusStartedAt}
+                              tooltipPlacement="top"
+                              className="w-3.5 h-3.5"
+                            />
+                          )}
+                        </div>
+                        <p className="text-[10px] text-gray-400">
+                          {event.organizer.role === "admin"
+                            ? "Administrator"
+                            : event.organizer.role === "manager"
+                            ? "Event Manager"
+                            : "Management Staff"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
@@ -268,7 +320,7 @@ export default function BoostDetailClient({ event }: { event: any }) {
                 {event.participants.map((p: any, idx: number) => (
                   <div
                     key={p.discordId}
-                    className={`flex items-center gap-4 p-4 rounded-2xl transition-colors ${idx < 3 ? "bg-gradient-to-r from-accent-lilac/10 to-transparent border border-accent-lilac/20" : "bg-black/20 hover:bg-black/40 border border-transparent"}`}
+                    className={`flex items-center gap-4 p-4 rounded-2xl transition-colors relative z-10 hover:z-50 ${idx < 3 ? "bg-gradient-to-r from-accent-lilac/10 to-transparent border border-accent-lilac/20" : "bg-black/20 hover:bg-black/40 border border-transparent"}`}
                   >
                     {/* Rank Number */}
                     <div

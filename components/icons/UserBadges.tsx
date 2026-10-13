@@ -20,6 +20,7 @@ interface UserBadgesProps {
   nismaraPlusStartedAt?: string | Date | null;
   truckyRank?: string;
   className?: string;
+  tooltipPlacement?: "top" | "bottom";
 }
 
 export default function UserBadges({
@@ -33,6 +34,7 @@ export default function UserBadges({
   nismaraPlusStartedAt,
   truckyRank,
   className,
+  tooltipPlacement = "bottom",
 }: UserBadgesProps) {
   const isManagerRole = isManager || role === "manager" || role === "admin";
   const hasTopManager =
@@ -44,12 +46,28 @@ export default function UserBadges({
 
   return (
     <>
-      {isManagerRole && <ManagerBadge className={className} />}
-      {hasTopManager && <TopManagerBadge month={effectiveMonth} className={className} />}
-      {isBooster && <ServerBoosterBadge className={className} />}
-      {isNismaraPlus && <NismaraPlusBadge startedAt={nismaraPlusStartedAt} className={className} />}
+      {isManagerRole && (
+        <ManagerBadge className={className} placement={tooltipPlacement} />
+      )}
+      {hasTopManager && (
+        <TopManagerBadge
+          month={effectiveMonth}
+          className={className}
+          placement={tooltipPlacement}
+        />
+      )}
+      {isBooster && (
+        <ServerBoosterBadge className={className} placement={tooltipPlacement} />
+      )}
+      {isNismaraPlus && (
+        <NismaraPlusBadge
+          startedAt={nismaraPlusStartedAt}
+          className={className}
+          placement={tooltipPlacement}
+        />
+      )}
       {truckyRank === "Legendary Driver" && (
-        <LegendaryBadge className={className} />
+        <LegendaryBadge className={className} placement={tooltipPlacement} />
       )}
     </>
   );

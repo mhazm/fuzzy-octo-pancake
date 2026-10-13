@@ -3,9 +3,12 @@ import { Crown } from "lucide-react";
 
 export default function LegendaryBadge({
   className = "w-4 h-4",
+  placement = "bottom",
 }: {
   className?: string;
+  placement?: "top" | "bottom";
 }) {
+  const isTop = placement === "top";
   return (
     <div className="group/legendary relative inline-flex items-center justify-center cursor-help ml-1.5 align-middle">
       {/* Glow effect */}
@@ -19,7 +22,7 @@ export default function LegendaryBadge({
       </div>
 
       {/* 2. Tooltip (Muncul saat di hover) */}
-      <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2 py-1 bg-black/95 text-orange-400 text-[10px] font-bold rounded-md opacity-0 group-hover/legendary:opacity-100 transition-all duration-300 -translate-y-1 group-hover/legendary:translate-y-0 whitespace-nowrap pointer-events-none border border-orange-400/30 z-[9999]">
+      <div className={`absolute ${isTop ? "bottom-full mb-1.5 translate-y-1" : "top-full mt-1.5 -translate-y-1"} left-1/2 -translate-x-1/2 px-2 py-1 bg-black/95 text-orange-400 text-[10px] font-bold rounded-md opacity-0 group-hover/legendary:opacity-100 transition-all duration-300 group-hover/legendary:translate-y-0 whitespace-nowrap pointer-events-none border border-orange-400/30 z-[9999]`}>
         Legendary Driver
       </div>
     </div>

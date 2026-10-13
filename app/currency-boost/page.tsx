@@ -63,6 +63,53 @@ export default async function EventsPage() {
     .limit(6)
     .toArray();
 
+  // Ambil data user pembuat/organizer event berdasarkan setBy
+  const allSetByIds = Array.from(
+    new Set(
+      [...activeEvents, ...pendingEvents, ...historyEvents]
+        .map((e) => e.setBy)
+        .filter(Boolean)
+    )
+  );
+
+  const organizerUsers = allSetByIds.length > 0
+    ? await db
+        .collection("users")
+        .find({ discordId: { $in: allSetByIds } })
+        .toArray()
+    : [];
+
+  const organizerLinks = allSetByIds.length > 0
+    ? await db
+        .collection("driverlinks")
+        .find({ userId: { $in: allSetByIds } })
+        .toArray()
+    : [];
+
+  const organizerMap = new Map<string, { name: string; image?: string | null }>();
+  for (const u of organizerUsers) {
+    if (u.discordId) {
+      organizerMap.set(String(u.discordId), {
+        name: u.name || u.global_name || u.username || "Management Nismara",
+        image: u.image || u.avatarUrl || null,
+      });
+    }
+  }
+  for (const link of organizerLinks) {
+    const key = String(link.userId);
+    if (!organizerMap.has(key)) {
+      organizerMap.set(key, {
+        name: link.truckyName || "Management Nismara",
+        image: null,
+      });
+    }
+  }
+
+  const getOrganizer = (setBy: any) => {
+    if (!setBy) return { name: "Management Nismara", image: null };
+    return organizerMap.get(String(setBy)) || { name: "Management Nismara", image: null };
+  };
+
   const formatDate = (dateInput: any) => {
     if (!dateInput) return "-";
     const date = dateInput.$date
@@ -144,9 +191,22 @@ export default async function EventsPage() {
                       </div>
                     </div>
                     <div className="flex items-center justify-between pt-4 border-t border-border/50">
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
-                        <User className="w-3 h-3" />
-                        <span>Organizer ID: {event.setBy}</span>
+                      <div className="flex items-center gap-2 text-xs text-gray-400">
+                        {getOrganizer(event.setBy).image ? (
+                          <img
+                            src={getOrganizer(event.setBy).image!}
+                            alt={getOrganizer(event.setBy).name}
+                            className="w-4 h-4 rounded-full object-cover ring-1 ring-white/20"
+                          />
+                        ) : (
+                          <User className="w-3.5 h-3.5 text-primary" />
+                        )}
+                        <span>
+                          Organizer:{" "}
+                          <strong className="text-gray-200 font-semibold">
+                            {getOrganizer(event.setBy).name}
+                          </strong>
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -200,9 +260,22 @@ export default async function EventsPage() {
                       </div>
                     </div>
                     <div className="flex items-center justify-between pt-4 border-t border-border/50">
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
-                        <User className="w-3 h-3" />
-                        <span>Organizer ID: {event.setBy}</span>
+                      <div className="flex items-center gap-2 text-xs text-gray-400">
+                        {getOrganizer(event.setBy).image ? (
+                          <img
+                            src={getOrganizer(event.setBy).image!}
+                            alt={getOrganizer(event.setBy).name}
+                            className="w-4 h-4 rounded-full object-cover ring-1 ring-orange-400/30"
+                          />
+                        ) : (
+                          <User className="w-3.5 h-3.5 text-orange-400" />
+                        )}
+                        <span>
+                          Organizer:{" "}
+                          <strong className="text-orange-200 font-semibold">
+                            {getOrganizer(event.setBy).name}
+                          </strong>
+                        </span>
                       </div>
                     </div>
                   </div>

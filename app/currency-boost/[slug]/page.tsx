@@ -85,6 +85,25 @@ export default async function CurrencyBoostDetailPage({ params }: any) {
     };
   });
 
+  // Ambil detail user untuk creator / organizer
+  const organizerUser = event.setBy
+    ? await db.collection("users").findOne({ discordId: event.setBy })
+    : null;
+  const organizerLink = (!organizerUser && event.setBy)
+    ? await db.collection("driverlinks").findOne({ userId: event.setBy })
+    : null;
+
+  const organizer = {
+    discordId: event.setBy,
+    name: organizerUser?.name || organizerUser?.global_name || organizerLink?.truckyName || "Management Nismara",
+    avatarUrl: organizerUser?.image || null,
+    truckyId: organizerUser?.truckyId || organizerLink?.truckyId || null,
+    role: organizerUser?.discordRole || organizerUser?.role || null,
+    isBooster: organizerUser?.isBooster || false,
+    isNismaraPlus: organizerUser?.nismaraplus?.status === true,
+    nismaraPlusStartedAt: organizerUser?.nismaraplus?.startedAt || null,
+  };
+
   const serializedEvent = {
     _id: event._id.toString(),
     slug: event.slug,
@@ -102,6 +121,7 @@ export default async function CurrencyBoostDetailPage({ params }: any) {
         : null,
     setAt: event.setAt ? event.setAt.toISOString() : null,
     setBy: event.setBy,
+    organizer,
     participants: enrichedParticipants
       .map((p: any) => ({
         discordId: p.discordId,
