@@ -2,18 +2,18 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { 
-  Search, 
-  Filter, 
-  Edit2, 
-  Save, 
-  X, 
-  CheckCircle2, 
+import {
+  Search,
+  Filter,
+  Edit2,
+  Save,
+  X,
+  CheckCircle2,
   XCircle,
   Truck,
   Plus,
   FileText,
-  Upload
+  Upload,
 } from "lucide-react";
 import { compressImageToWebP } from "@/lib/imageUtils";
 import { useSession } from "next-auth/react";
@@ -28,16 +28,33 @@ export default function FleetStoreManager() {
   const [gameFilter, setGameFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
 
-  const initialCostMaintenance = { engine: 2000, tires: 500, transmission: 1500, brakes: 800 };
-  const initialCostUnfix = { engine: 40000, transmission: 60000, brakes: 40000, tires: 30000 };
+  const initialCostMaintenance = {
+    engine: 2000,
+    tires: 500,
+    transmission: 1500,
+    brakes: 800,
+  };
+  const initialCostUnfix = {
+    engine: 40000,
+    transmission: 60000,
+    brakes: 40000,
+    tires: 30000,
+  };
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [formData, setFormData] = useState({ 
-    id: "", name: "", game_id: "1", in_game_id: "", type: "truck", price: "", brand: "", photo_url: "",
+  const [formData, setFormData] = useState({
+    id: "",
+    name: "",
+    game_id: "1",
+    in_game_id: "",
+    type: "truck",
+    price: "",
+    brand: "",
+    photo_url: "",
     component_cost_maintenance: { ...initialCostMaintenance },
-    component_cost_unfix_wear: { ...initialCostUnfix }
+    component_cost_unfix_wear: { ...initialCostUnfix },
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -62,7 +79,7 @@ export default function FleetStoreManager() {
       ]);
       const dataStores = await resStores.json();
       const dataBrands = await resBrands.json();
-      
+
       setStores(Array.isArray(dataStores) ? dataStores : []);
       setBrands(Array.isArray(dataBrands) ? dataBrands : []);
     } catch (error) {
@@ -78,18 +95,24 @@ export default function FleetStoreManager() {
       store.id?.toLowerCase().includes(search.toLowerCase());
     const matchesGame =
       gameFilter === "all" || store.game_id?.toString() === gameFilter;
-    const matchesType =
-      typeFilter === "all" || store.type === typeFilter;
+    const matchesType = typeFilter === "all" || store.type === typeFilter;
     return matchesSearch && matchesGame && matchesType;
   });
 
   const handleAddClick = () => {
     setIsEditMode(false);
     setPhotoFile(null);
-    setFormData({ 
-      id: "", name: "", game_id: "1", in_game_id: "", type: "truck", price: "", brand: "", photo_url: "",
+    setFormData({
+      id: "",
+      name: "",
+      game_id: "1",
+      in_game_id: "",
+      type: "truck",
+      price: "",
+      brand: "",
+      photo_url: "",
       component_cost_maintenance: { ...initialCostMaintenance },
-      component_cost_unfix_wear: { ...initialCostUnfix }
+      component_cost_unfix_wear: { ...initialCostUnfix },
     });
     setIsModalOpen(true);
   };
@@ -106,8 +129,12 @@ export default function FleetStoreManager() {
       price: store.price.toString(),
       brand: store.brand?._id || store.brand || "",
       photo_url: store.photo_url || "",
-      component_cost_maintenance: store.component_cost_maintenance || { ...initialCostMaintenance },
-      component_cost_unfix_wear: store.component_cost_unfix_wear || { ...initialCostUnfix }
+      component_cost_maintenance: store.component_cost_maintenance || {
+        ...initialCostMaintenance,
+      },
+      component_cost_unfix_wear: store.component_cost_unfix_wear || {
+        ...initialCostUnfix,
+      },
     });
     setIsModalOpen(true);
   };
@@ -116,12 +143,17 @@ export default function FleetStoreManager() {
     setIsSaving(true);
     try {
       let finalPhotoUrl = formData.photo_url;
-      const isNismaraPlus = (session?.user as any)?.nismaraplus?.status === true;
+      const isNismaraPlus =
+        (session?.user as any)?.nismaraplus?.status === true;
 
       if (photoFile) {
         setIsUploading(true);
-        const compressed = await compressImageToWebP(photoFile, isNismaraPlus ? 5 : 3, 1920);
-        
+        const compressed = await compressImageToWebP(
+          photoFile,
+          isNismaraPlus ? 5 : 3,
+          1920,
+        );
+
         const resUpload = await fetch("/api/upload", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -133,7 +165,8 @@ export default function FleetStoreManager() {
           }),
         });
         const uploadData = await resUpload.json();
-        if (!resUpload.ok) throw new Error(uploadData.error || "Gagal mendapatkan URL upload");
+        if (!resUpload.ok)
+          throw new Error(uploadData.error || "Gagal mendapatkan URL upload");
 
         const s3Res = await fetch(uploadData.signedUrl, {
           method: "PUT",
@@ -141,14 +174,16 @@ export default function FleetStoreManager() {
           body: compressed,
         });
         if (!s3Res.ok) throw new Error("Gagal mengupload file ke server");
-        
+
         finalPhotoUrl = uploadData.publicUrl;
         setIsUploading(false);
       }
 
-      const url = isEditMode ? `/api/fleet/store/${formData.id}` : `/api/fleet/store`;
+      const url = isEditMode
+        ? `/api/fleet/store/${formData.id}`
+        : `/api/fleet/store`;
       const method = isEditMode ? "PATCH" : "POST";
-      
+
       const payload = {
         ...formData,
         photo_url: finalPhotoUrl,
@@ -158,7 +193,9 @@ export default function FleetStoreManager() {
         component_cost_maintenance: {
           engine: Number(formData.component_cost_maintenance.engine),
           tires: Number(formData.component_cost_maintenance.tires),
-          transmission: Number(formData.component_cost_maintenance.transmission),
+          transmission: Number(
+            formData.component_cost_maintenance.transmission,
+          ),
           brakes: Number(formData.component_cost_maintenance.brakes),
         },
         component_cost_unfix_wear: {
@@ -166,7 +203,7 @@ export default function FleetStoreManager() {
           tires: Number(formData.component_cost_unfix_wear.tires),
           transmission: Number(formData.component_cost_unfix_wear.transmission),
           brakes: Number(formData.component_cost_unfix_wear.brakes),
-        }
+        },
       };
 
       const res = await fetch(url, {
@@ -176,8 +213,13 @@ export default function FleetStoreManager() {
       });
 
       if (!res.ok) throw new Error("Gagal menyimpan data");
-      
-      showToast(isEditMode ? "Kendaraan berhasil diupdate!" : "Kendaraan berhasil ditambahkan!", "success");
+
+      showToast(
+        isEditMode
+          ? "Kendaraan berhasil diupdate!"
+          : "Kendaraan berhasil ditambahkan!",
+        "success",
+      );
       setIsModalOpen(false);
       fetchData();
       router.refresh();
@@ -198,9 +240,12 @@ export default function FleetStoreManager() {
     }
 
     const isNismaraPlus = (session?.user as any)?.nismaraplus?.status === true;
-    
+
     if (!isNismaraPlus && file.type === "image/gif") {
-      showToast("Hanya member Nismara+ yang diizinkan mengunggah GIF.", "error");
+      showToast(
+        "Hanya member Nismara+ yang diizinkan mengunggah GIF.",
+        "error",
+      );
       return;
     }
 
@@ -267,27 +312,48 @@ export default function FleetStoreManager() {
               <Plus size={16} /> Add Vehicle
             </button>
             <div className="relative flex items-center">
-              <Filter className="absolute left-4 text-foreground/20" size={16} />
+              <Filter
+                className="absolute left-4 text-foreground/20"
+                size={16}
+              />
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
                 className="bg-white/5 border border-border rounded-2xl py-4 pl-10 pr-8 text-foreground focus:outline-none focus:border-accent-sky appearance-none font-bold text-xs uppercase tracking-widest cursor-pointer"
               >
-                <option value="all" className="bg-card">All Types</option>
-                <option value="truck" className="bg-card">Truck</option>
-                <option value="bus" className="bg-card">Bus</option>
+                <option value="all" className="bg-card">
+                  All Types
+                </option>
+                <option value="truck" className="bg-card">
+                  Truck
+                </option>
+                <option value="bus" className="bg-card">
+                  Bus
+                </option>
+                <option value="car" className="bg-card">
+                  Car
+                </option>
               </select>
             </div>
             <div className="relative flex items-center">
-              <Filter className="absolute left-4 text-foreground/20" size={16} />
+              <Filter
+                className="absolute left-4 text-foreground/20"
+                size={16}
+              />
               <select
                 value={gameFilter}
                 onChange={(e) => setGameFilter(e.target.value)}
                 className="bg-white/5 border border-border rounded-2xl py-4 pl-10 pr-8 text-foreground focus:outline-none focus:border-accent-sky appearance-none font-bold text-xs uppercase tracking-widest cursor-pointer"
               >
-                <option value="all" className="bg-card">All Games</option>
-                <option value="1" className="bg-card">Euro Truck Simulator 2</option>
-                <option value="2" className="bg-card">American Truck Simulator</option>
+                <option value="all" className="bg-card">
+                  All Games
+                </option>
+                <option value="1" className="bg-card">
+                  Euro Truck Simulator 2
+                </option>
+                <option value="2" className="bg-card">
+                  American Truck Simulator
+                </option>
               </select>
             </div>
           </div>
@@ -309,7 +375,10 @@ export default function FleetStoreManager() {
               <tbody className="divide-y divide-border">
                 {loading ? (
                   <tr>
-                    <td colSpan={5} className="px-8 py-20 text-center text-foreground/20 font-black uppercase tracking-[0.2em]">
+                    <td
+                      colSpan={5}
+                      className="px-8 py-20 text-center text-foreground/20 font-black uppercase tracking-[0.2em]"
+                    >
                       <div className="flex justify-center items-center gap-3">
                         <Truck className="animate-pulse" size={24} />
                         Loading fleet store data...
@@ -326,7 +395,10 @@ export default function FleetStoreManager() {
                       <td className="px-8 py-4">
                         <div className="flex items-center gap-4">
                           <img
-                            src={store.photo_url || "https://placehold.co/100x60?text=No+Image"}
+                            src={
+                              store.photo_url ||
+                              "https://placehold.co/100x60?text=No+Image"
+                            }
                             alt={store.name}
                             className="w-16 h-10 object-cover rounded-md border border-border"
                           />
@@ -345,7 +417,11 @@ export default function FleetStoreManager() {
                       <td className="px-8 py-4">
                         <div className="flex items-center gap-2">
                           {store.brand?.logo_url && (
-                            <img src={store.brand.logo_url} alt="Brand" className="h-4 object-contain" />
+                            <img
+                              src={store.brand.logo_url}
+                              alt="Brand"
+                              className="h-4 object-contain"
+                            />
                           )}
                           <span className="text-xs font-bold text-foreground/70 uppercase tracking-wider">
                             {store.brand?.name || "-"}
@@ -365,7 +441,15 @@ export default function FleetStoreManager() {
                               ATS
                             </div>
                           )}
-                          <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase border ${store.type === 'truck' ? 'bg-primary/10 text-primary border-primary/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'}`}>
+                          <div
+                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase border ${
+                              store.type === "truck"
+                                ? "bg-primary/10 text-primary border-primary/20"
+                                : store.type === "bus"
+                                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                                : "bg-purple-500/10 text-purple-400 border-purple-500/20"
+                            }`}
+                          >
                             {store.type}
                           </div>
                         </div>
@@ -374,7 +458,7 @@ export default function FleetStoreManager() {
                       {/* Price */}
                       <td className="px-8 py-4 text-right">
                         <span className="font-mono font-bold text-amber-500">
-                          {store.price?.toLocaleString('id-ID')} NC
+                          {store.price?.toLocaleString("id-ID")} NC
                         </span>
                       </td>
 
@@ -413,13 +497,13 @@ export default function FleetStoreManager() {
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 animate-in fade-in duration-200">
           <div className="glass-panel p-8 rounded-[2rem] border border-border/50 max-w-4xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto">
-            <button 
+            <button
               onClick={() => setIsModalOpen(false)}
               className="absolute top-6 right-6 text-foreground/40 hover:text-foreground transition-colors"
             >
               <X size={20} />
             </button>
-            
+
             <div className="mb-6">
               <div className="flex items-center gap-3 mb-2">
                 <div className="p-2 bg-accent-sky/10 rounded-lg text-accent-sky border border-accent-sky/20">
@@ -430,7 +514,9 @@ export default function FleetStoreManager() {
                 </h2>
               </div>
               <p className="text-foreground/40 text-xs font-bold uppercase tracking-widest mt-2">
-                {isEditMode ? "Ubah detail kendaraan" : "Masukkan data kendaraan baru"}
+                {isEditMode
+                  ? "Ubah detail kendaraan"
+                  : "Masukkan data kendaraan baru"}
               </p>
             </div>
 
@@ -444,7 +530,9 @@ export default function FleetStoreManager() {
                   type="text"
                   value={formData.id}
                   disabled={isEditMode}
-                  onChange={(e) => setFormData({ ...formData, id: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, id: e.target.value })
+                  }
                   className="w-full bg-white/5 border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-accent-sky transition-all disabled:opacity-50"
                   placeholder="e.g. TRUCK-001"
                 />
@@ -456,7 +544,9 @@ export default function FleetStoreManager() {
                 <input
                   type="text"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   className="w-full bg-white/5 border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-accent-sky transition-all"
                   placeholder="e.g. Scania S Highline"
                 />
@@ -468,7 +558,9 @@ export default function FleetStoreManager() {
                 <input
                   type="text"
                   value={formData.in_game_id}
-                  onChange={(e) => setFormData({ ...formData, in_game_id: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, in_game_id: e.target.value })
+                  }
                   className="w-full bg-white/5 border border-border rounded-xl px-4 py-3 text-foreground font-mono focus:outline-none focus:border-accent-sky transition-all"
                   placeholder="e.g. vehicle.scania.s_2016"
                 />
@@ -479,10 +571,14 @@ export default function FleetStoreManager() {
                 </label>
                 <select
                   value={formData.brand}
-                  onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, brand: e.target.value })
+                  }
                   className="w-full bg-white/5 border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-accent-sky transition-all appearance-none cursor-pointer"
                 >
-                  <option value="" disabled className="bg-card">Pilih Brand</option>
+                  <option value="" disabled className="bg-card">
+                    Pilih Brand
+                  </option>
                   {brands.map((b) => (
                     <option key={b._id} value={b._id} className="bg-card">
                       {b.name}
@@ -496,11 +592,17 @@ export default function FleetStoreManager() {
                 </label>
                 <select
                   value={formData.game_id}
-                  onChange={(e) => setFormData({ ...formData, game_id: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, game_id: e.target.value })
+                  }
                   className="w-full bg-white/5 border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-accent-sky transition-all appearance-none cursor-pointer"
                 >
-                  <option value="1" className="bg-card">ETS2</option>
-                  <option value="2" className="bg-card">ATS</option>
+                  <option value="1" className="bg-card">
+                    ETS2
+                  </option>
+                  <option value="2" className="bg-card">
+                    ATS
+                  </option>
                 </select>
               </div>
               <div className="col-span-1">
@@ -509,11 +611,20 @@ export default function FleetStoreManager() {
                 </label>
                 <select
                   value={formData.type}
-                  onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, type: e.target.value })
+                  }
                   className="w-full bg-white/5 border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-accent-sky transition-all appearance-none cursor-pointer"
                 >
-                  <option value="truck" className="bg-card">Truck</option>
-                  <option value="bus" className="bg-card">Bus</option>
+                  <option value="truck" className="bg-card">
+                    Truck
+                  </option>
+                  <option value="bus" className="bg-card">
+                    Bus
+                  </option>
+                  <option value="car" className="bg-card">
+                    Car
+                  </option>
                 </select>
               </div>
               <div className="col-span-1 lg:col-span-2">
@@ -523,7 +634,9 @@ export default function FleetStoreManager() {
                 <input
                   type="number"
                   value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, price: e.target.value })
+                  }
                   className="w-full bg-white/5 border border-border rounded-xl px-4 py-3 text-foreground font-mono focus:outline-none focus:border-accent-sky transition-all"
                   placeholder="e.g. 150000"
                 />
@@ -542,12 +655,12 @@ export default function FleetStoreManager() {
                   />
                   <label className="inline-flex items-center gap-2 px-4 py-3 bg-accent-sky/10 hover:bg-accent-sky/20 text-accent-sky border border-accent-sky/20 rounded-xl cursor-pointer transition-all">
                     {isUploading ? "Uploading..." : <Upload size={16} />}
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      className="hidden" 
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
                       onChange={handleFileUpload}
-                      disabled={isUploading} 
+                      disabled={isUploading}
                     />
                   </label>
                 </div>
@@ -560,7 +673,7 @@ export default function FleetStoreManager() {
                 Maintenance Cost (Per Service)
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {['engine', 'tires', 'transmission', 'brakes'].map((part) => (
+                {["engine", "tires", "transmission", "brakes"].map((part) => (
                   <div key={`maint-${part}`}>
                     <label className="block text-[10px] font-black text-foreground/40 uppercase tracking-widest mb-2">
                       {part} Cost
@@ -568,10 +681,15 @@ export default function FleetStoreManager() {
                     <input
                       type="number"
                       value={(formData.component_cost_maintenance as any)[part]}
-                      onChange={(e) => setFormData({ 
-                        ...formData, 
-                        component_cost_maintenance: { ...formData.component_cost_maintenance, [part]: e.target.value } 
-                      })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          component_cost_maintenance: {
+                            ...formData.component_cost_maintenance,
+                            [part]: e.target.value,
+                          },
+                        })
+                      }
                       className="w-full bg-white/5 border border-border rounded-xl px-4 py-3 text-foreground font-mono focus:outline-none focus:border-accent-sky transition-all"
                     />
                   </div>
@@ -585,7 +703,7 @@ export default function FleetStoreManager() {
                 Unfix Wear Cost (Total Loss)
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {['engine', 'tires', 'transmission', 'brakes'].map((part) => (
+                {["engine", "tires", "transmission", "brakes"].map((part) => (
                   <div key={`unfix-${part}`}>
                     <label className="block text-[10px] font-black text-foreground/40 uppercase tracking-widest mb-2">
                       {part} Replace
@@ -593,10 +711,15 @@ export default function FleetStoreManager() {
                     <input
                       type="number"
                       value={(formData.component_cost_unfix_wear as any)[part]}
-                      onChange={(e) => setFormData({ 
-                        ...formData, 
-                        component_cost_unfix_wear: { ...formData.component_cost_unfix_wear, [part]: e.target.value } 
-                      })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          component_cost_unfix_wear: {
+                            ...formData.component_cost_unfix_wear,
+                            [part]: e.target.value,
+                          },
+                        })
+                      }
                       className="w-full bg-white/5 border border-border rounded-xl px-4 py-3 text-foreground font-mono focus:outline-none focus:border-accent-sky transition-all"
                     />
                   </div>
@@ -613,10 +736,24 @@ export default function FleetStoreManager() {
               </button>
               <button
                 onClick={handleSave}
-                disabled={isSaving || !formData.id || !formData.name || !formData.price || !formData.brand || !formData.photo_url}
+                disabled={
+                  isSaving ||
+                  !formData.id ||
+                  !formData.name ||
+                  !formData.price ||
+                  !formData.brand ||
+                  !formData.photo_url
+                }
                 className="inline-flex items-center gap-2 px-6 py-3 bg-accent-sky/10 hover:bg-accent-sky/20 text-accent-sky border border-accent-sky/20 disabled:opacity-50 rounded-xl font-black text-xs uppercase tracking-widest transition-all"
               >
-                {isSaving ? "Saving..." : <><Save size={14} /> {isEditMode ? "Save Changes" : "Add Vehicle"}</>}
+                {isSaving ? (
+                  "Saving..."
+                ) : (
+                  <>
+                    <Save size={14} />{" "}
+                    {isEditMode ? "Save Changes" : "Add Vehicle"}
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -626,14 +763,20 @@ export default function FleetStoreManager() {
       {/* TOAST NOTIFICATION */}
       <div
         className={`fixed bottom-8 right-8 px-6 py-4 rounded-2xl font-bold text-sm shadow-xl transition-all duration-300 flex items-center gap-3 backdrop-blur-md border z-50 ${
-          toast.show ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0 pointer-events-none"
+          toast.show
+            ? "translate-y-0 opacity-100"
+            : "translate-y-4 opacity-0 pointer-events-none"
         } ${
-          toast.type === "error" 
-            ? "bg-red-500/10 text-red-400 border-red-500/20" 
+          toast.type === "error"
+            ? "bg-red-500/10 text-red-400 border-red-500/20"
             : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
         }`}
       >
-        {toast.type === "error" ? <XCircle size={18} /> : <CheckCircle2 size={18} />}
+        {toast.type === "error" ? (
+          <XCircle size={18} />
+        ) : (
+          <CheckCircle2 size={18} />
+        )}
         {toast.message}
       </div>
     </main>

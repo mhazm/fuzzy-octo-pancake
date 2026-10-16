@@ -7,7 +7,7 @@ const fleetStoreSchema = new mongoose.Schema(
     name: { type: String, required: true },
     game_id: { type: Number, required: true },
     in_game_id: { type: String, required: true, default: "" },
-    type: { type: String, enum: ["truck", "bus"], required: true },
+    type: { type: String, enum: ["truck", "bus", "car"], required: true },
     price: { type: Number, required: true },
     photo_url: { type: String, required: true },
     brand: {
