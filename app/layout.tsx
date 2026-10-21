@@ -95,6 +95,7 @@ export const metadata: Metadata = {
 };
 
 import GlobalPopupAd from "@/components/GlobalPopupAd";
+import HalloweenDecorations from "@/components/halloween/HalloweenDecorations";
 
 export default function RootLayout({
   children,
@@ -120,6 +121,7 @@ export default function RootLayout({
           <Footer />
           <NismaraPlusAdPopup />
           <GlobalPopupAd />
+          <HalloweenDecorations />
         </Providers>
         {process.env.NEXT_PUBLIC_GA_ID && (
           <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
