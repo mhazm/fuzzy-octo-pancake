@@ -208,8 +208,10 @@ export async function ensureStarterTemplates() {
  * agar tidak terjadi dobel klaim / free reward tanpa usaha ekstra.
  */
 const INCOMPATIBLE_TYPE_PAIRS: [string, string][] = [
-  // TOTAL_JOBS dan TRUCKERSMP_JOB sama-sama menghitung kuantitas job murni (job TMP otomatis mengisi Total Job)
+  // TOTAL_JOBS, TRUCKERSMP_JOB, dan HAULMP_JOB sama-sama menghitung kuantitas job murni
   ["TOTAL_JOBS", "TRUCKERSMP_JOB"],
+  ["TOTAL_JOBS", "HAULMP_JOB"],
+  ["TRUCKERSMP_JOB", "HAULMP_JOB"],
 ];
 
 function isTypeCompatibleWithSelected(type: string, usedTypes: Set<string>): boolean {
@@ -458,6 +460,12 @@ export async function getUserWeeklyQuestProgress(
         currentValue = userJobs.filter((j) => {
           const mode = String(j.gameMode || "").toLowerCase();
           return mode === "truckersmp" || mode.includes("truckersmp");
+        }).length;
+        break;
+      case "HAULMP_JOB":
+        currentValue = userJobs.filter((j) => {
+          const mode = String(j.gameMode || "").toLowerCase();
+          return mode === "haulmp" || mode.includes("haulmp");
         }).length;
         break;
       case "HEAVY_CARGO":

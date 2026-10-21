@@ -179,7 +179,8 @@ export default async function ConvoyDetailPage({
                 <span className="bg-white/20 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider backdrop-blur-md">
                   {convoy.gameplayType || "Convoy Lobby"}
                   {convoy.gameplayType === "TruckersMP" && convoy.serverName ? ` - ${convoy.serverName}` : ""}
-                  {convoy.gameplayType !== "TruckersMP" && convoy.lobbyId ? ` - ID: ${convoy.lobbyId}` : ""}
+                  {convoy.gameplayType === "HaulMP" && convoy.serverName ? ` - ${convoy.serverName}` : ""}
+                  {convoy.gameplayType === "Convoy Lobby" && convoy.lobbyId ? ` - ID: ${convoy.lobbyId}` : ""}
                 </span>
               </div>
               <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-white drop-shadow-xl">

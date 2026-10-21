@@ -5,7 +5,7 @@ export interface IActiveQuestItem {
   templateId?: mongoose.Types.ObjectId | string;
   title: string;
   description: string;
-  type: "TOTAL_JOBS" | "HEAVY_CARGO" | "LONG_HAUL" | "TOTAL_DISTANCE" | "PERFECT_DELIVERY" | "HARDCORE_JOB" | "TRUCKERSMP_JOB";
+  type: "TOTAL_JOBS" | "HEAVY_CARGO" | "LONG_HAUL" | "TOTAL_DISTANCE" | "PERFECT_DELIVERY" | "HARDCORE_JOB" | "TRUCKERSMP_JOB" | "HAULMP_JOB";
   target: number;
   minCargoMass?: number;
   minDistanceKm?: number;
@@ -33,7 +33,7 @@ const activeQuestItemSchema = new mongoose.Schema(
     description: { type: String, required: true },
     type: {
       type: String,
-      enum: ["TOTAL_JOBS", "HEAVY_CARGO", "LONG_HAUL", "TOTAL_DISTANCE", "PERFECT_DELIVERY", "HARDCORE_JOB", "TRUCKERSMP_JOB"],
+      enum: ["TOTAL_JOBS", "HEAVY_CARGO", "LONG_HAUL", "TOTAL_DISTANCE", "PERFECT_DELIVERY", "HARDCORE_JOB", "TRUCKERSMP_JOB", "HAULMP_JOB"],
       required: true,
     },
     target: { type: Number, required: true },

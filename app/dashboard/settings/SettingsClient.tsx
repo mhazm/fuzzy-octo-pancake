@@ -2,7 +2,14 @@
 
 import { useSession } from "next-auth/react";
 import { useState, useEffect } from "react"; // Tambahkan useEffect
-import { updateProfile, getUserSettings, syncTruckersMP, unlinkTruckersMP } from "./actions"; // Import actions TMP
+import {
+  updateProfile,
+  getUserSettings,
+  syncTruckersMP,
+  unlinkTruckersMP,
+  submitHaulmpApplication,
+  cancelHaulmpApplication,
+} from "./actions"; // Import actions TMP & HaulMP
 import {
   User,
   Image as ImageIcon,
@@ -15,7 +22,11 @@ import {
   ShieldAlert,
   Link as LinkIcon,
   Truck,
-  Unlink
+  Unlink,
+  Clock,
+  Send,
+  ExternalLink,
+  MessageSquare,
 } from "lucide-react";
 import { compressImageToWebP } from "@/lib/imageUtils";
 import { showAlert, showConfirm } from "@/lib/dialog";
@@ -30,11 +41,42 @@ export default function SettingsClient() {
     text: string;
   } | null>(null);
 
+  // Tab State: "profile" | "sync"
+  const [activeTab, setActiveTab] = useState<"profile" | "sync">("profile");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get("tab");
+      if (tabParam === "sync" || tabParam === "profile") {
+        setActiveTab(tabParam);
+      }
+    }
+  }, []);
+
+  const handleTabChange = (tab: "profile" | "sync") => {
+    setActiveTab(tab);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("tab", tab);
+      window.history.replaceState({}, "", url.toString());
+    }
+  };
+
   // TMP State
   const [tmpId, setTmpId] = useState("");
   const [isTmpDriver, setIsTmpDriver] = useState(false);
   const [truckersmpId, setTruckersmpId] = useState<string | null>(null);
   const [isSyncingTmp, setIsSyncingTmp] = useState(false);
+
+  // HaulMP State
+  const [isDriver, setIsDriver] = useState(false);
+  const [isHaulmpDriver, setIsHaulmpDriver] = useState(false);
+  const [haulmpId, setHaulmpId] = useState<string | null>(null);
+  const [haulmpApp, setHaulmpApp] = useState<any | null>(null);
+  const [haulmpNotes, setHaulmpNotes] = useState("");
+  const [isSubmittingHaulmp, setIsSubmittingHaulmp] = useState(false);
+  const [isCancellingHaulmp, setIsCancellingHaulmp] = useState(false);
 
   // State form
   const [name, setName] = useState("");
@@ -83,6 +125,10 @@ export default function SettingsClient() {
         }
         setTruckersmpId(data.truckersmpId || null);
         setIsTmpDriver(data.isTmpDriver || false);
+        setIsDriver(Boolean(data.isDriver));
+        setIsHaulmpDriver(Boolean(data.isHaulmpDriver));
+        setHaulmpId(data.haulmpId || null);
+        setHaulmpApp(data.haulmpApplication || null);
       }
       setIsInitialLoading(false);
     }
@@ -129,6 +175,54 @@ export default function SettingsClient() {
       } else {
         showAlert(result.message, "error");
       }
+    }
+  };
+
+  const handleSubmitHaulmp = async () => {
+    setIsSubmittingHaulmp(true);
+    try {
+      const result = await submitHaulmpApplication(haulmpNotes);
+      if (result.success) {
+        await showAlert(result.message);
+        const data = await getUserSettings();
+        if (data) {
+          setIsHaulmpDriver(Boolean(data.isHaulmpDriver));
+          setHaulmpApp(data.haulmpApplication || null);
+        }
+        setHaulmpNotes("");
+      } else {
+        await showAlert(result.message, "error");
+      }
+    } catch (error) {
+      console.error(error);
+      await showAlert("Terjadi kesalahan internal saat mengajukan verifikasi.", "error");
+    } finally {
+      setIsSubmittingHaulmp(false);
+    }
+  };
+
+  const handleCancelHaulmp = async () => {
+    if (!(await showConfirm("Yakin ingin membatalkan pengajuan verifikasi VTC HaulMP Anda?"))) {
+      return;
+    }
+    setIsCancellingHaulmp(true);
+    try {
+      const result = await cancelHaulmpApplication();
+      if (result.success) {
+        await showAlert(result.message);
+        const data = await getUserSettings();
+        if (data) {
+          setIsHaulmpDriver(Boolean(data.isHaulmpDriver));
+          setHaulmpApp(data.haulmpApplication || null);
+        }
+      } else {
+        await showAlert(result.message, "error");
+      }
+    } catch (error) {
+      console.error(error);
+      await showAlert("Terjadi kesalahan saat membatalkan pengajuan.", "error");
+    } finally {
+      setIsCancellingHaulmp(false);
     }
   };
 
@@ -275,11 +369,42 @@ export default function SettingsClient() {
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-black text-foreground">
-            Profile Settings
+            Pengaturan Akun
           </h1>
           <p className="text-gray-400">
-            Kustomisasi identitas publik Nismara kamu.
+            Kustomisasi identitas publik Nismara kamu dan kelola sinkronisasi akun game eksternal.
           </p>
+        </div>
+
+        {/* TAB NAVIGATION */}
+        <div className="flex items-center gap-2 p-1.5 bg-black/40 border border-white/10 rounded-2xl mb-8 w-full sm:w-fit backdrop-blur-md">
+          <button
+            type="button"
+            onClick={() => handleTabChange("profile")}
+            className={`flex-1 sm:flex-none flex items-center justify-center gap-2.5 px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 ${
+              activeTab === "profile"
+                ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                : "text-gray-400 hover:text-foreground hover:bg-white/5"
+            }`}
+          >
+            <User className="w-4 h-4" />
+            <span>Profil & Kustomisasi</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleTabChange("sync")}
+            className={`flex-1 sm:flex-none flex items-center justify-center gap-2.5 px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 relative ${
+              activeTab === "sync"
+                ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                : "text-gray-400 hover:text-foreground hover:bg-white/5"
+            }`}
+          >
+            <LinkIcon className="w-4 h-4" />
+            <span>Sinkronisasi Akun</span>
+            {(truckersmpId || isHaulmpDriver) && (
+              <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block ring-2 ring-black" />
+            )}
+          </button>
         </div>
 
         {message && (
@@ -299,67 +424,16 @@ export default function SettingsClient() {
           </div>
         )}
 
-        {/* TRUCKERSMP SYNC CARD */}
-        <div className="glass-panel p-8 rounded-[2rem] border-border/50 mb-8 bg-black/40">
-          <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-            <Truck className="text-orange-500 w-5 h-5" /> Integrasi TruckersMP
-          </h2>
-          <p className="text-sm text-gray-400 mb-6">
-            Tautkan akun TruckersMP Anda untuk memastikan Anda adalah anggota Nismara Transport.
-          </p>
-          
-          {truckersmpId ? (
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl bg-green-500/10 border border-green-500/20">
-              <div className="flex items-center gap-3">
-                <CheckCircle className="w-6 h-6 text-green-500 shrink-0" />
-                <div>
-                  <h3 className="font-bold text-green-400">Akun Terhubung</h3>
-                  <p className="text-sm text-green-500/80">ID TruckersMP: {truckersmpId}</p>
-                </div>
-              </div>
-              <button 
-                onClick={handleUnlinkTmp}
-                disabled={isSyncingTmp}
-                className="px-4 py-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/20 font-bold rounded-xl text-sm transition-colors flex items-center gap-2"
-              >
-                {isSyncingTmp ? <Loader2 className="w-4 h-4 animate-spin" /> : <Unlink className="w-4 h-4" />}
-                Putuskan Tautan
-              </button>
-            </div>
-          ) : (
-            <div className="flex flex-col sm:flex-row items-end gap-4">
-              <div className="w-full space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-                  ID TruckersMP
-                </label>
-                <input
-                  type="text"
-                  value={tmpId}
-                  onChange={(e) => setTmpId(e.target.value)}
-                  placeholder="Contoh: 5610149"
-                  className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-orange-500 transition-colors"
-                />
-              </div>
-              <button 
-                onClick={handleSyncTmp}
-                disabled={isSyncingTmp || !tmpId}
-                className="w-full sm:w-auto px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl transition-all disabled:opacity-50 whitespace-nowrap flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20"
-              >
-                {isSyncingTmp ? <Loader2 className="w-5 h-5 animate-spin" /> : <Truck className="w-5 h-5" />}
-                Sinkronisasi
-              </button>
-            </div>
-          )}
-        </div>
-
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            const formData = new FormData(e.currentTarget);
-            handleSubmit(formData);
-          }}
-          className="space-y-8"
-        >
+        {/* TAB 1: PROFIL & KUSTOMISASI */}
+        {activeTab === "profile" && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              handleSubmit(formData);
+            }}
+            className="space-y-8 animate-in fade-in duration-200"
+          >
           <div className="glass-panel p-8 rounded-[2rem] border-border/50">
             <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
               <User className="text-primary w-5 h-5" /> Identitas Dasar
@@ -536,6 +610,230 @@ export default function SettingsClient() {
             </button>
           </div>
         </form>
+        )}
+
+        {/* TAB 2: SINKRONISASI AKUN */}
+        {activeTab === "sync" && (
+          <div className="space-y-8 animate-in fade-in duration-200">
+            {/* Info Notice */}
+            <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10 flex items-start gap-3">
+              <LinkIcon className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+              <div>
+                <h3 className="text-sm font-bold text-foreground">Sinkronisasi Platform Eksternal</h3>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Hubungkan akun game eksternal Anda untuk integrasi data konvoi, leaderboard, dan verifikasi driver resmi Nismara Transport.
+                </p>
+              </div>
+            </div>
+
+            {/* TRUCKERSMP SYNC CARD */}
+            <div className="glass-panel p-8 rounded-[2rem] border-border/50 bg-black/40">
+              <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+                <Truck className="text-orange-500 w-5 h-5" /> Integrasi TruckersMP
+              </h2>
+              <p className="text-sm text-gray-400 mb-6">
+                Tautkan akun TruckersMP Anda untuk memastikan Anda adalah anggota Nismara Transport.
+              </p>
+              
+              {truckersmpId ? (
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl bg-green-500/10 border border-green-500/20">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="w-6 h-6 text-green-500 shrink-0" />
+                    <div>
+                      <h3 className="font-bold text-green-400">Akun Terhubung</h3>
+                      <p className="text-sm text-green-500/80">ID TruckersMP: {truckersmpId}</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={handleUnlinkTmp}
+                    disabled={isSyncingTmp}
+                    className="px-4 py-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/20 font-bold rounded-xl text-sm transition-colors flex items-center gap-2"
+                  >
+                    {isSyncingTmp ? <Loader2 className="w-4 h-4 animate-spin" /> : <Unlink className="w-4 h-4" />}
+                    Putuskan Tautan
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col sm:flex-row items-end gap-4">
+                  <div className="w-full space-y-2">
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                      ID TruckersMP
+                    </label>
+                    <input
+                      type="text"
+                      value={tmpId}
+                      onChange={(e) => setTmpId(e.target.value)}
+                      placeholder="Contoh: 5610149"
+                      className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-orange-500 transition-colors"
+                    />
+                  </div>
+                  <button 
+                    onClick={handleSyncTmp}
+                    disabled={isSyncingTmp || !tmpId}
+                    className="w-full sm:w-auto px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl transition-all disabled:opacity-50 whitespace-nowrap flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20"
+                  >
+                    {isSyncingTmp ? <Loader2 className="w-5 h-5 animate-spin" /> : <Truck className="w-5 h-5" />}
+                    Sinkronisasi
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* HAULMP INTEGRATION CARD */}
+            {(isDriver || (session?.user as any)?.isDriver) ? (
+              <div className="glass-panel p-8 rounded-[2rem] border-border/50 bg-black/40">
+                <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                  <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                    <Truck className="text-emerald-400 w-5 h-5" /> Integrasi VTC HaulMP
+                  </h2>
+                  {isHaulmpDriver ? (
+                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
+                      <CheckCircle className="w-3.5 h-3.5" /> Terverifikasi
+                    </span>
+                  ) : haulmpApp?.status === "pending" ? (
+                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5" /> Menunggu Persetujuan
+                    </span>
+                  ) : (
+                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-white/5 text-gray-400 border border-white/10">
+                      Belum Terdaftar
+                    </span>
+                  )}
+                </div>
+
+                <p className="text-sm text-gray-400 mb-6">
+                  Verifikasi akun Anda di platform multiplayer HaulMP untuk mencatat pekerjaan dan mengikuti konvoi resmi Nismara Transport di HaulMP.
+                </p>
+
+                {isHaulmpDriver ? (
+                  <div className="p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 space-y-2">
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className="w-6 h-6 text-emerald-400 shrink-0" />
+                      <div>
+                        <h3 className="font-bold text-emerald-400 text-base">Driver HaulMP Aktif</h3>
+                        <p className="text-xs text-emerald-300/80">
+                          Akun Anda telah terdaftar dan diverifikasi dalam roster VTC HaulMP Nismara Transport.
+                        </p>
+                      </div>
+                    </div>
+                    {haulmpId && (
+                      <div className="pt-2 border-t border-emerald-500/20 text-xs text-emerald-300/90 font-mono">
+                        ID HaulMP: {haulmpId}
+                      </div>
+                    )}
+                  </div>
+                ) : haulmpApp?.status === "pending" ? (
+                  <div className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/20 space-y-4">
+                    <div className="flex items-start gap-3">
+                      <Clock className="w-6 h-6 text-amber-400 shrink-0 mt-0.5" />
+                      <div className="space-y-1">
+                        <h3 className="font-bold text-amber-400 text-base">Pengajuan Sedang Ditinjau</h3>
+                        <p className="text-xs text-amber-300/80 leading-relaxed">
+                          Pengajuan verifikasi VTC HaulMP Anda telah terkirim dan sedang menunggu pemeriksaan oleh manajemen Nismara.
+                        </p>
+                        {haulmpApp.notes && (
+                          <p className="text-xs text-amber-200/70 italic mt-1 bg-black/20 p-2 rounded-lg border border-amber-500/10">
+                            Catatan Anda: &quot;{haulmpApp.notes}&quot;
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-amber-500/20">
+                      <button
+                        type="button"
+                        onClick={handleCancelHaulmp}
+                        disabled={isCancellingHaulmp}
+                        className="px-4 py-2 bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 text-xs font-bold rounded-xl transition-all disabled:opacity-50 flex items-center gap-1.5"
+                      >
+                        {isCancellingHaulmp ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                        Batalkan Pengajuan
+                      </button>
+                      {haulmpApp.channelId ? (
+                        <a
+                          href={`https://discord.com/channels/863959415702028318/${haulmpApp.channelId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-4 py-2 bg-[#5865F2]/20 hover:bg-[#5865F2]/30 text-[#9aa4fc] border border-[#5865F2]/40 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 shadow-sm"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5" /> Kunjungi Channel Tiket
+                        </a>
+                      ) : (
+                        <a
+                          href="https://discord.gg/nismara"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" /> Buka Discord Nismara
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {haulmpApp?.status === "rejected" && (
+                      <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-300 space-y-1">
+                        <div className="font-bold text-red-400 flex items-center gap-1.5">
+                          <ShieldAlert className="w-4 h-4" /> Pengajuan Sebelumnya Ditolak
+                        </div>
+                        {(haulmpApp.reviewReason || haulmpApp.reviewNotes) && (
+                          <p className="italic">Alasan manajemen: &quot;{haulmpApp.reviewReason || haulmpApp.reviewNotes}&quot;</p>
+                        )}
+                        <p className="text-red-400/80">
+                          Anda dapat mengajukan permohonan verifikasi kembali setelah memperbaiki persyaratan.
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="p-4 rounded-2xl bg-black/20 border border-white/5 space-y-2 text-xs text-gray-400">
+                      <p className="font-semibold text-gray-300">Langkah Verifikasi Driver HaulMP:</p>
+                      <ol className="list-decimal list-inside space-y-1 ml-1 text-gray-400">
+                        <li>Pastikan Anda sudah bergabung / mengirim application ke VTC Nismara di platform HaulMP.</li>
+                        <li>Kirim pengajuan verifikasi melalui formulir di bawah ini (sertakan catatan atau link profil jika ada).</li>
+                        <li>Buka tiket di channel Discord Nismara jika membutuhkan konfirmasi cepat dari manajemen.</li>
+                      </ol>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                        Catatan / Tautan Profil HaulMP (Opsional)
+                      </label>
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <input
+                          type="text"
+                          value={haulmpNotes}
+                          onChange={(e) => setHaulmpNotes(e.target.value)}
+                          placeholder="Contoh: Sudah apply di VTC HaulMP nama akun..."
+                          className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-emerald-500 transition-colors"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleSubmitHaulmp}
+                          disabled={isSubmittingHaulmp}
+                          className="px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl transition-all disabled:opacity-50 whitespace-nowrap flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 text-sm"
+                        >
+                          {isSubmittingHaulmp ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Send className="w-4 h-4" />
+                          )}
+                          Ajukan Verifikasi
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="glass-panel p-6 rounded-[2rem] border-border/50 bg-black/20 text-xs text-gray-400 flex items-center gap-3">
+                <Truck className="w-5 h-5 text-gray-500 shrink-0" />
+                <p>
+                  Integrasi VTC HaulMP khusus diperuntukkan bagi Driver terdaftar Nismara Transport.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </main>
   );

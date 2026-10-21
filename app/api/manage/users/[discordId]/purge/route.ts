@@ -232,6 +232,19 @@ export async function DELETE(
       }
     }
 
+    // Bersihkan Channel Tiket HaulMP jika masih pending
+    const pendingHaulmp = await db.collection("haulmp_applications").findOne({ discordId, status: "pending" });
+    if (pendingHaulmp?.channelId && process.env.DISCORD_BOT_TOKEN) {
+      try {
+        await fetch(`https://discord.com/api/v10/channels/${pendingHaulmp.channelId}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}` },
+        });
+      } catch (e) {
+        console.error("Purge: failed to delete discord haulmp ticket channel", e);
+      }
+    }
+
     // --- User Core & Auth ---
     deletePromises.push(db.collection("users").deleteMany({ discordId }));
     if (userIdObj) {
@@ -354,6 +367,9 @@ export async function DELETE(
     );
     deletePromises.push(
       db.collection("applications").deleteMany({ "applicant.discordId": discordId }),
+    );
+    deletePromises.push(
+      db.collection("haulmp_applications").deleteMany({ discordId }),
     );
 
     // --- Galeri & Konten Sosial ---

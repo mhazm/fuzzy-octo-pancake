@@ -27,7 +27,7 @@ export interface IConvoyLobby extends Document {
   cargoName?: string;
   cargoMass?: number;
   plannedDistanceKm?: number;
-  gameplayType: "Convoy Lobby" | "TruckersMP";
+  gameplayType: "Convoy Lobby" | "TruckersMP" | "HaulMP";
   lobbyId?: string;
   serverName?: string;
   partisipan: IPartisipan[];
@@ -60,7 +60,7 @@ const convoyLobbySchema = new Schema<IConvoyLobby>(
   {
     guildId: { type: String, required: true },
     gameId: { type: String, required: true }, // 1 = ETS2, 2 = ATS
-    gameplayType: { type: String, enum: ["Convoy Lobby", "TruckersMP"], default: "Convoy Lobby" },
+    gameplayType: { type: String, enum: ["Convoy Lobby", "TruckersMP", "HaulMP"], default: "Convoy Lobby" },
     lobbyId: { type: String, default: "85568392935732469" },
     serverName: { type: String },
     convoyUri: { type: String, required: true, unique: true },

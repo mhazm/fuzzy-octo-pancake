@@ -21,7 +21,7 @@ import {
 export interface MonthlyJobStatItem {
   month: string; // Format: "YYYY-MM"
   game: "ETS2" | "ATS";
-  gameMode: "truckersmp" | "sp";
+  gameMode: "truckersmp" | "haulmp" | "sp";
   totalCompleted: number;
   totalCanceled: number;
   totalDistanceKm: number;
@@ -121,11 +121,13 @@ export default function DriverMonthlyJobAnalytics({
   const ets2Stats = useMemo(() => {
     const gameFiltered = activeStats.filter((s) => s.game === "ETS2");
     const tmpFiltered = gameFiltered.filter((s) => s.gameMode === "truckersmp");
+    const haulmpFiltered = gameFiltered.filter((s) => s.gameMode === "haulmp");
     const spFiltered = gameFiltered.filter((s) => s.gameMode === "sp");
 
     return {
       total: calcMetrics(gameFiltered),
       truckersmp: calcMetrics(tmpFiltered),
+      haulmp: calcMetrics(haulmpFiltered),
       sp: calcMetrics(spFiltered),
     };
   }, [activeStats]);
@@ -134,11 +136,13 @@ export default function DriverMonthlyJobAnalytics({
   const atsStats = useMemo(() => {
     const gameFiltered = activeStats.filter((s) => s.game === "ATS");
     const tmpFiltered = gameFiltered.filter((s) => s.gameMode === "truckersmp");
+    const haulmpFiltered = gameFiltered.filter((s) => s.gameMode === "haulmp");
     const spFiltered = gameFiltered.filter((s) => s.gameMode === "sp");
 
     return {
       total: calcMetrics(gameFiltered),
       truckersmp: calcMetrics(tmpFiltered),
+      haulmp: calcMetrics(haulmpFiltered),
       sp: calcMetrics(spFiltered),
     };
   }, [activeStats]);
@@ -438,6 +442,58 @@ export default function DriverMonthlyJobAnalytics({
               </div>
             </div>
 
+            {/* HaulMP */}
+            <div className="p-3.5 rounded-xl bg-card/50 border border-border/50 hover:border-emerald-500/40 transition-colors">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400">
+                    <Truck className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-sm font-semibold text-foreground">
+                      HaulMP
+                    </span>
+                    <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                      Multiplayer
+                    </span>
+                  </div>
+                </div>
+                <span className="text-sm font-bold text-foreground">
+                  {ets2Stats.haulmp.distance.toLocaleString("id-ID")} Km
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 border-t border-border/30">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-green-400 inline-block" />
+                  Selesai:{" "}
+                  <strong className="text-foreground">
+                    {ets2Stats.haulmp.completed}
+                  </strong>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-red-400 inline-block" />
+                  Batal:{" "}
+                  <strong className="text-foreground">
+                    {ets2Stats.haulmp.canceled}
+                  </strong>
+                </span>
+                <span>
+                  Share:{" "}
+                  <strong className="text-emerald-400">
+                    {ets2Stats.total.distance > 0
+                      ? Math.round(
+                          (ets2Stats.haulmp.distance /
+                            ets2Stats.total.distance) *
+                            100,
+                        )
+                      : 0}
+                    %
+                  </strong>
+                </span>
+              </div>
+            </div>
+
             {/* SinglePlayer / Convoy */}
             <div className="p-3.5 rounded-xl bg-card/50 border border-border/50 hover:border-accent-lilac/40 transition-colors">
               <div className="flex items-center justify-between mb-2">
@@ -594,6 +650,58 @@ export default function DriverMonthlyJobAnalytics({
                     {atsStats.total.distance > 0
                       ? Math.round(
                           (atsStats.truckersmp.distance /
+                            atsStats.total.distance) *
+                            100,
+                        )
+                      : 0}
+                    %
+                  </strong>
+                </span>
+              </div>
+            </div>
+
+            {/* HaulMP */}
+            <div className="p-3.5 rounded-xl bg-card/50 border border-border/50 hover:border-emerald-500/40 transition-colors">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400">
+                    <Truck className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-sm font-semibold text-foreground">
+                      HaulMP
+                    </span>
+                    <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                      Multiplayer
+                    </span>
+                  </div>
+                </div>
+                <span className="text-sm font-bold text-foreground">
+                  {atsStats.haulmp.distance.toLocaleString("id-ID")} Km
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 border-t border-border/30">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-green-400 inline-block" />
+                  Selesai:{" "}
+                  <strong className="text-foreground">
+                    {atsStats.haulmp.completed}
+                  </strong>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-red-400 inline-block" />
+                  Batal:{" "}
+                  <strong className="text-foreground">
+                    {atsStats.haulmp.canceled}
+                  </strong>
+                </span>
+                <span>
+                  Share:{" "}
+                  <strong className="text-emerald-400">
+                    {atsStats.total.distance > 0
+                      ? Math.round(
+                          (atsStats.haulmp.distance /
                             atsStats.total.distance) *
                             100,
                         )

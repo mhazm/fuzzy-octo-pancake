@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
+import { jsonNoCache } from "@/lib/antiCache";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 export async function GET(request: Request) {
   try {
@@ -10,11 +15,12 @@ export async function GET(request: Request) {
     const isGlobal = searchParams.get("global") === "true";
     const tag = searchParams.get("tag");
     const page = parseInt(searchParams.get("page") || "1");
-    const limit = 12;
+    const limitParam = searchParams.get("limit");
+    const limit = limitParam ? Math.max(1, parseInt(limitParam)) : 12;
     const skip = (page - 1) * limit;
 
     if (!userId && !isGlobal) {
-      return NextResponse.json({ error: "userId required or global=true" }, { status: 400 });
+      return jsonNoCache({ error: "userId required or global=true" }, { status: 400 });
     }
 
     const client = await clientPromise;
@@ -32,7 +38,7 @@ export async function GET(request: Request) {
     
     pipeline.push({ $sort: { createdAt: -1 } });
     
-    if (isGlobal) {
+    if (isGlobal || limitParam) {
       pipeline.push({ $skip: skip });
       pipeline.push({ $limit: limit }); // Pagination limit
     }
@@ -100,14 +106,10 @@ export async function GET(request: Request) {
 
     const posts = await db.collection("gallery_posts").aggregate(pipeline).toArray();
 
-    return NextResponse.json(posts, {
-      headers: {
-        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=240",
-      },
-    });
+    return jsonNoCache(posts);
   } catch (error) {
     console.error("Error fetching gallery posts:", error);
-    return NextResponse.json(
+    return jsonNoCache(
       { error: "Failed to fetch gallery posts" },
       { status: 500 },
     );

@@ -27,7 +27,7 @@ const jobHistorySchema = new mongoose.Schema(
 
     // Game info
     game: String, // ETS2 / ATS
-    gameMode: String, // truckersmp / sp
+    gameMode: String, // truckersmp / sp / haulmp
     statsType: String,
     marketType: String, // cargo market / freight market
 
@@ -96,6 +96,7 @@ const jobHistorySchema = new mongoose.Schema(
       booster: Number,
       nismaraplus: Number,
       truckersmp: Number,
+      haulmp: Number,
       total: Number,
     },
 

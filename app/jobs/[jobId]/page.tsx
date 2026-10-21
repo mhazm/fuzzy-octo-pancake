@@ -205,17 +205,26 @@ export default async function JobDetailPage(props: {
     "text-slate-600 bg-slate-100 border-slate-200 dark:text-gray-400 dark:bg-gray-400/10 dark:border-gray-400/20";
 
   const getLobbyInfo = (id: string) => {
-    return id === "truckersmp"
-      ? {
-          name: "Truckers MP",
-          color: "text-accent-sky",
-          bg: "bg-accent-sky/10",
-        }
-      : {
-          name: "SinglePlayer / Convoy",
-          color: "text-accent-lilac",
-          bg: "bg-accent-lilac/10",
-        };
+    const lower = (id || "").toLowerCase();
+    if (lower === "truckersmp") {
+      return {
+        name: "Truckers MP",
+        color: "text-accent-sky",
+        bg: "bg-accent-sky/10",
+      };
+    }
+    if (lower === "haulmp") {
+      return {
+        name: "HaulMP",
+        color: "text-emerald-400",
+        bg: "bg-emerald-400/10",
+      };
+    }
+    return {
+      name: "SinglePlayer / Convoy",
+      color: "text-accent-lilac",
+      bg: "bg-accent-lilac/10",
+    };
   };
 
   const gameLobby = getLobbyInfo(gameMode);
@@ -402,6 +411,11 @@ export default async function JobDetailPage(props: {
                         label="TruckersMP Bonus"
                         value={localJob?.nc?.truckersmp}
                         color="text-blue-600 dark:text-blue-400"
+                      />
+                      <BreakdownRow
+                        label="HaulMP Bonus"
+                        value={localJob?.nc?.haulmp}
+                        color="text-emerald-600 dark:text-emerald-400"
                       />
                       <BreakdownRow
                         label="Nismara Plus Bonus"

@@ -457,7 +457,7 @@ export default async function PublicProfilePage(props: {
               </div>
 
               {/* Badges / Roles */}
-              <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-4">
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-4 relative z-20">
                 <span
                   className="px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-md border"
                   style={{
@@ -496,6 +496,38 @@ export default async function PublicProfilePage(props: {
                 {user.isDriver && (
                   <span className="px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-md bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 flex items-center gap-1">
                     <ShieldCheck className="w-3 h-3" /> Verified Driver
+                  </span>
+                )}
+                {(user.isTmpDriver || user.truckersmpId) && (
+                  user.truckersmpId ? (
+                    <a
+                      href={`https://truckersmp.com/user/${user.truckersmpId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group relative px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-md bg-orange-500/10 text-orange-400 border border-orange-500/20 hover:bg-orange-500/20 hover:border-orange-500/40 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm shadow-orange-500/5"
+                    >
+                      <Truck className="w-3.5 h-3.5 text-orange-400" />
+                      <span>TruckersMP Driver</span>
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max px-3 py-1.5 bg-black/80 backdrop-blur-sm text-white text-[11px] rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-lg border border-white/10 font-medium normal-case tracking-normal pointer-events-none">
+                        ID: {user.truckersmpId} &bull; Klik untuk lihat profil TruckersMP
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-black/80" />
+                      </div>
+                    </a>
+                  ) : (
+                    <span className="px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-md bg-orange-500/10 text-orange-400 border border-orange-500/20 flex items-center gap-1.5 shadow-sm shadow-orange-500/5">
+                      <Truck className="w-3.5 h-3.5 text-orange-400" />
+                      <span>TruckersMP Driver</span>
+                    </span>
+                  )
+                )}
+                {user.isHaulmpDriver && (
+                  <span className="group relative px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-md bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 flex items-center gap-1.5 cursor-help shadow-sm shadow-cyan-500/5">
+                    <Truck className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>HaulMP Driver</span>
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max px-3 py-1.5 bg-black/80 backdrop-blur-sm text-white text-[11px] rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-lg border border-white/10 font-medium normal-case tracking-normal pointer-events-none">
+                      {user.haulmpId ? `ID: ${user.haulmpId} • ` : ""}Driver Resmi VTC HaulMP
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-black/80" />
+                    </div>
                   </span>
                 )}
               </div>
@@ -846,11 +878,35 @@ export default async function PublicProfilePage(props: {
                       <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-orange-500" />
                     </a>
                   )}
+                  {user.truckersmpId && (
+                    <a
+                      href={`https://truckersmp.com/user/${user.truckersmpId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group flex items-center justify-between p-3 rounded-xl bg-background/50 border border-border/30 hover:bg-orange-500/10 hover:border-orange-500/30 transition-all"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-orange-500/10 rounded-lg text-orange-500 group-hover:bg-orange-500 group-hover:text-white transition-colors">
+                          <Truck className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <span className="text-sm font-bold text-foreground block">
+                            TruckersMP
+                          </span>
+                          <span className="text-[10px] text-muted-foreground font-mono">
+                            ID: {user.truckersmpId}
+                          </span>
+                        </div>
+                      </div>
+                      <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-orange-500" />
+                    </a>
+                  )}
                   {/* Fallback if no socials */}
                   {!user.social_media?.youtube &&
                     !user.social_media?.facebook &&
                     !user.social_media?.instagram &&
-                    !user.social_media?.world_of_truck && (
+                    !user.social_media?.world_of_truck &&
+                    !user.truckersmpId && (
                       <p className="text-sm text-muted-foreground text-center italic py-2">
                         Belum ada sosial media yang ditautkan.
                       </p>

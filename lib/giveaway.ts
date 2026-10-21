@@ -148,6 +148,12 @@ export async function getUserGiveawayProgress(
           return mode === "truckersmp" || mode.includes("truckersmp");
         }).length;
         break;
+      case "HAULMP_JOB":
+        currentValue = userJobs.filter((j) => {
+          const mode = String(j.gameMode || "").toLowerCase();
+          return mode === "haulmp" || mode.includes("haulmp");
+        }).length;
+        break;
       case "LONG_HAUL":
         const minDist = q.minDistanceKm || 1000;
         currentValue = userJobs.filter((j) => (j.distanceKm || 0) >= minDist).length;

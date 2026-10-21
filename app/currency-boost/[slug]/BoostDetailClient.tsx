@@ -83,8 +83,10 @@ export default function BoostDetailClient({ event }: { event: any }) {
   };
 
   const getTypeName = (type: string) => {
-    if (type === "Singleplayer") return "Singleplayer";
+    if (type === "Singleplayer" || type === "Single Player") return "Singleplayer";
     if (type === "TruckersMP") return "TruckersMP";
+    if (type === "HaulMP") return "HaulMP";
+    if (type === "Convoy") return "Convoy";
     return "Semua Mode";
   };
 

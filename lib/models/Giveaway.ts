@@ -24,7 +24,7 @@ export interface GiveawayQuestConfig {
   questId: string;
   title: string;
   description: string;
-  type: "TOTAL_JOBS" | "LONG_HAUL" | "TRUCKERSMP_JOB" | "HEAVY_CARGO" | "PERFECT_DELIVERY";
+  type: "TOTAL_JOBS" | "LONG_HAUL" | "TRUCKERSMP_JOB" | "HAULMP_JOB" | "HEAVY_CARGO" | "PERFECT_DELIVERY";
   target: number;
   minDistanceKm?: number;
   minCargoMass?: number;
@@ -108,7 +108,7 @@ const questConfigSchema = new mongoose.Schema(
     description: { type: String, default: "" },
     type: {
       type: String,
-      enum: ["TOTAL_JOBS", "LONG_HAUL", "TRUCKERSMP_JOB", "HEAVY_CARGO", "PERFECT_DELIVERY"],
+      enum: ["TOTAL_JOBS", "LONG_HAUL", "TRUCKERSMP_JOB", "HAULMP_JOB", "HEAVY_CARGO", "PERFECT_DELIVERY"],
       required: true,
     },
     target: { type: Number, required: true, default: 1 },

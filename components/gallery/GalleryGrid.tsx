@@ -1,9 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Heart, MessageCircle, MonitorPlay, Plus } from "lucide-react";
+import {
+  Heart,
+  MessageCircle,
+  MonitorPlay,
+  Plus,
+  Loader2,
+  ChevronDown,
+} from "lucide-react";
 import GalleryModal from "./GalleryModal";
 import UploadPostDialog from "./UploadPostDialog";
+import { NO_CACHE_FETCH_OPTIONS } from "@/lib/antiCache";
 
 export interface UserComment {
   _id: string;
@@ -68,28 +76,65 @@ export default function GalleryGrid({
   profileTopManager?: any;
   isManager?: boolean;
 }) {
+  const PAGE_SIZE = 6;
   const [posts, setPosts] = useState<GalleryPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
   const [selectedPost, setSelectedPost] = useState<GalleryPost | null>(null);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
 
-  const fetchPosts = async () => {
+  const fetchPosts = async (pageNum = 1, append = false) => {
+    if (!profileDiscordId) {
+      setLoading(false);
+      return;
+    }
+
+    if (!append) {
+      setLoading(true);
+    } else {
+      setLoadingMore(true);
+    }
+
     try {
-      const res = await fetch(`/api/gallery?userId=${profileDiscordId}`);
+      const res = await fetch(
+        `/api/gallery?userId=${profileDiscordId}&page=${pageNum}&limit=${PAGE_SIZE}`,
+        NO_CACHE_FETCH_OPTIONS,
+      );
       if (res.ok) {
-        const data = await res.json();
-        setPosts(data);
+        const data: GalleryPost[] = await res.json();
+        if (append) {
+          if (data.length === 0) {
+            setHasMore(false);
+          } else {
+            setPosts((prev) => [...prev, ...data]);
+            setHasMore(data.length === PAGE_SIZE);
+            setPage(pageNum);
+          }
+        } else {
+          setPosts(data);
+          setHasMore(data.length === PAGE_SIZE);
+          setPage(1);
+        }
       }
     } catch (error) {
-      console.error(error);
+      console.error("Error fetching gallery posts:", error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
   useEffect(() => {
-    fetchPosts();
-  }, [truckyId]);
+    fetchPosts(1, false);
+  }, [profileDiscordId, truckyId]);
+
+  const handleLoadMore = () => {
+    if (!loadingMore && hasMore) {
+      fetchPosts(page + 1, true);
+    }
+  };
 
   return (
     <div>
@@ -140,7 +185,26 @@ export default function GalleryGrid({
               />
               {post.imageUrls && post.imageUrls.length > 1 && (
                 <div className="absolute top-2 right-2 z-10 text-white drop-shadow-md">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M7 3v18"/><path d="M3 7.5h4"/><path d="M3 12h18"/><path d="M3 16.5h4"/><path d="M17 3v18"/><path d="M17 7.5h4"/><path d="M17 16.5h4"/></svg>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+                    <path d="M7 3v18" />
+                    <path d="M3 7.5h4" />
+                    <path d="M3 12h18" />
+                    <path d="M3 16.5h4" />
+                    <path d="M17 3v18" />
+                    <path d="M17 7.5h4" />
+                    <path d="M17 16.5h4" />
+                  </svg>
                 </div>
               )}
               <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-6 text-white font-bold">
@@ -155,6 +219,30 @@ export default function GalleryGrid({
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Load More Button */}
+      {!loading && hasMore && (
+        <div className="flex justify-center mt-8">
+          <button
+            type="button"
+            onClick={handleLoadMore}
+            disabled={loadingMore}
+            className="px-6 py-3 bg-card/60 hover:bg-card border border-border/50 hover:border-primary/50 text-foreground font-bold rounded-2xl transition-all duration-200 flex items-center gap-2 shadow-lg shadow-black/20 text-xs uppercase tracking-wider group disabled:opacity-50 cursor-pointer"
+          >
+            {loadingMore ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                <span>Memuat Gambar...</span>
+              </>
+            ) : (
+              <>
+                <span>Muat Lebih Banyak</span>
+                <ChevronDown className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-y-0.5 transition-transform" />
+              </>
+            )}
+          </button>
         </div>
       )}
 
@@ -186,7 +274,7 @@ export default function GalleryGrid({
         <UploadPostDialog
           onClose={() => setIsUploadOpen(false)}
           onSuccess={(newPost: GalleryPost) => {
-            setPosts([newPost, ...posts]);
+            setPosts((prev) => [newPost, ...prev]);
             setIsUploadOpen(false);
           }}
         />

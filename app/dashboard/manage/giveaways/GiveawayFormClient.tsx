@@ -719,6 +719,7 @@ export default function GiveawayFormClient({ initialData, isEdit }: GiveawayForm
                         <option value="TOTAL_JOBS">Total Pekerjaan (Job)</option>
                         <option value="LONG_HAUL">Jarak Jauh (Long Haul)</option>
                         <option value="TRUCKERSMP_JOB">Job TruckersMP</option>
+                        <option value="HAULMP_JOB">Job HaulMP</option>
                         <option value="HEAVY_CARGO">Kargo Berat (Heavy)</option>
                         <option value="PERFECT_DELIVERY">0% Damage (Perfect)</option>
                       </select>

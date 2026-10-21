@@ -16,6 +16,8 @@ const userSchema = new mongoose.Schema(
     truckersmpId: { type: String, required: false },
     steamId: { type: String, required: false },
     isTmpDriver: { type: Boolean, default: false },
+    haulmpId: { type: String, required: false },
+    isHaulmpDriver: { type: Boolean, default: false },
 
     insurance: {
       status: { type: Boolean, default: false },

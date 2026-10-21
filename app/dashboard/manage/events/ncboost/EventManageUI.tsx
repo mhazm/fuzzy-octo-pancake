@@ -859,6 +859,7 @@ export default function EventManageUI({
                   >
                     <option value="all">Semua Server (Singleplayer & Multiplayer)</option>
                     <option value="TruckersMP">Khusus TruckersMP</option>
+                    <option value="HaulMP">Khusus HaulMP</option>
                     <option value="Single Player">Khusus Single Player</option>
                     <option value="Convoy">Khusus Convoy</option>
                   </select>

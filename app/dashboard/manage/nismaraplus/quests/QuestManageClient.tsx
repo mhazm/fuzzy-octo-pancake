@@ -209,6 +209,8 @@ export default function QuestManageClient({
         return <Flame className="w-4 h-4 text-rose-400" />;
       case "TRUCKERSMP_JOB":
         return <Globe className="w-4 h-4 text-purple-400" />;
+      case "HAULMP_JOB":
+        return <Truck className="w-4 h-4 text-emerald-400" />;
       default:
         return <Truck className="w-4 h-4 text-blue-400" />;
     }
@@ -372,6 +374,7 @@ export default function QuestManageClient({
             <option value="ALL">Semua Tipe Quest</option>
             <option value="TOTAL_JOBS">Total Pekerjaan</option>
             <option value="TRUCKERSMP_JOB">TruckersMP Multiplayer</option>
+            <option value="HAULMP_JOB">HaulMP Multiplayer</option>
             <option value="HEAVY_CARGO">Heavy Cargo (≥20T)</option>
             <option value="LONG_HAUL">Long Haul (≥1000KM)</option>
             <option value="TOTAL_DISTANCE">Akumulasi Jarak (KM)</option>
@@ -573,6 +576,7 @@ export default function QuestManageClient({
                   >
                     <option value="TOTAL_JOBS">📦 Total Pekerjaan</option>
                     <option value="TRUCKERSMP_JOB">🌐 TruckersMP Multiplayer (Job)</option>
+                    <option value="HAULMP_JOB">🚛 HaulMP Multiplayer (Job)</option>
                     <option value="HEAVY_CARGO">🏋️ Heavy Cargo (Ton)</option>
                     <option value="LONG_HAUL">🛣️ Long Haul (KM)</option>
                     <option value="TOTAL_DISTANCE">⚡ Akumulasi Jarak (KM)</option>

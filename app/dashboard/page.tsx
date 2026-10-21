@@ -163,7 +163,18 @@ export default async function DashboardPage() {
                 },
               },
               "truckersmp",
-              "sp",
+              {
+                $cond: [
+                  {
+                    $regexMatch: {
+                      input: { $ifNull: ["$gameMode", ""] },
+                      regex: /haulmp/i,
+                    },
+                  },
+                  "haulmp",
+                  "sp",
+                ],
+              },
             ],
           },
           jobStatus: 1,

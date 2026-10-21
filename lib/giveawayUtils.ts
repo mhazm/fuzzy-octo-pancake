@@ -15,6 +15,8 @@ export function getAutoQuestDescription(
       return `Selesaikan ${targetNum} pekerjaan kargo apa saja di ETS2 atau ATS.`;
     case "TRUCKERSMP_JOB":
       return `Selesaikan ${targetNum} pekerjaan kargo di server multiplayer TruckersMP.`;
+    case "HAULMP_JOB":
+      return `Selesaikan ${targetNum} pekerjaan kargo di server multiplayer HaulMP.`;
     case "LONG_HAUL": {
       const dist = (minDistanceKm || 2000).toLocaleString("id-ID");
       return `Selesaikan ${targetNum} pengiriman kargo dengan jarak minimal ${dist} KM.`;
@@ -52,6 +54,11 @@ export function resolveQuestDescription(q: {
 
   // Jika tipe misi adalah TruckersMP tapi teksnya template kargo apa saja / jarak jauh
   if (q.type === "TRUCKERSMP_JOB" && (isOldDefaultJobsTemplate || isOldDefaultLongHaulTemplate)) {
+    return getAutoQuestDescription(q.type, q.target, q.minDistanceKm, q.minCargoMass);
+  }
+
+  // Jika tipe misi adalah HaulMP tapi teksnya template kargo apa saja / jarak jauh
+  if (q.type === "HAULMP_JOB" && (isOldDefaultJobsTemplate || isOldDefaultLongHaulTemplate)) {
     return getAutoQuestDescription(q.type, q.target, q.minDistanceKm, q.minCargoMass);
   }
 

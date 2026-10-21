@@ -14,6 +14,7 @@ import {
   FileQuestion,
   BookOpen,
   MonitorPlay,
+  Truck,
 } from "lucide-react";
 
 export const metadata = {
@@ -47,6 +48,17 @@ export default async function UserDataHub() {
       border: "border-accent-indigo/20",
       hoverBorder: "group-hover:border-accent-indigo/50",
       glow: "group-hover:bg-accent-indigo/20",
+    },
+    {
+      name: "Manage HaulMP",
+      desc: "Kelola status driver dan pengajuan VTC HaulMP.",
+      icon: Truck,
+      href: "/dashboard/manage/data/haulmp",
+      color: "text-emerald-400",
+      bg: "bg-emerald-500/10",
+      border: "border-emerald-500/20",
+      hoverBorder: "group-hover:border-emerald-500/50",
+      glow: "group-hover:bg-emerald-500/20",
     },
     {
       name: "Manage NC",

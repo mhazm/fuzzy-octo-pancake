@@ -165,25 +165,18 @@ if (!turnstileResult.success) {
 
 Nismara Logistics runs on Next.js App Router hosted on Vercel with Cloudflare proxying. Because the system deals with real-time financial balances (NC), penalty points, market mod purchases, tickets, and fleet ownership, **stale cache can cause severe user panic and miscommunication**. Always adhere to these standards:
 
+- **Helper Standar Terpusat (`@/lib/antiCache`):** Gunakan fungsi pembungkus siap pakai dari `@/lib/antiCache` agar tidak perlu mengetik header manual:
+  - `jsonNoCache(data, init)`: Drop-in replacement untuk `NextResponse.json()` yang otomatis menyertakan header anti-cache Vercel, Cloudflare, dan browser.
+  - `NO_CACHE_HEADERS`: Objek header anti-cache standar.
+  - `NO_CACHE_FETCH_OPTIONS`: Opsi `fetch` standar untuk client (`cache: "no-store"`).
 - **Server Components & Dashboard Pages:** Every dynamic or dashboard page (`app/dashboard/**/page.tsx`) must export:
   ```tsx
   export const dynamic = "force-dynamic";
   export const revalidate = 0;
   export const fetchCache = "force-no-store";
   ```
-- **Route Handlers / API Endpoints:** Every dynamic or mutating API (`app/api/**/route.ts`) must declare `dynamic = "force-dynamic"`, `revalidate = 0`, `fetchCache = "force-no-store"`, and return anti-cache headers in `NextResponse.json(...)`:
-  ```ts
-  {
-    headers: {
-      "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0, s-maxage=0",
-      "CDN-Cache-Control": "no-store",
-      "Vercel-CDN-Cache-Control": "no-store",
-      "Pragma": "no-cache",
-      "Expires": "0",
-    }
-  }
-  ```
-- **Client-Side Data Fetching:** When using `fetch()` in client components (`"use client"`), ALWAYS pass `{ cache: "no-store", headers: { "Pragma": "no-cache", "Cache-Control": "no-cache" } }` to prevent the browser disk cache from serving stale JSON.
+- **Route Handlers / API Endpoints:** Every dynamic or mutating API (`app/api/**/route.ts`) must declare `dynamic = "force-dynamic"`, `revalidate = 0`, `fetchCache = "force-no-store"`, and return anti-cache response using `jsonNoCache(data)` from `@/lib/antiCache` (or manual `headers: NO_CACHE_HEADERS`).
+- **Client-Side Data Fetching:** When using `fetch()` in client components (`"use client"`), ALWAYS pass `NO_CACHE_FETCH_OPTIONS` (or `{ cache: "no-store", headers: { "Pragma": "no-cache", "Cache-Control": "no-cache" } }`) to prevent the browser disk cache from serving stale JSON.
 - **Data Mutations & Revalidation:**
   - On the server (after POST/PUT/DELETE mutations), call `revalidatePath("/path")` for affected pages (e.g. `/dashboard/library`, `/dashboard/transactions`). *Note: `revalidatePath` targets page paths, never API URLs.*
   - On the client (after mutation succeeds in the UI), call `router.refresh()` from `next/navigation` to invalidate the Next.js in-memory Client Router Cache.

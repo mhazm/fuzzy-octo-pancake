@@ -252,6 +252,7 @@ export default function CreateConvoyPage() {
                 >
                   <option value="Convoy Lobby" className="bg-card">Convoy Lobby</option>
                   <option value="TruckersMP" className="bg-card">TruckersMP</option>
+                  <option value="HaulMP" className="bg-card">HaulMP</option>
                 </select>
               </div>
 
@@ -274,6 +275,17 @@ export default function CreateConvoyPage() {
                     name="serverName"
                     className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary"
                     placeholder="Contoh: Simulation 1"
+                  />
+                </div>
+              )}
+
+              {gameplayType === "HaulMP" && (
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Server / Session Name</label>
+                  <input
+                    name="serverName"
+                    className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary"
+                    placeholder="Contoh: HaulMP Official Server"
                   />
                 </div>
               )}
